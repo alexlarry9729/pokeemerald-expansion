@@ -24,7 +24,8 @@
 #include "constants/songs.h"
 #include "constants/rgb.h"
 
-#define STARTER_MON_COUNT   3
+#define STARTER_MON_COUNT 10
+#define STARTER_DISPLAY_COUNT 3
 
 // Position of the sprite of the selected starter Pokémon
 #define STARTER_PKMN_POS_X (DISPLAY_WIDTH / 2)
@@ -39,6 +40,8 @@ static void Task_StarterChoose(u8 taskId);
 static void Task_HandleStarterChooseInput(u8 taskId);
 static void Task_WaitForStarterSprite(u8 taskId);
 static void Task_AskConfirmStarter(u8 taskId);
+static void Task_HandleStarterNatureInput(u8 taskId);
+static void Task_HandleStarterAbilityInput(u8 taskId);
 static void Task_HandleConfirmStarterInput(u8 taskId);
 static void Task_DeclineStarter(u8 taskId);
 static void Task_MoveStarterChooseCursor(u8 taskId);
@@ -50,6 +53,8 @@ static void SpriteCB_Pokeball(struct Sprite *sprite);
 static void SpriteCB_StarterPokemon(struct Sprite *sprite);
 
 static u16 sStarterLabelWindowId;
+static u8 sChosenStarterNature = NATURE_HARDY;
+static u8 sChosenStarterAbility;
 
 const u16 gBirchBagGrass_Pal[] = INCGFX_U16("graphics/starter_choose/tiles.png", ".gbapal");
 static const u16 sPokeballSelection_Pal[] = INCGFX_U16("graphics/starter_choose/pokeball_selection.png", ".gbapal");
@@ -96,29 +101,32 @@ static const struct WindowTemplate sWindowTemplate_StarterLabel =
     .baseBlock = 0x0274
 };
 
-static const u8 sPokeballCoords[STARTER_MON_COUNT][2] =
+static const u8 sPokeballCoords[STARTER_DISPLAY_COUNT][2] =
 {
     {60, 64},
     {120, 88},
     {180, 64},
 };
 
-static const u8 sStarterLabelCoords[STARTER_MON_COUNT][2] =
+static const u8 sStarterLabelCoords[STARTER_DISPLAY_COUNT][2] =
 {
     {0, 9},
     {16, 10},
     {8, 4},
 };
 
-#define GRASS_STARTER (IS_FRLG ? SPECIES_BULBASAUR  : SPECIES_TREECKO)
-#define FIRE_STARTER  (IS_FRLG ? SPECIES_CHARMANDER : SPECIES_TORCHIC)
-#define WATER_STARTER (IS_FRLG ? SPECIES_SQUIRTLE   : SPECIES_MUDKIP )
-
 static const u16 sStarterMon[STARTER_MON_COUNT] =
 {
-    GRASS_STARTER,
-    FIRE_STARTER,
-    WATER_STARTER,
+    SPECIES_BAGON,
+    SPECIES_DRATINI,
+    SPECIES_BELDUM,
+    SPECIES_GIBLE,
+    SPECIES_JANGMO_O,
+    SPECIES_DEINO,
+    SPECIES_GOOMY,
+    SPECIES_SLAKOTH,
+    SPECIES_DREEPY,
+    SPECIES_LARVITAR,
 };
 
 static const struct BgTemplate sBgTemplates[3] =
@@ -349,10 +357,13 @@ static const struct SpriteTemplate sSpriteTemplate_StarterCircle =
 // .text
 u16 GetStarterPokemon(u16 chosenStarterId)
 {
-    if (chosenStarterId > STARTER_MON_COUNT)
+    if (chosenStarterId >= STARTER_MON_COUNT)
         chosenStarterId = 0;
     return sStarterMon[chosenStarterId];
 }
+
+u8 GetChosenStarterNature(void) { return sChosenStarterNature; }
+u8 GetChosenStarterAbility(void) { return sChosenStarterAbility; }
 
 static void VblankCB_StarterChoose(void)
 {
@@ -365,6 +376,8 @@ static void VblankCB_StarterChoose(void)
 #define tStarterSelection   data[0]
 #define tPkmnSpriteId       data[1]
 #define tCircleSpriteId     data[2]
+#define tStarterNature       data[3]
+#define tStarterAbility      data[4]
 
 // Data for sSpriteTemplate_Pokeball
 #define sTaskId data[0]
@@ -491,11 +504,11 @@ static void Task_HandleStarterChooseInput(u8 taskId)
         ClearStarterLabel();
 
         // Create white circle background
-        spriteId = CreateSprite(&sSpriteTemplate_StarterCircle, sPokeballCoords[selection][0], sPokeballCoords[selection][1], 1);
+        spriteId = CreateSprite(&sSpriteTemplate_StarterCircle, sPokeballCoords[selection % STARTER_DISPLAY_COUNT][0], sPokeballCoords[selection % STARTER_DISPLAY_COUNT][1], 1);
         gTasks[taskId].tCircleSpriteId = spriteId;
 
         // Create Pokémon sprite
-        spriteId = CreatePokemonFrontSprite(GetStarterPokemon(gTasks[taskId].tStarterSelection), sPokeballCoords[selection][0], sPokeballCoords[selection][1]);
+        spriteId = CreatePokemonFrontSprite(GetStarterPokemon(gTasks[taskId].tStarterSelection), sPokeballCoords[selection % STARTER_DISPLAY_COUNT][0], sPokeballCoords[selection % STARTER_DISPLAY_COUNT][1]);
         gSprites[spriteId].affineAnims = &sAffineAnims_StarterPokemon;
         gSprites[spriteId].callback = SpriteCB_StarterPokemon;
 
@@ -524,14 +537,134 @@ static void Task_WaitForStarterSprite(u8 taskId)
     }
 }
 
+static void PrintStarterOptionText(const u8 *prompt, const u8 *value)
+{
+    FillWindowPixelBuffer(0, PIXEL_FILL(1));
+    AddTextPrinterParameterized(0, FONT_NORMAL, prompt, 0, 1, 0, NULL);
+    AddTextPrinterParameterized(0, FONT_NORMAL, value, 0, 17, 0, NULL);
+    ScheduleBgCopyTilemapToVram(0);
+}
+
+static bool32 IsStarterAbilitySlotValid(enum Species species, u8 slot)
+{
+    u8 i;
+    enum Ability ability;
+
+    if (slot >= NUM_ABILITY_SLOTS)
+        return FALSE;
+
+    ability = gSpeciesInfo[species].abilities[slot];
+    if (ability == ABILITY_NONE)
+        return FALSE;
+
+    for (i = 0; i < slot; i++)
+    {
+        if (gSpeciesInfo[species].abilities[i] == ability)
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
+static u8 GetNextStarterAbilitySlot(enum Species species, u8 current, bool8 forward)
+{
+    u8 i;
+    u8 candidate;
+
+    for (i = 1; i <= NUM_ABILITY_SLOTS; i++)
+    {
+        if (forward)
+            candidate = (current + i) % NUM_ABILITY_SLOTS;
+        else
+            candidate = (current + NUM_ABILITY_SLOTS - (i % NUM_ABILITY_SLOTS))
+                        % NUM_ABILITY_SLOTS;
+
+        if (IsStarterAbilitySlotValid(species, candidate))
+            return candidate;
+    }
+
+    return 0;
+}
+
+static void Task_HandleStarterNatureInput(u8 taskId)
+{
+    u8 nature = gTasks[taskId].tStarterNature;
+
+    if (JOY_NEW(DPAD_LEFT))
+        nature = (nature + NUM_NATURES - 1) % NUM_NATURES;
+    else if (JOY_NEW(DPAD_RIGHT))
+        nature = (nature + 1) % NUM_NATURES;
+    else if (JOY_NEW(A_BUTTON))
+    {
+        enum Species species = GetStarterPokemon(gTasks[taskId].tStarterSelection);
+        gTasks[taskId].tStarterAbility =
+            GetNextStarterAbilitySlot(species, NUM_ABILITY_SLOTS - 1, TRUE);
+
+        PrintStarterOptionText(
+            COMPOUND_STRING("Ability: LEFT/RIGHT"),
+            gAbilitiesInfo[gSpeciesInfo[species].abilities[gTasks[taskId].tStarterAbility]].name
+        );
+        gTasks[taskId].func = Task_HandleStarterAbilityInput;
+        return;
+    }
+
+    gTasks[taskId].tStarterNature = nature;
+    PrintStarterOptionText(
+        COMPOUND_STRING("Nature: LEFT/RIGHT"),
+        gNaturesInfo[nature].name
+    );
+}
+
+static void Task_HandleStarterAbilityInput(u8 taskId)
+{
+    enum Species species = GetStarterPokemon(gTasks[taskId].tStarterSelection);
+    u8 slot = gTasks[taskId].tStarterAbility;
+
+    if (JOY_NEW(DPAD_LEFT))
+        slot = GetNextStarterAbilitySlot(species, slot, FALSE);
+    else if (JOY_NEW(DPAD_RIGHT))
+        slot = GetNextStarterAbilitySlot(species, slot, TRUE);
+    else if (JOY_NEW(B_BUTTON))
+    {
+        PrintStarterOptionText(
+            COMPOUND_STRING("Nature: LEFT/RIGHT"),
+            gNaturesInfo[gTasks[taskId].tStarterNature].name
+        );
+        gTasks[taskId].func = Task_HandleStarterNatureInput;
+        return;
+    }
+    else if (JOY_NEW(A_BUTTON))
+    {
+        FillWindowPixelBuffer(0, PIXEL_FILL(1));
+        AddTextPrinterParameterized(0, FONT_NORMAL, gText_ConfirmStarterChoice, 0, 1, 0, NULL);
+        ScheduleBgCopyTilemapToVram(0);
+        CreateYesNoMenu(&sWindowTemplate_ConfirmStarter, 0x2A8, 0xD, 0);
+        gTasks[taskId].func = Task_HandleConfirmStarterInput;
+        return;
+    }
+
+    gTasks[taskId].tStarterAbility = slot;
+    PrintStarterOptionText(
+        COMPOUND_STRING("Ability: LEFT/RIGHT"),
+        gAbilitiesInfo[gSpeciesInfo[species].abilities[slot]].name
+    );
+}
+
 static void Task_AskConfirmStarter(u8 taskId)
 {
-    PlayCry_Normal(GetStarterPokemon(gTasks[taskId].tStarterSelection), 0);
-    FillWindowPixelBuffer(0, PIXEL_FILL(1));
-    AddTextPrinterParameterized(0, FONT_NORMAL, gText_ConfirmStarterChoice, 0, 1, 0, NULL);
-    ScheduleBgCopyTilemapToVram(0);
-    CreateYesNoMenu(&sWindowTemplate_ConfirmStarter, 0x2A8, 0xD, 0);
-    gTasks[taskId].func = Task_HandleConfirmStarterInput;
+    enum Species species = GetStarterPokemon(gTasks[taskId].tStarterSelection);
+
+    PlayCry_Normal(species, 0);
+    gTasks[taskId].tStarterNature = NATURE_HARDY;
+    gTasks[taskId].tStarterAbility = GetNextStarterAbilitySlot(
+        species, NUM_ABILITY_SLOTS - 1, TRUE
+    );
+
+    PrintStarterOptionText(
+        COMPOUND_STRING("Nature: LEFT/RIGHT"),
+        gNaturesInfo[NATURE_HARDY].name
+    );
+    gTasks[taskId].func = Task_HandleStarterNatureInput;
 }
 
 static void Task_HandleConfirmStarterInput(u8 taskId)
@@ -541,7 +674,9 @@ static void Task_HandleConfirmStarterInput(u8 taskId)
     switch (Menu_ProcessInputNoWrapClearOnChoose())
     {
     case 0:  // YES
-        // Return the starter choice and exit.
+        // Salva la natura e l'abilità scelte dal giocatore.
+        sChosenStarterNature = gTasks[taskId].tStarterNature;
+        sChosenStarterAbility = gTasks[taskId].tStarterAbility;
         gSpecialVar_Result = gTasks[taskId].tStarterSelection;
         ResetAllPicSprites();
         SetMainCallback2(gMain.savedCallback);
@@ -579,8 +714,8 @@ static void CreateStarterPokemonLabel(u8 selection)
     speciesName = GetSpeciesName(species);
 
     winTemplate = sWindowTemplate_StarterLabel;
-    winTemplate.tilemapLeft = sStarterLabelCoords[selection][0];
-    winTemplate.tilemapTop = sStarterLabelCoords[selection][1];
+    winTemplate.tilemapLeft = sStarterLabelCoords[selection % STARTER_DISPLAY_COUNT][0];
+    winTemplate.tilemapTop = sStarterLabelCoords[selection % STARTER_DISPLAY_COUNT][1];
 
     sStarterLabelWindowId = AddWindow(&winTemplate);
     FillWindowPixelBuffer(sStarterLabelWindowId, PIXEL_FILL(0));
@@ -594,10 +729,10 @@ static void CreateStarterPokemonLabel(u8 selection)
     PutWindowTilemap(sStarterLabelWindowId);
     ScheduleBgCopyTilemapToVram(0);
 
-    labelLeft = sStarterLabelCoords[selection][0] * 8 - 4;
-    labelRight = (sStarterLabelCoords[selection][0] + 13) * 8 + 4;
-    labelTop = sStarterLabelCoords[selection][1] * 8;
-    labelBottom = (sStarterLabelCoords[selection][1] + 4) * 8;
+    labelLeft = sStarterLabelCoords[selection % STARTER_DISPLAY_COUNT][0] * 8 - 4;
+    labelRight = (sStarterLabelCoords[selection % STARTER_DISPLAY_COUNT][0] + 13) * 8 + 4;
+    labelTop = sStarterLabelCoords[selection % STARTER_DISPLAY_COUNT][1] * 8;
+    labelBottom = (sStarterLabelCoords[selection % STARTER_DISPLAY_COUNT][1] + 4) * 8;
     SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(labelLeft, labelRight));
     SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(labelTop, labelBottom));
 }
@@ -637,8 +772,8 @@ static u8 CreatePokemonFrontSprite(enum Species species, u8 x, u8 y)
 static void SpriteCB_SelectionHand(struct Sprite *sprite)
 {
     // Float up and down above selected Poké Ball
-    sprite->x = sCursorCoords[gTasks[sprite->data[0]].tStarterSelection][0];
-    sprite->y = sCursorCoords[gTasks[sprite->data[0]].tStarterSelection][1];
+    sprite->x = sCursorCoords[gTasks[sprite->data[0]].tStarterSelection % STARTER_DISPLAY_COUNT][0];
+    sprite->y = sCursorCoords[gTasks[sprite->data[0]].tStarterSelection % STARTER_DISPLAY_COUNT][1];
     sprite->y2 = Sin(sprite->data[1], 8);
     sprite->data[1] = (u8)(sprite->data[1]) + 4;
 }
@@ -646,7 +781,7 @@ static void SpriteCB_SelectionHand(struct Sprite *sprite)
 static void SpriteCB_Pokeball(struct Sprite *sprite)
 {
     // Animate Poké Ball if currently selected
-    if (gTasks[sprite->sTaskId].tStarterSelection == sprite->sBallId)
+    if ((gTasks[sprite->sTaskId].tStarterSelection % STARTER_DISPLAY_COUNT) == sprite->sBallId)
         StartSpriteAnimIfDifferent(sprite, 1);
     else
         StartSpriteAnimIfDifferent(sprite, 0);

@@ -1542,7 +1542,7 @@ static void SpriteCB_CreditsMonBg(struct Sprite *sprite)
 
 static void DeterminePokemonToShow(void)
 {
-    enum NationalDexOrder starter = SpeciesToNationalPokedexNum(GetStarterPokemon(VarGet(VAR_STARTER_MON)));
+    enum NationalDexOrder starter = SpeciesToNationalPokedexNum(GetStarterPokemon(IS_FRLG ? VarGet(VAR_STARTER_MON) : VarGet(VAR_STARTER_CHOICE)));
     u16 page;
     u16 dexNum;
     u16 j;

@@ -1,4 +1,5 @@
 #include "global.h"
+#include "pokemon.h"
 #include "data.h"
 #include "main.h"
 #include "battle.h"
@@ -1006,11 +1007,31 @@ void ChooseStarter(void)
 
 static void CB2_GiveStarter(void)
 {
+    struct PokemonTemplate monTemplate = {0};
     u16 starterMon;
+    u32 i;
 
-    *GetVarPointer(VAR_STARTER_MON) = gSpecialVar_Result;
+    *GetVarPointer(VAR_STARTER_CHOICE) = gSpecialVar_Result;
+    *GetVarPointer(VAR_STARTER_MON) = gSpecialVar_Result % 3;
     starterMon = GetStarterPokemon(gSpecialVar_Result);
-    ScriptGiveMon(starterMon, 5, ITEM_NONE);
+
+    monTemplate.species = starterMon;
+    monTemplate.level = 5;
+    monTemplate.heldItem = ITEM_NONE;
+    monTemplate.gender = MON_GENDER_RANDOM;
+    monTemplate.nature = GetChosenStarterNature();
+    monTemplate.abilityNum = GetChosenStarterAbility();
+    monTemplate.doNotUseDefaultAbility = TRUE;
+    monTemplate.origin = GIFTMON_ORIGIN;
+
+    for (i = 0; i < NUM_STATS; i++)
+        monTemplate.ivs[i] = USE_RANDOM_IVS;
+
+    for (i = 0; i < MAX_MON_MOVES; i++)
+        monTemplate.moves[i] = MOVE_DEFAULT;
+
+    ScriptGiveMonParameterized(B_SIDE_PLAYER, PARTY_SIZE, &monTemplate);
+
     ResetTasks();
     PlayBattleBGM();
     SetMainCallback2(CB2_StartFirstBattle);
