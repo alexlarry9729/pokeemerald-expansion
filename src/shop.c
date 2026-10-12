@@ -114,6 +114,7 @@ static EWRAM_DATA struct ListMenuItem *sListMenuItems = NULL;
 static EWRAM_DATA u8 (*sItemNames)[ITEM_NAME_LENGTH + 2] = {0};
 static EWRAM_DATA u8 sPurchaseHistoryId = 0;
 EWRAM_DATA struct ItemSlot gMartPurchaseHistory[SMARTSHOPPER_NUM_ITEMS] = {0};
+static EWRAM_DATA u16 sUniversalShopItems[ITEMS_COUNT + 1];
 
 static void Task_ShopMenu(u8 taskId);
 static void Task_HandleShopMenuQuit(u8 taskId);
@@ -391,6 +392,40 @@ static void SetShopItemsForSale(const u16 *items)
     assertf(items != NULL, "Shop items list should never be set as NULL")
     {
         sMartInfo.itemList = sShopItemsListDummy;
+        return;
+    }
+
+    // Elenchi universali: ITEM_FIELD_ARROW seguito dall'indice della tasca.
+    if (items[0] == ITEM_FIELD_ARROW)
+    {
+        enum Pocket pocket = (enum Pocket)items[1];
+        u16 itemId;
+
+        if (pocket >= POCKETS_COUNT || pocket == POCKET_KEY_ITEMS)
+        {
+            sMartInfo.itemList = sShopItemsListDummy;
+            return;
+        }
+
+        for (itemId = 1; itemId < ITEMS_COUNT; itemId++)
+        {
+            const struct ItemInfo *info = &gItemsInfo[itemId];
+
+            if (info->name == NULL || info->name == gQuestionMarksItemName)
+                continue;
+            if (GetItemPocket(itemId) != pocket)
+                continue;
+
+            // Gli oggetti importanti non vengono venduti nel catalogo generale.
+            // MT e MN restano incluse anche se marcate come riutilizzabili.
+            if (pocket != POCKET_TM_HM && GetItemImportance(itemId) != 0)
+                continue;
+
+            sUniversalShopItems[sMartInfo.itemCount++] = itemId;
+        }
+
+        sUniversalShopItems[sMartInfo.itemCount] = ITEM_NONE;
+        sMartInfo.itemList = sUniversalShopItems;
         return;
     }
 
