@@ -201,6 +201,11 @@ void Special_ViewWallClock(void)
     LockPlayerFieldControls();
 }
 
+void ApplyPlayerCyberpunkOutfitPalette(void)
+{
+    ApplyPlayerCyberpunkOutfitPaletteToAvatar();
+}
+
 void ResetCyclingRoadChallengeData(void)
 {
     gBikeCyclingChallenge = FALSE;
