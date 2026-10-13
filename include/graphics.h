@@ -3386,7 +3386,13 @@ extern const u16 gFrontierFactoryMenu_Pal[];
 
 // Object event pals
 extern const u16 gObjectEventPal_Brendan[];
+extern const u16 gObjectEventPal_BrendanCyberNeon[];
+extern const u16 gObjectEventPal_BrendanCyberSynthwave[];
+extern const u16 gObjectEventPal_BrendanCyberToxic[];
 extern const u16 gObjectEventPal_May[];
+extern const u16 gObjectEventPal_MayCyberNeon[];
+extern const u16 gObjectEventPal_MayCyberSynthwave[];
+extern const u16 gObjectEventPal_MayCyberToxic[];
 extern const u16 gObjectEventPal_RubySapphireBrendan[];
 extern const u16 gObjectEventPal_RubySapphireMay[];
 
