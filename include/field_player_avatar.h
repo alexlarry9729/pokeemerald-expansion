@@ -8,6 +8,7 @@ void SetPlayerAvatarExtraStateTransition(u16 graphicsId, u8 transitionFlag);
 enum Gender GetPlayerAvatarGenderByGraphicsId(u16 gfxId);
 u8 TestPlayerAvatarFlags(u8 flag);
 u8 GetPlayerAvatarSpriteId(void);
+void ApplyPlayerCyberpunkOutfitPaletteToAvatar(void);
 void PlayerGetDestCoords(s16 *x, s16 *y);
 enum Direction GetPlayerFacingDirection(void);
 enum Direction GetPlayerMovementDirection(void);
