@@ -275,7 +275,7 @@ static const struct WindowTemplate sWindowTemplates_MainMenus[] =
         .tilemapLeft = 1,
         .tilemapTop = 1,
         .width = 9,
-        .height = 6,
+        .height = 8,
         .paletteNum = 15,
         .baseBlock = 1
     },
@@ -305,7 +305,7 @@ static const struct WindowTemplate sWindowTemplate_CyberpunkOutfitMenu =
     .tilemapLeft = 1,
     .tilemapTop = 1,
     .width = 16,
-    .height = 7,
+    .height = 8,
     .paletteNum = 15,
     .baseBlock = 1
 };
