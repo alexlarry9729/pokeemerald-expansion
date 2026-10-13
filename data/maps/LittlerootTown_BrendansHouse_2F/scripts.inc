@@ -325,9 +325,11 @@ Common_Text_LookCloserAtMap:
 	.string "{REGION} region map.$"
 
 PlayersHouse_2F_Text_ItsAGameCube:
-	.string "A compact cyber-console projects a\n"
-	.string "neon wardrobe interface.\p"
-	.string "Select a look before heading out.$"
+	.string "A compact cyber-console\n"
+	.string "projects a neon wardrobe.\p"
+	.string "Select a look before heading\n"
+	.string "out.$"
 
 PlayersHouse_2F_Text_OutfitSet:
-	.string "Your cyber-look has been saved.$"
+	.string "Your cyber-look has been\n"
+	.string "saved.$"
