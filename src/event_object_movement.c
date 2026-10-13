@@ -50,6 +50,8 @@
 #include "constants/items.h"
 #include "constants/mauville_old_man.h"
 #include "constants/metatile_behaviors.h"
+#include "constants/player_outfit.h"
+#include "constants/vars.h"
 #include "constants/rgb.h"
 #include "constants/region_map_sections.h"
 #include "constants/songs.h"
@@ -3294,12 +3296,88 @@ void FreeAndReserveObjectSpritePalettes(void)
     gReservedSpritePaletteCount = OBJ_PALSLOT_COUNT;
 }
 
+static const u16 *GetPlayerOutfitPalette(u16 paletteTag)
+{
+    u16 outfit = VarGet(VAR_PLAYER_OUTFIT);
+
+    if (paletteTag == OBJ_EVENT_PAL_TAG_BRENDAN)
+    {
+        switch (outfit)
+        {
+        case PLAYER_OUTFIT_NEON_CYAN:
+            return gObjectEventPal_BrendanCyberNeon;
+        case PLAYER_OUTFIT_SYNTHWAVE:
+            return gObjectEventPal_BrendanCyberSynthwave;
+        case PLAYER_OUTFIT_TOXIC_CIRCUIT:
+            return gObjectEventPal_BrendanCyberToxic;
+        case PLAYER_OUTFIT_HOENN_CLASSIC:
+        default:
+            return gObjectEventPal_Brendan;
+        }
+    }
+
+    if (paletteTag == OBJ_EVENT_PAL_TAG_MAY)
+    {
+        switch (outfit)
+        {
+        case PLAYER_OUTFIT_NEON_CYAN:
+            return gObjectEventPal_MayCyberNeon;
+        case PLAYER_OUTFIT_SYNTHWAVE:
+            return gObjectEventPal_MayCyberSynthwave;
+        case PLAYER_OUTFIT_TOXIC_CIRCUIT:
+            return gObjectEventPal_MayCyberToxic;
+        case PLAYER_OUTFIT_HOENN_CLASSIC:
+        default:
+            return gObjectEventPal_May;
+        }
+    }
+
+    return NULL;
+}
+
 u8 LoadObjectEventPalette(u16 paletteTag)
 {
     u16 i = FindObjectEventPaletteIndexByTag(paletteTag);
+    struct SpritePalette playerPalette;
+    const struct SpritePalette *spritePalette;
+
     if (i == 0xFF)
         return i;
-    return LoadSpritePaletteIfTagExists(&sObjectEventSpritePalettes[i]);
+
+    spritePalette = &sObjectEventSpritePalettes[i];
+    if (paletteTag == OBJ_EVENT_PAL_TAG_BRENDAN || paletteTag == OBJ_EVENT_PAL_TAG_MAY)
+    {
+        playerPalette.data = GetPlayerOutfitPalette(paletteTag);
+        playerPalette.tag = paletteTag;
+        spritePalette = &playerPalette;
+    }
+
+    return LoadSpritePaletteIfTagExists(spritePalette);
+}
+
+void ApplyPlayerCyberpunkOutfitPalette(void)
+{
+    u16 paletteTag;
+    const u16 *palette;
+    u8 spriteId;
+    u8 paletteNum;
+
+    if (gPlayerAvatar.gender == FEMALE)
+        paletteTag = OBJ_EVENT_PAL_TAG_MAY;
+    else
+        paletteTag = OBJ_EVENT_PAL_TAG_BRENDAN;
+
+    spriteId = GetPlayerAvatarSpriteId();
+    if (spriteId == MAX_SPRITES)
+        return;
+
+    palette = GetPlayerOutfitPalette(paletteTag);
+    if (palette == NULL)
+        return;
+
+    paletteNum = gSprites[spriteId].oam.paletteNum;
+    LoadPalette(palette, OBJ_PLTT_ID(paletteNum), PLTT_SIZE_4BPP);
+    UpdateSpritePaletteWithWeather(paletteNum, FALSE);
 }
 
 u8 LoadObjectEventPaletteCopy(u16 originalTag, u16 copyTag)
