@@ -515,6 +515,15 @@ void CreateWildMon(enum Species species, u8 level)
     ZeroEnemyPartyMons();
     u32 personality = GetMonPersonality(species, GetSynchronizedGender(WILDMON_ORIGIN, species), PickWildMonNature(species), RANDOM_UNOWN_LETTER);
     CreateMonWithIVs(&gParties[B_TRAINER_OPPONENT_A][0], species, level, personality, OTID_STRUCT_PLAYER_ID, USE_RANDOM_IVS);
+
+    // Wild Pokemon with a Hidden Ability have a 45% chance to appear with it.
+    if (GetSpeciesAbility(species, NUM_NORMAL_ABILITY_SLOTS) != ABILITY_NONE
+     && RandomPercentage(RNG_WILD_MON_HIDDEN_ABILITY, 45))
+    {
+        u8 abilityNum = NUM_NORMAL_ABILITY_SLOTS;
+        SetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_ABILITY_NUM, &abilityNum);
+    }
+
     GiveMonInitialMoveset(&gParties[B_TRAINER_OPPONENT_A][0]);
 }
 
