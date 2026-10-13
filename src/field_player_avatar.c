@@ -9,12 +9,14 @@
 #include "field_effect_helpers.h"
 #include "field_screen_effect.h"
 #include "field_player_avatar.h"
+#include "graphics.h"
 #include "fieldmap.h"
 #include "follower_npc.h"
 #include "menu.h"
 #include "metatile_behavior.h"
 #include "oras_dowse.h"
 #include "overworld.h"
+#include "palette.h"
 #include "party_menu.h"
 #include "random.h"
 #include "rotating_gate.h"
@@ -33,8 +35,10 @@
 #include "constants/items.h"
 #include "constants/metatile_behaviors.h"
 #include "constants/moves.h"
+#include "constants/player_outfit.h"
 #include "constants/songs.h"
 #include "constants/trainer_types.h"
+#include "constants/vars.h"
 
 #define NUM_FORCED_MOVEMENTS 22
 #define NUM_ACRO_BIKE_COLLISIONS 5
@@ -1542,6 +1546,59 @@ u8 GetPlayerAvatarSpriteId(void)
     return gPlayerAvatar.spriteId;
 }
 
+void ApplyPlayerCyberpunkOutfitPaletteToAvatar(void)
+{
+    const u16 *palette;
+    u8 spriteId = GetPlayerAvatarSpriteId();
+    u8 paletteNum;
+    u16 outfit = VarGet(VAR_PLAYER_OUTFIT);
+
+    if (spriteId >= MAX_SPRITES)
+        return;
+
+    if (gPlayerAvatar.gender == MALE)
+    {
+        switch (outfit)
+        {
+        case PLAYER_OUTFIT_NEON_CYAN:
+            palette = gObjectEventPal_BrendanCyberNeon;
+            break;
+        case PLAYER_OUTFIT_SYNTHWAVE:
+            palette = gObjectEventPal_BrendanCyberSynthwave;
+            break;
+        case PLAYER_OUTFIT_TOXIC_CIRCUIT:
+            palette = gObjectEventPal_BrendanCyberToxic;
+            break;
+        case PLAYER_OUTFIT_HOENN_CLASSIC:
+        default:
+            palette = gObjectEventPal_Brendan;
+            break;
+        }
+    }
+    else
+    {
+        switch (outfit)
+        {
+        case PLAYER_OUTFIT_NEON_CYAN:
+            palette = gObjectEventPal_MayCyberNeon;
+            break;
+        case PLAYER_OUTFIT_SYNTHWAVE:
+            palette = gObjectEventPal_MayCyberSynthwave;
+            break;
+        case PLAYER_OUTFIT_TOXIC_CIRCUIT:
+            palette = gObjectEventPal_MayCyberToxic;
+            break;
+        case PLAYER_OUTFIT_HOENN_CLASSIC:
+        default:
+            palette = gObjectEventPal_May;
+            break;
+        }
+    }
+
+    paletteNum = gSprites[spriteId].oam.paletteNum;
+    LoadPalette(palette, OBJ_PLTT_ID(paletteNum), PLTT_SIZE_4BPP);
+}
+
 void CancelPlayerForcedMovement(void)
 {
     ForcedMovement_None();
@@ -1729,6 +1786,7 @@ void InitPlayerAvatar(s16 x, s16 y, enum Direction direction, enum Gender gender
     gPlayerAvatar.gender = gender;
     SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_CONTROLLABLE | PLAYER_AVATAR_FLAG_ON_FOOT);
     CreateFollowerNPCAvatar();
+    ApplyPlayerCyberpunkOutfitPaletteToAvatar();
 }
 
 void SetPlayerInvisibility(bool8 invisible)
