@@ -3127,6 +3127,10 @@ static void ObjectEventSetGraphics(struct ObjectEvent *objectEvent, const struct
     sprite->y += 16 + sprite->centerToCornerVecY;
     if (objectEvent->trackedByCamera)
         CameraObjectReset();
+
+    // Graphics transitions reload the base palette, so restore the selected outfit for the player.
+    if (objectEvent->isPlayer)
+        ApplyPlayerCyberpunkOutfitPaletteToAvatar();
 }
 
 void ObjectEventSetGraphicsId(struct ObjectEvent *objectEvent, u16 graphicsId)
