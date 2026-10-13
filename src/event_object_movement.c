@@ -3302,6 +3302,10 @@ static const u16 *GetPlayerOutfitPalette(u16 paletteTag)
 
     if (paletteTag == OBJ_EVENT_PAL_TAG_BRENDAN)
     {
+        // Only customize the player's own palette. Keep the opposite-gender rival unchanged.
+        if (gSaveBlock2Ptr->playerGender != MALE)
+            return gObjectEventPal_Brendan;
+
         switch (outfit)
         {
         case PLAYER_OUTFIT_NEON_CYAN:
@@ -3318,6 +3322,10 @@ static const u16 *GetPlayerOutfitPalette(u16 paletteTag)
 
     if (paletteTag == OBJ_EVENT_PAL_TAG_MAY)
     {
+        // Only customize the player's own palette. Keep the opposite-gender rival unchanged.
+        if (gSaveBlock2Ptr->playerGender != FEMALE)
+            return gObjectEventPal_May;
+
         switch (outfit)
         {
         case PLAYER_OUTFIT_NEON_CYAN:
