@@ -533,6 +533,92 @@ static void PlayerPC_Decoration(u8 taskId)
     DoPlayerRoomDecorationMenu(taskId);
 }
 
+static void PlayerPC_Outfit(u8 taskId)
+{
+    DisplayItemMessageOnField(taskId, sText_ChooseCyberpunkOutfit, PlayerPC_InitOutfitMenu);
+}
+
+static void PlayerPC_InitOutfitMenu(u8 taskId)
+{
+    s16 *data = gTasks[taskId].data;
+    struct WindowTemplate windowTemplate = sWindowTemplate_CyberpunkOutfitMenu;
+    u16 currentOutfit = VarGet(VAR_PLAYER_OUTFIT);
+
+    if (currentOutfit >= PLAYER_OUTFIT_COUNT)
+        currentOutfit = PLAYER_OUTFIT_HOENN_CLASSIC;
+
+    windowTemplate.width = GetMaxWidthInMenuTable(sCyberpunkOutfitMenuActions, ARRAY_COUNT(sCyberpunkOutfitMenuActions));
+    tWindowId = AddWindow(&windowTemplate);
+    SetStandardWindowBorderStyle(tWindowId, FALSE);
+    PrintMenuTable(tWindowId, ARRAY_COUNT(sCyberpunkOutfitMenuActions), sCyberpunkOutfitMenuActions);
+    InitMenuInUpperLeftCornerNormal(tWindowId, ARRAY_COUNT(sCyberpunkOutfitMenuActions), currentOutfit);
+    ScheduleBgCopyTilemapToVram(0);
+    gTasks[taskId].func = PlayerPC_OutfitMenuProcessInput;
+}
+
+static void PlayerPC_CloseOutfitMenu(u8 taskId)
+{
+    s16 *data = gTasks[taskId].data;
+
+    ClearStdWindowAndFrameToTransparent(tWindowId, FALSE);
+    ClearWindowTilemap(tWindowId);
+    RemoveWindow(tWindowId);
+    ScheduleBgCopyTilemapToVram(0);
+}
+
+static void PlayerPC_OutfitMenuProcessInput(u8 taskId)
+{
+    s8 inputOptionId = Menu_ProcessInput();
+
+    switch (inputOptionId)
+    {
+    case MENU_NOTHING_CHOSEN:
+        break;
+    case MENU_B_PRESSED:
+        PlaySE(SE_SELECT);
+        PlayerPC_CloseOutfitMenu(taskId);
+        ReshowPlayerPC(taskId);
+        break;
+    default:
+        PlaySE(SE_SELECT);
+        PlayerPC_CloseOutfitMenu(taskId);
+        sCyberpunkOutfitMenuActions[inputOptionId].func.void_u8(taskId);
+        break;
+    }
+}
+
+static void PlayerPC_SetOutfit(u8 taskId, enum PlayerOutfit outfit)
+{
+    VarSet(VAR_PLAYER_OUTFIT, outfit);
+    ApplyPlayerCyberpunkOutfitPalette();
+    DisplayItemMessageOnField(taskId, sText_CyberpunkOutfitChanged, ReshowPlayerPC);
+}
+
+static void PlayerPC_OutfitHoennClassic(u8 taskId)
+{
+    PlayerPC_SetOutfit(taskId, PLAYER_OUTFIT_HOENN_CLASSIC);
+}
+
+static void PlayerPC_OutfitNeonCyan(u8 taskId)
+{
+    PlayerPC_SetOutfit(taskId, PLAYER_OUTFIT_NEON_CYAN);
+}
+
+static void PlayerPC_OutfitSynthwave(u8 taskId)
+{
+    PlayerPC_SetOutfit(taskId, PLAYER_OUTFIT_SYNTHWAVE);
+}
+
+static void PlayerPC_OutfitToxicCircuit(u8 taskId)
+{
+    PlayerPC_SetOutfit(taskId, PLAYER_OUTFIT_TOXIC_CIRCUIT);
+}
+
+static void PlayerPC_OutfitCancel(u8 taskId)
+{
+    ReshowPlayerPC(taskId);
+}
+
 static void PlayerPC_TurnOff(u8 taskId)
 {
     if (sTopMenuNumOptions == NUM_BEDROOM_PC_OPTIONS) // Flimsy way to determine if Bedroom PC is in use
