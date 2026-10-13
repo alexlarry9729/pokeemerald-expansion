@@ -2,6 +2,7 @@
 #include "constants/songs.h"
 #include "bg.h"
 #include "decoration.h"
+#include "event_data.h"
 #include "event_scripts.h"
 #include "event_object_movement.h"
 #include "field_screen_effect.h"
@@ -30,13 +31,24 @@
 #include "window.h"
 #include "menu_specialized.h"
 #include "constants/layouts.h"
+#include "constants/player_outfit.h"
+#include "constants/vars.h"
 
 // Top level PC menu options
 enum {
     MENU_ITEMSTORAGE,
     MENU_MAILBOX,
     MENU_DECORATION,
+    MENU_OUTFIT,
     MENU_TURNOFF
+};
+
+enum {
+    OUTFIT_MENU_HOENN_CLASSIC,
+    OUTFIT_MENU_NEON_CYAN,
+    OUTFIT_MENU_SYNTHWAVE,
+    OUTFIT_MENU_TOXIC_CIRCUIT,
+    OUTFIT_MENU_CANCEL
 };
 
 // Item storage menu options
@@ -101,6 +113,15 @@ static void Mailbox_MailOptionsProcessInput(u8);
 static void PlayerPC_ItemStorage(u8);
 static void PlayerPC_Mailbox(u8);
 static void PlayerPC_Decoration(u8);
+static void PlayerPC_Outfit(u8);
+static void PlayerPC_InitOutfitMenu(u8);
+static void PlayerPC_OutfitMenuProcessInput(u8);
+static void PlayerPC_SetOutfit(u8, enum PlayerOutfit);
+static void PlayerPC_OutfitHoennClassic(u8);
+static void PlayerPC_OutfitNeonCyan(u8);
+static void PlayerPC_OutfitSynthwave(u8);
+static void PlayerPC_OutfitToxicCircuit(u8);
+static void PlayerPC_OutfitCancel(u8);
 static void PlayerPC_TurnOff(u8);
 
 static void Mailbox_DoMailMoveToBag(u8);
@@ -172,6 +193,8 @@ static const u8 sText_WithdrawItem[] = _("WITHDRAW ITEM");
 static const u8 sText_DepositItem[] = _("DEPOSIT ITEM");
 static const u8 sText_TossItem[] = _("TOSS ITEM");
 static const u8 sText_Mailbox[] = _("MAILBOX");
+static const u8 sText_ChooseCyberpunkOutfit[] = _("Choose your outfit.");
+static const u8 sText_CyberpunkOutfitChanged[] = _("Your outfit has been updated!");
 
 static const u8 sText_WithdrawHowManyItems[] = _("Withdraw how many\n{STR_VAR_1}?");
 static const u8 sText_WithdrawXItems[] = _("Withdrew {STR_VAR_2}\n{STR_VAR_1}.");
@@ -188,10 +211,20 @@ static const u8 *const sItemStorage_OptionDescriptions[] =
 
 static const struct MenuAction sPlayerPCMenuActions[] =
 {
-    [MENU_ITEMSTORAGE] = { COMPOUND_STRING("ITEM STORAGE"), {PlayerPC_ItemStorage} },
-    [MENU_MAILBOX]     = { sText_Mailbox,                   {PlayerPC_Mailbox} },
-    [MENU_DECORATION]  = { COMPOUND_STRING("DECORATION"),   {PlayerPC_Decoration} },
-    [MENU_TURNOFF]     = { COMPOUND_STRING("TURN OFF"),     {PlayerPC_TurnOff} }
+    [MENU_ITEMSTORAGE] = { COMPOUND_STRING("ITEM STORAGE"),       {PlayerPC_ItemStorage} },
+    [MENU_MAILBOX]     = { sText_Mailbox,                         {PlayerPC_Mailbox} },
+    [MENU_DECORATION]  = { COMPOUND_STRING("DECORATION"),         {PlayerPC_Decoration} },
+    [MENU_OUTFIT]      = { COMPOUND_STRING("CYBERPUNK WARDROBE"), {PlayerPC_Outfit} },
+    [MENU_TURNOFF]     = { COMPOUND_STRING("TURN OFF"),           {PlayerPC_TurnOff} }
+};
+
+static const struct MenuAction sCyberpunkOutfitMenuActions[] =
+{
+    [OUTFIT_MENU_HOENN_CLASSIC] = { COMPOUND_STRING("HOENN CLASSIC"), {PlayerPC_OutfitHoennClassic} },
+    [OUTFIT_MENU_NEON_CYAN]     = { COMPOUND_STRING("NEON CYAN"),    {PlayerPC_OutfitNeonCyan} },
+    [OUTFIT_MENU_SYNTHWAVE]     = { COMPOUND_STRING("SYNTHWAVE"),    {PlayerPC_OutfitSynthwave} },
+    [OUTFIT_MENU_TOXIC_CIRCUIT] = { COMPOUND_STRING("TOXIC CIRCUIT"), {PlayerPC_OutfitToxicCircuit} },
+    [OUTFIT_MENU_CANCEL]        = { gText_Cancel,                     {PlayerPC_OutfitCancel} }
 };
 
 static const u8 sBedroomPC_OptionOrder[] =
@@ -199,6 +232,7 @@ static const u8 sBedroomPC_OptionOrder[] =
     MENU_ITEMSTORAGE,
     MENU_MAILBOX,
     MENU_DECORATION,
+    MENU_OUTFIT,
     MENU_TURNOFF
 };
 #define NUM_BEDROOM_PC_OPTIONS ARRAY_COUNT(sBedroomPC_OptionOrder)
@@ -207,6 +241,7 @@ static const u8 sPlayerPC_OptionOrder[] =
 {
     MENU_ITEMSTORAGE,
     MENU_MAILBOX,
+    MENU_OUTFIT,
     MENU_TURNOFF
 };
 #define NUM_PLAYER_PC_OPTIONS ARRAY_COUNT(sPlayerPC_OptionOrder)
@@ -262,6 +297,17 @@ static const struct WindowTemplate sWindowTemplates_MainMenus[] =
         .paletteNum = 15,
         .baseBlock = 1
     }
+};
+
+static const struct WindowTemplate sWindowTemplate_CyberpunkOutfitMenu =
+{
+    .bg = 0,
+    .tilemapLeft = 1,
+    .tilemapTop = 1,
+    .width = 16,
+    .height = 7,
+    .paletteNum = 15,
+    .baseBlock = 1
 };
 
 static const struct YesNoFuncTable ItemTossYesNoFuncs =
