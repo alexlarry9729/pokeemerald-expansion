@@ -266,7 +266,36 @@ PlayersHouse_2F_EventScript_Notebook::
 	end
 
 PlayersHouse_2F_EventScript_GameCube::
-	msgbox PlayersHouse_2F_Text_ItsAGameCube, MSGBOX_SIGN
+	lockall
+	msgbox PlayersHouse_2F_Text_ItsAGameCube, MSGBOX_DEFAULT
+	multichoice 1, 1, MULTI_PLAYER_OUTFIT, FALSE
+	goto_if_eq VAR_RESULT, 0, PlayersHouse_2F_EventScript_OutfitClassic
+	goto_if_eq VAR_RESULT, 1, PlayersHouse_2F_EventScript_OutfitNeon
+	goto_if_eq VAR_RESULT, 2, PlayersHouse_2F_EventScript_OutfitSynthwave
+	goto_if_eq VAR_RESULT, 3, PlayersHouse_2F_EventScript_OutfitToxic
+	releaseall
+	end
+
+PlayersHouse_2F_EventScript_OutfitClassic::
+	setvar VAR_PLAYER_OUTFIT, 0
+	goto PlayersHouse_2F_EventScript_ApplyOutfit
+
+PlayersHouse_2F_EventScript_OutfitNeon::
+	setvar VAR_PLAYER_OUTFIT, 1
+	goto PlayersHouse_2F_EventScript_ApplyOutfit
+
+PlayersHouse_2F_EventScript_OutfitSynthwave::
+	setvar VAR_PLAYER_OUTFIT, 2
+	goto PlayersHouse_2F_EventScript_ApplyOutfit
+
+PlayersHouse_2F_EventScript_OutfitToxic::
+	setvar VAR_PLAYER_OUTFIT, 3
+	goto PlayersHouse_2F_EventScript_ApplyOutfit
+
+PlayersHouse_2F_EventScript_ApplyOutfit::
+	special ApplyPlayerCyberpunkOutfitPalette
+	msgbox PlayersHouse_2F_Text_OutfitSet, MSGBOX_DEFAULT
+	releaseall
 	end
 
 PlayersHouse_2F_Text_ClockIsStopped:
@@ -296,6 +325,9 @@ Common_Text_LookCloserAtMap:
 	.string "{REGION} region map.$"
 
 PlayersHouse_2F_Text_ItsAGameCube:
-	.string "It's a Nintendo GameCube.\p"
-	.string "A Game Boy Advance is connected to\n"
-	.string "serve as the Controller.$"
+	.string "A compact cyber-console projects a\n"
+	.string "neon wardrobe interface.\p"
+	.string "Select a look before heading out.$"
+
+PlayersHouse_2F_Text_OutfitSet:
+	.string "Your cyber-look has been saved.$"
