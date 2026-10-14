@@ -508,12 +508,8 @@ static void Crafting_BufferRecipe(enum Item outputItem, const struct CraftingRec
     CopyItemName(recipe->ingredients[1], gStringVar3);
     if (recipe->count == 3)
     {
-        StringCopy(gStringVar4, COMPOUND_STRING(" + "));
-        StringAppend(gStringVar4, GetItemName(recipe->ingredients[2]));
-    }
-    else
-    {
-        gStringVar4[0] = EOS;
+        StringAppend(gStringVar3, COMPOUND_STRING(" + "));
+        StringAppend(gStringVar3, GetItemName(recipe->ingredients[2]));
     }
 }
 
