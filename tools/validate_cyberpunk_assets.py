@@ -151,14 +151,14 @@ def luminance(rgb: tuple[int, int, int]) -> float:
 EXPECTED_LAVARIDGE_LIGHTS = {
     (11, 6): "LIGHT_TYPE_PKMN_CENTER_SIGN",
     (17, 5): "LIGHT_TYPE_POKE_MART_SIGN",
-    (8, 6): "LIGHT_TYPE_PKMN_CENTER_SIGN",
-    (14, 5): "LIGHT_TYPE_POKE_MART_SIGN",
-    (4, 15): "LIGHT_TYPE_POKE_MART_SIGN",
-    (6, 15): "LIGHT_TYPE_PKMN_CENTER_SIGN",
-    (11, 15): "LIGHT_TYPE_POKE_MART_SIGN",
-    (13, 15): "LIGHT_TYPE_PKMN_CENTER_SIGN",
-    (15, 15): "LIGHT_TYPE_POKE_MART_SIGN",
-    (17, 15): "LIGHT_TYPE_PKMN_CENTER_SIGN",
+    (8, 6): "LIGHT_TYPE_FACADE",
+    (14, 5): "LIGHT_TYPE_FACADE",
+    (4, 15): "LIGHT_TYPE_FACADE",
+    (6, 15): "LIGHT_TYPE_FACADE",
+    (11, 15): "LIGHT_TYPE_FACADE",
+    (13, 15): "LIGHT_TYPE_FACADE",
+    (15, 15): "LIGHT_TYPE_FACADE",
+    (17, 15): "LIGHT_TYPE_FACADE",
 }
 
 
@@ -192,7 +192,7 @@ def validate_lavaridge_light_events(root: Path) -> list[str]:
         if event.get("graphics_id") == "OBJ_EVENT_GFX_LIGHT_SPRITE"
     ]
     seen: dict[tuple[int, int], dict] = {}
-    valid_types = {"LIGHT_TYPE_PKMN_CENTER_SIGN", "LIGHT_TYPE_POKE_MART_SIGN"}
+    valid_types = {"LIGHT_TYPE_PKMN_CENTER_SIGN", "LIGHT_TYPE_POKE_MART_SIGN", "LIGHT_TYPE_FACADE"}
 
     for event in lights:
         x, y = event.get("x"), event.get("y")

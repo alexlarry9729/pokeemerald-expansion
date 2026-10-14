@@ -2764,7 +2764,7 @@ void UpdateLightSprite(struct Sprite *sprite)
 
     if (gTimeOfDay != TIME_NIGHT)
     {
-        // Keep building signs subtly illuminated in daylight. The full neon palette
+        // Keep building signs and facade panels subtly illuminated in daylight. The full neon palette
         // and hardware blending are reserved for night, so lights remain less intense.
         if (sprite->sLightType == LIGHT_TYPE_BALL)
         {
@@ -2778,7 +2778,7 @@ void UpdateLightSprite(struct Sprite *sprite)
         return;
     }
 
-    // Restore the vivid neon palette at night, when the sign lights use blending.
+    // Restore the vivid neon palette at night, when signs and facade lights use blending.
     if (sprite->sLightType != LIGHT_TYPE_BALL)
     {
         sprite->oam.objMode = ST_OAM_OBJ_BLEND;
@@ -2852,6 +2852,7 @@ static void SpawnLightSprite(s16 x, s16 y, s16 camX, s16 camY, u32 lightType)
         break;
     case LIGHT_TYPE_PKMN_CENTER_SIGN:
     case LIGHT_TYPE_POKE_MART_SIGN:
+    case LIGHT_TYPE_FACADE:
         sprite->centerToCornerVecX = -(16 >> 1);
         sprite->centerToCornerVecY = -(16 >> 1);
         sprite->oam.priority = 2;
