@@ -56,16 +56,16 @@ Crafting_EventScript_Exit::
 
 Crafting_Text_Intro:
 	.string "I'm the CENTER'S item fabricator.\p"
-	.string "Choose an item and I'll show you\\n"
+	.string "Choose an item and I'll show you\n"
 	.string "the materials needed to make it.$"
 
 Crafting_Text_Recipe:
-	.string "Recipe for {STR_VAR_1}:\\n"
+	.string "Recipe for {STR_VAR_1}:\n"
 	.string "{STR_VAR_2} + {STR_VAR_3}{STR_VAR_4}\p"
 	.string "Craft this item?$"
 
 Crafting_Text_MissingMaterials:
-	.string "You don't have all the required\\n"
+	.string "You don't have all the required\n"
 	.string "materials in your BAG.$"
 
 Crafting_Text_Success:
@@ -75,7 +75,7 @@ Crafting_Text_BagFull:
 	.string "Your BAG has no room for that item.$"
 
 Crafting_Text_NoItems:
-	.string "There are no craftable items in\\n"
+	.string "There are no craftable items in\n"
 	.string "this category.$"
 
 Crafting_Text_InvalidOutput:
