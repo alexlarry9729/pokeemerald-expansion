@@ -7,6 +7,7 @@ on:
   pull_request:
     paths:
       - 'data/tilesets/secondary/lavaridge/**'
+      - 'data/maps/LavaridgeTown/map.json'
       - 'graphics/object_events/palettes/neon_light*.pal'
       - 'tools/validate_cyberpunk_assets.py'
       - '.github/workflows/cyberpunk-validation.yml'
