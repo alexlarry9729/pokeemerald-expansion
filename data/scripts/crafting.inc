@@ -8,12 +8,12 @@ Crafting_EventScript_CategoryMenu::
 	special Crafting_DecodeSelection
 	goto_if_eq VAR_RESULT, MULTI_B_PRESSED, Crafting_EventScript_Exit
 	goto_if_eq VAR_RESULT, CRAFTING_CATEGORY_EXIT, Crafting_EventScript_Exit
-	setvar VAR_0x8004, VAR_RESULT
+	copyvar VAR_0x8004, VAR_RESULT
 	special Crafting_ChooseOutput
 	goto_if_eq VAR_RESULT, MULTI_B_PRESSED, Crafting_EventScript_CategoryMenu
 	special Crafting_DecodeSelection
 	goto_if_eq VAR_RESULT, CRAFTING_MENU_NO_ITEMS, Crafting_EventScript_NoItems
-	setvar VAR_0x8007, VAR_RESULT
+	copyvar VAR_0x8007, VAR_RESULT
 	special Crafting_PrepareRecipe
 	goto_if_eq VAR_RESULT, FALSE, Crafting_EventScript_InvalidOutput
 	special Crafting_CheckRecipe
