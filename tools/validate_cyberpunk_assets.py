@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 import binascii
+import json
 import struct
 import sys
 import zlib
@@ -144,8 +145,100 @@ def luminance(rgb: tuple[int, int, int]) -> float:
     return 0.2126 * red + 0.7152 * green + 0.0722 * blue
 
 
+
+# The two original points illuminate the Centre and Mart signage. The added
+# points give each Lavaridge building a restrained facade/window glow anchor.
+EXPECTED_LAVARIDGE_LIGHTS = {
+    (11, 6): "LIGHT_TYPE_PKMN_CENTER_SIGN",
+    (17, 5): "LIGHT_TYPE_POKE_MART_SIGN",
+    (8, 6): "LIGHT_TYPE_PKMN_CENTER_SIGN",
+    (14, 5): "LIGHT_TYPE_POKE_MART_SIGN",
+    (4, 15): "LIGHT_TYPE_POKE_MART_SIGN",
+    (6, 15): "LIGHT_TYPE_PKMN_CENTER_SIGN",
+    (11, 15): "LIGHT_TYPE_POKE_MART_SIGN",
+    (13, 15): "LIGHT_TYPE_PKMN_CENTER_SIGN",
+    (15, 15): "LIGHT_TYPE_POKE_MART_SIGN",
+    (17, 15): "LIGHT_TYPE_PKMN_CENTER_SIGN",
+}
+
+
+def validate_lavaridge_light_events(root: Path) -> list[str]:
+    errors: list[str] = []
+    map_path = root / "data/maps/LavaridgeTown/map.json"
+    layouts_path = root / "data/layouts/layouts.json"
+
+    try:
+        map_data = json.loads(map_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [f"{map_path}: unable to parse Lavaridge map JSON: {exc}"]
+
+    try:
+        layouts_data = json.loads(layouts_path.read_text(encoding="utf-8"))
+        layout = next(
+            item for item in layouts_data["layouts"]
+            if item.get("id") == map_data.get("layout")
+        )
+        width, height = int(layout["width"]), int(layout["height"])
+    except (OSError, json.JSONDecodeError, KeyError, StopIteration, TypeError, ValueError) as exc:
+        errors.append(f"{layouts_path}: unable to resolve Lavaridge layout dimensions: {exc}")
+        width = height = 0
+
+    object_events = map_data.get("object_events")
+    if not isinstance(object_events, list):
+        return errors + [f"{map_path}: object_events must be a list"]
+
+    lights = [
+        event for event in object_events
+        if event.get("graphics_id") == "OBJ_EVENT_GFX_LIGHT_SPRITE"
+    ]
+    seen: dict[tuple[int, int], dict] = {}
+    valid_types = {"LIGHT_TYPE_PKMN_CENTER_SIGN", "LIGHT_TYPE_POKE_MART_SIGN"}
+
+    for event in lights:
+        x, y = event.get("x"), event.get("y")
+        if not isinstance(x, int) or not isinstance(y, int):
+            errors.append(f"{map_path}: light event has non-integer coordinates")
+            continue
+        coord = (x, y)
+        if coord in seen:
+            errors.append(f"{map_path}: duplicate light sprites at ({x}, {y})")
+        seen[coord] = event
+        if not (0 <= x < width and 0 <= y < height):
+            errors.append(
+                f"{map_path}: light at ({x}, {y}) is outside the {width}x{height} layout"
+            )
+        light_type = event.get("trainer_sight_or_berry_tree_id")
+        if light_type not in valid_types:
+            errors.append(f"{map_path}: unsupported light type {light_type!r} at ({x}, {y})")
+        if event.get("movement_type") != "MOVEMENT_TYPE_NONE" or event.get("script") != "NULL":
+            errors.append(
+                f"{map_path}: visual light at ({x}, {y}) must be stationary and script-free"
+            )
+
+    expected_coords = set(EXPECTED_LAVARIDGE_LIGHTS)
+    observed_coords = set(seen)
+    for coord, expected_type in EXPECTED_LAVARIDGE_LIGHTS.items():
+        event = seen.get(coord)
+        if event is None:
+            errors.append(f"{map_path}: missing facade/window light at {coord}")
+        elif event.get("trainer_sight_or_berry_tree_id") != expected_type:
+            errors.append(
+                f"{map_path}: light at {coord} should use {expected_type}, "
+                f"found {event.get('trainer_sight_or_berry_tree_id')!r}"
+            )
+    for coord in sorted(observed_coords - expected_coords):
+        errors.append(f"{map_path}: unexpected light event at {coord}; update the expected placement set")
+
+    if len(lights) != len(EXPECTED_LAVARIDGE_LIGHTS):
+        errors.append(
+            f"{map_path}: expected {len(EXPECTED_LAVARIDGE_LIGHTS)} light events, found {len(lights)}"
+        )
+    return errors
+
+
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
+    errors.extend(validate_lavaridge_light_events(root))
     palette_dir = root / "data/tilesets/secondary/lavaridge/palettes"
     object_palette_dir = root / "graphics/object_events/palettes"
     tiles_png = root / "data/tilesets/secondary/lavaridge/tiles.png"
@@ -217,7 +310,7 @@ def main() -> int:
         return 1
     print(
         "Cyberpunk asset validation passed: indexed Lavaridge PNG, palettes/masks, "
-        "and day/night ramps look valid."
+        "day/night ramps, and Lavaridge facade-light placements look valid."
     )
     return 0
 
