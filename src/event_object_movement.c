@@ -3367,30 +3367,6 @@ u8 LoadObjectEventPalette(u16 paletteTag)
     return LoadSpritePaletteIfTagExists(spritePalette);
 }
 
-void ApplyPlayerCyberpunkOutfitPalette(void)
-{
-    u16 paletteTag;
-    const u16 *palette;
-    u8 spriteId;
-    u8 paletteNum;
-
-    if (gPlayerAvatar.gender == FEMALE)
-        paletteTag = OBJ_EVENT_PAL_TAG_MAY;
-    else
-        paletteTag = OBJ_EVENT_PAL_TAG_BRENDAN;
-
-    spriteId = GetPlayerAvatarSpriteId();
-    if (spriteId == MAX_SPRITES)
-        return;
-
-    palette = GetPlayerOutfitPalette(paletteTag);
-    if (palette == NULL)
-        return;
-
-    paletteNum = gSprites[spriteId].oam.paletteNum;
-    LoadPalette(palette, OBJ_PLTT_ID(paletteNum), PLTT_SIZE_4BPP);
-    UpdateSpritePaletteWithWeather(paletteNum, FALSE);
-}
 
 u8 LoadObjectEventPaletteCopy(u16 originalTag, u16 copyTag)
 {
