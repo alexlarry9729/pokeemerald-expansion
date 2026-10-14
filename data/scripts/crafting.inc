@@ -2,6 +2,8 @@ Common_EventScript_CraftingStation::
 	lock
 	faceplayer
 	msgbox Crafting_Text_Intro, MSGBOX_DEFAULT
+	msgbox Crafting_Text_BuyMaterials, MSGBOX_YESNO
+	goto_if_eq VAR_RESULT, YES, Crafting_EventScript_BuyMaterials
 
 Crafting_EventScript_CategoryMenu::
 	special Crafting_ChooseCategory
@@ -21,6 +23,11 @@ Crafting_EventScript_CategoryMenu::
 	msgbox Crafting_Text_Recipe, MSGBOX_DEFAULT
 	msgbox Crafting_Text_ConfirmCraft, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, YES, Crafting_EventScript_ConfirmCraft
+	goto Crafting_EventScript_CategoryMenu
+
+Crafting_EventScript_BuyMaterials::
+	pokemart Crafting_Pokemart_Materials
+	msgbox Crafting_Text_MaterialsThanks, MSGBOX_DEFAULT
 	goto Crafting_EventScript_CategoryMenu
 
 Crafting_EventScript_ConfirmCraft::
@@ -59,6 +66,22 @@ Crafting_Text_Intro:
 	.string "I'm the CENTER'S item fabricator.\p"
 	.string "Choose an item and I'll show you\n"
 	.string "the materials needed to make it.$"
+
+Crafting_Pokemart_Materials:
+	.2byte ITEM_ORAN_BERRY
+	.2byte ITEM_CHERI_BERRY
+	.2byte ITEM_RED_SHARD
+	.2byte ITEM_BLUE_SHARD
+	.2byte ITEM_GREEN_SHARD
+	.2byte ITEM_YELLOW_SHARD
+	pokemartlistend
+
+Crafting_Text_BuyMaterials:
+	.string "Need supplies? You can buy crafting\n"
+	.string "materials here. Want to shop?$"
+
+Crafting_Text_MaterialsThanks:
+	.string "Good luck with your crafting!$"
 
 Crafting_Text_Recipe:
 	.string "Recipe for {STR_VAR_1}:\n"
