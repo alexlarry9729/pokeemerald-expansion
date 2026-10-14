@@ -271,12 +271,6 @@ static bool32 Crafting_IsMaterial(enum Item itemId)
     case ITEM_BLUE_SHARD:
     case ITEM_GREEN_SHARD:
     case ITEM_YELLOW_SHARD:
-    case ITEM_TINY_MUSHROOM:
-    case ITEM_BIG_MUSHROOM:
-    case ITEM_NUGGET:
-    case ITEM_STAR_PIECE:
-    case ITEM_HEART_SCALE:
-    case ITEM_STARDUST:
         return TRUE;
     default:
         return FALSE;
@@ -458,14 +452,14 @@ static bool32 Crafting_GetRecipe(enum Item outputItem, struct CraftingRecipe *re
          || outputItem == ITEM_BEAST_BALL
          || outputItem == ITEM_CHERISH_BALL)
         {
-            recipe->ingredients[2] = ITEM_STAR_PIECE;
+            recipe->ingredients[2] = ITEM_YELLOW_SHARD;
             recipe->count = 3;
         }
         break;
     case POCKET_TM_HM:
-        recipe->ingredients[0] = ITEM_BIG_MUSHROOM;
+        recipe->ingredients[0] = ITEM_ORAN_BERRY;
         recipe->ingredients[1] = ITEM_BLUE_SHARD;
-        recipe->ingredients[2] = ITEM_NUGGET;
+        recipe->ingredients[2] = ITEM_YELLOW_SHARD;
         recipe->count = 3;
         break;
     case POCKET_BERRIES:
@@ -477,20 +471,20 @@ static bool32 Crafting_GetRecipe(enum Item outputItem, struct CraftingRecipe *re
         if (GetItemPrice(outputItem) <= 500)
         {
             recipe->ingredients[0] = ITEM_ORAN_BERRY;
-            recipe->ingredients[1] = ITEM_TINY_MUSHROOM;
+            recipe->ingredients[1] = ITEM_CHERI_BERRY;
             recipe->count = 2;
         }
         else if (GetItemPrice(outputItem) <= 2500)
         {
-            recipe->ingredients[0] = ITEM_BIG_MUSHROOM;
+            recipe->ingredients[0] = ITEM_ORAN_BERRY;
             recipe->ingredients[1] = ITEM_YELLOW_SHARD;
             recipe->count = 2;
         }
         else
         {
-            recipe->ingredients[0] = ITEM_BIG_MUSHROOM;
-            recipe->ingredients[1] = ITEM_STAR_PIECE;
-            recipe->ingredients[2] = ITEM_HEART_SCALE;
+            recipe->ingredients[0] = ITEM_ORAN_BERRY;
+            recipe->ingredients[1] = ITEM_RED_SHARD;
+            recipe->ingredients[2] = ITEM_BLUE_SHARD;
             recipe->count = 3;
         }
         break;
