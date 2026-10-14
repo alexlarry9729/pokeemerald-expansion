@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate palette files used by the cyberpunk Lavaridge lighting pass.
+"""Validate palette files and the indexed art for the cyberpunk Lavaridge pass.
 
 Run from the repository root:
     python3 tools/validate_cyberpunk_assets.py
@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import struct
 import sys
 
 
@@ -57,6 +58,29 @@ def parse_palette_mask(path: Path) -> list[int]:
     return values
 
 
+def validate_indexed_tileset_png(path: Path) -> None:
+    """Check the PNG signature, IHDR and indexed 4bpp format expected by GBA tiles."""
+    data = path.read_bytes()
+    if len(data) < 45 or data[:8] != b"\x89PNG\r\n\x1a\n":
+        raise ValueError(f"{path}: file is not a complete PNG")
+    if data[12:16] != b"IHDR" or struct.unpack(">I", data[8:12])[0] != 13:
+        raise ValueError(f"{path}: missing or malformed IHDR chunk")
+
+    width, height = struct.unpack(">II", data[16:24])
+    bit_depth, colour_type = data[24], data[25]
+    if (width, height) != (128, 232):
+        raise ValueError(
+            f"{path}: expected 128×232 tile atlas, found {width}×{height}"
+        )
+    if bit_depth != 4 or colour_type != 3:
+        raise ValueError(
+            f"{path}: expected a 4-bit indexed PNG, found bit depth {bit_depth}, "
+            f"colour type {colour_type}"
+        )
+    if b"IDAT" not in data or b"IEND" not in data:
+        raise ValueError(f"{path}: missing image data or PNG end chunk")
+
+
 def luminance(rgb: tuple[int, int, int]) -> float:
     red, green, blue = rgb
     return 0.2126 * red + 0.7152 * green + 0.0722 * blue
@@ -66,11 +90,17 @@ def validate(root: Path) -> list[str]:
     errors: list[str] = []
     palette_dir = root / "data/tilesets/secondary/lavaridge/palettes"
     object_palette_dir = root / "graphics/object_events/palettes"
+    tiles_png = root / "data/tilesets/secondary/lavaridge/tiles.png"
 
     palette_paths = sorted(palette_dir.glob("*.pal"))
     mask_paths = sorted(palette_dir.glob("*.pla"))
     neon_night = object_palette_dir / "neon_light.pal"
     neon_day = object_palette_dir / "neon_light_day.pal"
+
+    try:
+        validate_indexed_tileset_png(tiles_png)
+    except (OSError, ValueError, struct.error) as exc:
+        errors.append(str(exc))
 
     for path in palette_paths + [p for p in (neon_night, neon_day) if p.exists()]:
         try:
@@ -114,8 +144,12 @@ def validate(root: Path) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1],
-                        help="pokeemerald-expansion repository root")
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=Path(__file__).resolve().parents[1],
+        help="pokeemerald-expansion repository root",
+    )
     args = parser.parse_args()
     errors = validate(args.root.resolve())
     if errors:
@@ -123,7 +157,10 @@ def main() -> int:
         for error in errors:
             print(f"  - {error}", file=sys.stderr)
         return 1
-    print("Cyberpunk asset validation passed: Lavaridge palettes/masks and day/night ramps look valid.")
+    print(
+        "Cyberpunk asset validation passed: indexed Lavaridge PNG, palettes/masks, "
+        "and day/night ramps look valid."
+    )
     return 0
 
 
