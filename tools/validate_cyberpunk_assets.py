@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import binascii
 import struct
 import sys
+import zlib
 
 
 def parse_palette(path: Path) -> list[tuple[int, int, int]]:
@@ -59,7 +61,7 @@ def parse_palette_mask(path: Path) -> list[int]:
 
 
 def validate_indexed_tileset_png(path: Path) -> None:
-    """Check the PNG signature, IHDR and indexed 4bpp format expected by GBA tiles."""
+    """Validate PNG chunks, CRCs, data stream and the expected indexed 4bpp format."""
     data = path.read_bytes()
     if len(data) < 45 or data[:8] != b"\x89PNG\r\n\x1a\n":
         raise ValueError(f"{path}: file is not a complete PNG")
@@ -67,7 +69,7 @@ def validate_indexed_tileset_png(path: Path) -> None:
         raise ValueError(f"{path}: missing or malformed IHDR chunk")
 
     width, height = struct.unpack(">II", data[16:24])
-    bit_depth, colour_type = data[24], data[25]
+    bit_depth, colour_type, compression, filter_method, interlace = data[24:29]
     if (width, height) != (128, 232):
         raise ValueError(
             f"{path}: expected 128×232 tile atlas, found {width}×{height}"
@@ -77,8 +79,64 @@ def validate_indexed_tileset_png(path: Path) -> None:
             f"{path}: expected a 4-bit indexed PNG, found bit depth {bit_depth}, "
             f"colour type {colour_type}"
         )
-    if b"IDAT" not in data or b"IEND" not in data:
-        raise ValueError(f"{path}: missing image data or PNG end chunk")
+    if (compression, filter_method, interlace) != (0, 0, 0):
+        raise ValueError(f"{path}: unsupported PNG compression/filter/interlace mode")
+
+    offset = 8
+    palette_entries: int | None = None
+    idat_chunks: list[bytes] = []
+    found_iend = False
+    while offset < len(data):
+        if offset + 12 > len(data):
+            raise ValueError(f"{path}: truncated PNG chunk header")
+        chunk_length = struct.unpack(">I", data[offset:offset + 4])[0]
+        chunk_type = data[offset + 4:offset + 8]
+        chunk_end = offset + 12 + chunk_length
+        if chunk_end > len(data):
+            raise ValueError(f"{path}: truncated {chunk_type.decode('ascii', 'replace')} chunk")
+        chunk_data = data[offset + 8:offset + 8 + chunk_length]
+        expected_crc = struct.unpack(">I", data[offset + 8 + chunk_length:chunk_end])[0]
+        actual_crc = binascii.crc32(chunk_type + chunk_data) & 0xFFFFFFFF
+        if actual_crc != expected_crc:
+            raise ValueError(f"{path}: CRC mismatch in {chunk_type.decode('ascii', 'replace')} chunk")
+
+        if chunk_type == b"PLTE":
+            if chunk_length % 3 or chunk_length // 3 != 16:
+                raise ValueError(f"{path}: expected exactly 16 indexed palette colours")
+            palette_entries = chunk_length // 3
+        elif chunk_type == b"IDAT":
+            idat_chunks.append(chunk_data)
+        elif chunk_type == b"IEND":
+            if chunk_length != 0:
+                raise ValueError(f"{path}: IEND chunk must be empty")
+            found_iend = True
+            offset = chunk_end
+            break
+        offset = chunk_end
+
+    if not found_iend or offset != len(data):
+        raise ValueError(f"{path}: missing IEND chunk or contains trailing data")
+    if palette_entries != 16:
+        raise ValueError(f"{path}: missing 16-colour PLTE chunk")
+    if not idat_chunks:
+        raise ValueError(f"{path}: missing PNG image data")
+
+    try:
+        raw = zlib.decompress(b"".join(idat_chunks))
+    except zlib.error as exc:
+        raise ValueError(f"{path}: invalid compressed image data: {exc}") from exc
+
+    row_bytes = (width * bit_depth + 7) // 8
+    row_stride = row_bytes + 1  # one PNG filter byte per row
+    if len(raw) != height * row_stride:
+        raise ValueError(
+            f"{path}: decoded image data has {len(raw)} bytes; "
+            f"expected {height * row_stride}"
+        )
+    for row in range(height):
+        filter_type = raw[row * row_stride]
+        if filter_type not in range(5):
+            raise ValueError(f"{path}: invalid PNG filter {filter_type} on row {row}")
 
 
 def luminance(rgb: tuple[int, int, int]) -> float:
