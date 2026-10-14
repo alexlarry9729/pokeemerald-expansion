@@ -67,6 +67,7 @@ Crafting_Text_Intro:
 	.string "Choose an item and I'll show you\n"
 	.string "the materials needed to make it.$"
 
+	.align 2
 Crafting_Pokemart_Materials:
 	.2byte ITEM_ORAN_BERRY
 	.2byte ITEM_CHERI_BERRY
