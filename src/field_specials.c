@@ -206,6 +206,416 @@ void ApplyPlayerCyberpunkOutfitPalette(void)
     ApplyPlayerCyberpunkOutfitPaletteToAvatar();
 }
 
+
+#define CRAFTING_MENU_MAX_ITEMS 250
+#define CRAFTING_MENU_NAME_LENGTH 32
+#define CRAFTING_MENU_MODE_NONE 0
+#define CRAFTING_MENU_MODE_CATEGORY 1
+#define CRAFTING_MENU_MODE_OUTPUT 2
+
+static EWRAM_DATA u8 sCraftingMenuMode = CRAFTING_MENU_MODE_NONE;
+
+static const u8 *const sCraftingCategoryNames[] =
+{
+    COMPOUND_STRING("POKE BALLS"),
+    COMPOUND_STRING("ITEMS 1-249"),
+    COMPOUND_STRING("ITEMS 250-499"),
+    COMPOUND_STRING("ITEMS 500-749"),
+    COMPOUND_STRING("ITEMS 750-872"),
+    COMPOUND_STRING("TMs / HMs"),
+    COMPOUND_STRING("BERRIES"),
+    COMPOUND_STRING("EXIT"),
+};
+
+struct CraftingRecipe
+{
+    enum Item ingredients[3];
+    u8 count;
+};
+
+static void Crafting_FreeMenuItems(struct ListMenuItem *items, u32 count)
+{
+    u32 i;
+
+    if (items == NULL)
+        return;
+
+    for (i = 0; i < count; i++)
+    {
+        if (items[i].name != NULL)
+            Free((void *)items[i].name);
+    }
+    Free(items);
+}
+
+static bool32 Crafting_SetMenuItem(struct ListMenuItem *item, const u8 *name, s32 id)
+{
+    u8 *nameCopy = AllocZeroed(CRAFTING_MENU_NAME_LENGTH);
+
+    if (nameCopy == NULL)
+        return FALSE;
+
+    StringCopy(nameCopy, name);
+    item->name = nameCopy;
+    item->id = id;
+    return TRUE;
+}
+
+static bool32 Crafting_IsMaterial(enum Item itemId)
+{
+    switch (itemId)
+    {
+    case ITEM_ORAN_BERRY:
+    case ITEM_CHERI_BERRY:
+    case ITEM_RED_SHARD:
+    case ITEM_BLUE_SHARD:
+    case ITEM_GREEN_SHARD:
+    case ITEM_YELLOW_SHARD:
+    case ITEM_TINY_MUSHROOM:
+    case ITEM_BIG_MUSHROOM:
+    case ITEM_NUGGET:
+    case ITEM_STAR_PIECE:
+    case ITEM_HEART_SCALE:
+    case ITEM_STARDUST:
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
+static bool32 Crafting_IsOutputForCategory(enum Item itemId, u16 category)
+{
+    enum Pocket pocket;
+
+    if (itemId == ITEM_NONE || itemId >= ITEMS_COUNT || Crafting_IsMaterial(itemId))
+        return FALSE;
+
+    pocket = GetItemPocket(itemId);
+    if (pocket == POCKET_KEY_ITEMS)
+        return FALSE;
+
+    switch (category)
+    {
+    case CRAFTING_CATEGORY_POKE_BALLS:
+        return pocket == POCKET_POKE_BALLS;
+    case CRAFTING_CATEGORY_ITEMS_1:
+        return pocket == POCKET_ITEMS && itemId >= 1 && itemId <= 249;
+    case CRAFTING_CATEGORY_ITEMS_2:
+        return pocket == POCKET_ITEMS && itemId >= 250 && itemId <= 499;
+    case CRAFTING_CATEGORY_ITEMS_3:
+        return pocket == POCKET_ITEMS && itemId >= 500 && itemId <= 749;
+    case CRAFTING_CATEGORY_ITEMS_4:
+        return pocket == POCKET_ITEMS && itemId >= 750 && itemId < ITEMS_COUNT;
+    case CRAFTING_CATEGORY_TM_HM:
+        return pocket == POCKET_TM_HM;
+    case CRAFTING_CATEGORY_BERRIES:
+        return pocket == POCKET_BERRIES;
+    default:
+        return FALSE;
+    }
+}
+
+void Crafting_ChooseCategory(void)
+{
+    struct ListMenuItem *items;
+    u32 i;
+    const u8 count = ARRAY_COUNT(sCraftingCategoryNames);
+
+    items = AllocZeroed(count * sizeof(*items));
+    if (items == NULL)
+    {
+        gSpecialVar_Result = MULTI_B_PRESSED;
+        return;
+    }
+
+    for (i = 0; i < count; i++)
+    {
+        if (!Crafting_SetMenuItem(&items[i], sCraftingCategoryNames[i], CRAFTING_MENU_CATEGORY_OFFSET + i))
+        {
+            Crafting_FreeMenuItems(items, count);
+            gSpecialVar_Result = MULTI_B_PRESSED;
+            return;
+        }
+    }
+
+    sCraftingMenuMode = CRAFTING_MENU_MODE_CATEGORY;
+    if (!ScriptMenu_MultichoiceDynamic(1, 1, count, items, FALSE, 8, 0, DYN_MULTICHOICE_CB_NONE))
+    {
+        sCraftingMenuMode = CRAFTING_MENU_MODE_NONE;
+        gSpecialVar_Result = MULTI_B_PRESSED;
+    }
+}
+
+void Crafting_ChooseOutput(void)
+{
+    struct ListMenuItem *items;
+    u16 category = VarGet(VAR_0x8004);
+    u16 itemId;
+    u8 count = 0;
+
+    items = AllocZeroed(CRAFTING_MENU_MAX_ITEMS * sizeof(*items));
+    if (items == NULL)
+    {
+        gSpecialVar_Result = MULTI_B_PRESSED;
+        return;
+    }
+
+    for (itemId = 1; itemId < ITEMS_COUNT; itemId++)
+    {
+        if (!Crafting_IsOutputForCategory(itemId, category))
+            continue;
+        if (count >= CRAFTING_MENU_MAX_ITEMS)
+            break;
+
+        if (!Crafting_SetMenuItem(&items[count], GetItemName(itemId), CRAFTING_MENU_ITEM_OFFSET + itemId))
+        {
+            Crafting_FreeMenuItems(items, count);
+            gSpecialVar_Result = MULTI_B_PRESSED;
+            return;
+        }
+        count++;
+    }
+
+    if (count == 0)
+    {
+        Crafting_FreeMenuItems(items, 0);
+        items = AllocZeroed(sizeof(*items));
+        if (items == NULL)
+        {
+            gSpecialVar_Result = MULTI_B_PRESSED;
+            return;
+        }
+        if (!Crafting_SetMenuItem(&items[0], COMPOUND_STRING("NO ITEMS AVAILABLE"), CRAFTING_MENU_ITEM_OFFSET + CRAFTING_MENU_NO_ITEMS))
+        {
+            Crafting_FreeMenuItems(items, 0);
+            gSpecialVar_Result = MULTI_B_PRESSED;
+            return;
+        }
+        count = 1;
+    }
+
+    sCraftingMenuMode = CRAFTING_MENU_MODE_OUTPUT;
+    if (!ScriptMenu_MultichoiceDynamic(1, 1, count, items, FALSE, 8, 0, DYN_MULTICHOICE_CB_NONE))
+    {
+        sCraftingMenuMode = CRAFTING_MENU_MODE_NONE;
+        gSpecialVar_Result = MULTI_B_PRESSED;
+    }
+}
+
+void Crafting_DecodeSelection(void)
+{
+    if (gSpecialVar_Result == MULTI_B_PRESSED)
+    {
+        sCraftingMenuMode = CRAFTING_MENU_MODE_NONE;
+        return;
+    }
+
+    if (sCraftingMenuMode == CRAFTING_MENU_MODE_CATEGORY
+     && gSpecialVar_Result >= CRAFTING_MENU_CATEGORY_OFFSET)
+    {
+        gSpecialVar_Result -= CRAFTING_MENU_CATEGORY_OFFSET;
+    }
+    else if (sCraftingMenuMode == CRAFTING_MENU_MODE_OUTPUT
+          && gSpecialVar_Result >= CRAFTING_MENU_ITEM_OFFSET)
+    {
+        gSpecialVar_Result -= CRAFTING_MENU_ITEM_OFFSET;
+    }
+    else
+    {
+        gSpecialVar_Result = MULTI_B_PRESSED;
+    }
+
+    sCraftingMenuMode = CRAFTING_MENU_MODE_NONE;
+}
+
+static bool32 Crafting_GetRecipe(enum Item outputItem, struct CraftingRecipe *recipe)
+{
+    enum Pocket pocket;
+
+    if (outputItem == ITEM_NONE || outputItem >= ITEMS_COUNT || Crafting_IsMaterial(outputItem))
+        return FALSE;
+
+    pocket = GetItemPocket(outputItem);
+    if (pocket == POCKET_KEY_ITEMS)
+        return FALSE;
+
+    recipe->ingredients[0] = ITEM_NONE;
+    recipe->ingredients[1] = ITEM_NONE;
+    recipe->ingredients[2] = ITEM_NONE;
+    recipe->count = 0;
+
+    switch (pocket)
+    {
+    case POCKET_POKE_BALLS:
+        recipe->ingredients[0] = ITEM_CHERI_BERRY;
+        recipe->ingredients[1] = ITEM_RED_SHARD;
+        recipe->count = 2;
+        if (GetItemPrice(outputItem) >= 1000
+         || outputItem == ITEM_MASTER_BALL
+         || outputItem == ITEM_SAFARI_BALL
+         || outputItem == ITEM_SPORT_BALL
+         || outputItem == ITEM_PARK_BALL
+         || outputItem == ITEM_BEAST_BALL
+         || outputItem == ITEM_CHERISH_BALL)
+        {
+            recipe->ingredients[2] = ITEM_STAR_PIECE;
+            recipe->count = 3;
+        }
+        break;
+    case POCKET_TM_HM:
+        recipe->ingredients[0] = ITEM_BIG_MUSHROOM;
+        recipe->ingredients[1] = ITEM_BLUE_SHARD;
+        recipe->ingredients[2] = ITEM_NUGGET;
+        recipe->count = 3;
+        break;
+    case POCKET_BERRIES:
+        recipe->ingredients[0] = ITEM_ORAN_BERRY;
+        recipe->ingredients[1] = ITEM_GREEN_SHARD;
+        recipe->count = 2;
+        break;
+    case POCKET_ITEMS:
+        if (GetItemPrice(outputItem) <= 500)
+        {
+            recipe->ingredients[0] = ITEM_ORAN_BERRY;
+            recipe->ingredients[1] = ITEM_TINY_MUSHROOM;
+            recipe->count = 2;
+        }
+        else if (GetItemPrice(outputItem) <= 2500)
+        {
+            recipe->ingredients[0] = ITEM_BIG_MUSHROOM;
+            recipe->ingredients[1] = ITEM_YELLOW_SHARD;
+            recipe->count = 2;
+        }
+        else
+        {
+            recipe->ingredients[0] = ITEM_BIG_MUSHROOM;
+            recipe->ingredients[1] = ITEM_STAR_PIECE;
+            recipe->ingredients[2] = ITEM_HEART_SCALE;
+            recipe->count = 3;
+        }
+        break;
+    default:
+        return FALSE;
+    }
+
+    return recipe->count >= 2 && recipe->count <= 3;
+}
+
+static void Crafting_BufferRecipe(enum Item outputItem, const struct CraftingRecipe *recipe)
+{
+    CopyItemName(outputItem, gStringVar1);
+    CopyItemName(recipe->ingredients[0], gStringVar2);
+    CopyItemName(recipe->ingredients[1], gStringVar3);
+    if (recipe->count == 3)
+    {
+        StringCopy(gStringVar4, COMPOUND_STRING(" + "));
+        StringAppend(gStringVar4, GetItemName(recipe->ingredients[2]));
+    }
+    else
+    {
+        gStringVar4[0] = EOS;
+    }
+}
+
+void Crafting_PrepareRecipe(void)
+{
+    struct CraftingRecipe recipe;
+    enum Item outputItem = VarGet(VAR_0x8007);
+
+    if (!Crafting_GetRecipe(outputItem, &recipe))
+    {
+        gSpecialVar_Result = FALSE;
+        return;
+    }
+
+    Crafting_BufferRecipe(outputItem, &recipe);
+    gSpecialVar_Result = TRUE;
+}
+
+void Crafting_CheckRecipe(void)
+{
+    struct CraftingRecipe recipe;
+    enum Item outputItem = VarGet(VAR_0x8007);
+    u32 i;
+
+    if (!Crafting_GetRecipe(outputItem, &recipe))
+    {
+        gSpecialVar_Result = FALSE;
+        return;
+    }
+
+    for (i = 0; i < recipe.count; i++)
+    {
+        if (!CheckBagHasItem(recipe.ingredients[i], 1))
+        {
+            gSpecialVar_Result = FALSE;
+            return;
+        }
+    }
+
+    gSpecialVar_Result = TRUE;
+}
+
+static bool32 Crafting_HasRoomAfterRecipe(enum Item outputItem, const struct CraftingRecipe *recipe)
+{
+    enum Pocket outputPocket = GetItemPocket(outputItem);
+    u32 i;
+
+    if (CheckBagHasSpace(outputItem, 1))
+        return TRUE;
+
+    for (i = 0; i < recipe->count; i++)
+    {
+        enum Item ingredient = recipe->ingredients[i];
+        if (GetItemPocket(ingredient) == outputPocket && CountTotalItemQuantityInBag(ingredient) == 1)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+void Crafting_CreateItem(void)
+{
+    struct CraftingRecipe recipe;
+    enum Item outputItem = VarGet(VAR_0x8007);
+    u32 i;
+
+    if (!Crafting_GetRecipe(outputItem, &recipe))
+    {
+        gSpecialVar_Result = 3;
+        return;
+    }
+
+    for (i = 0; i < recipe.count; i++)
+    {
+        if (!CheckBagHasItem(recipe.ingredients[i], 1))
+        {
+            gSpecialVar_Result = 1;
+            return;
+        }
+    }
+
+    if (!Crafting_HasRoomAfterRecipe(outputItem, &recipe))
+    {
+        gSpecialVar_Result = 2;
+        return;
+    }
+
+    CopyItemName(outputItem, gStringVar1);
+    for (i = 0; i < recipe.count; i++)
+        RemoveBagItem(recipe.ingredients[i], 1);
+
+    if (!AddBagItem(outputItem, 1))
+    {
+        for (i = 0; i < recipe.count; i++)
+            AddBagItem(recipe.ingredients[i], 1);
+        gSpecialVar_Result = 2;
+        return;
+    }
+
+    gSpecialVar_Result = 0;
+}
+
 void ResetCyclingRoadChallengeData(void)
 {
     gBikeCyclingChallenge = FALSE;

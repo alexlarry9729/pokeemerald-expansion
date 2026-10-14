@@ -65,6 +65,12 @@ gSpecials::
 	def_special ObjectEventInteractionGetBerryName
 	def_special ObjectEventInteractionGetBerryCountString
 	def_special Bag_ChooseBerry, waitstate=1
+	def_special Crafting_ChooseCategory, waitstate=1
+	def_special Crafting_ChooseOutput, waitstate=1
+	def_special Crafting_DecodeSelection
+	def_special Crafting_PrepareRecipe
+	def_special Crafting_CheckRecipe
+	def_special Crafting_CreateItem
 	def_special ObjectEventInteractionPlantBerryTree
 	def_special ObjectEventInteractionPickBerryTree
 	def_special ObjectEventInteractionRemoveBerryTree
