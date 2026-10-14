@@ -271,6 +271,12 @@ static bool32 Crafting_IsMaterial(enum Item itemId)
     case ITEM_BLUE_SHARD:
     case ITEM_GREEN_SHARD:
     case ITEM_YELLOW_SHARD:
+    case ITEM_TINY_MUSHROOM:
+    case ITEM_BIG_MUSHROOM:
+    case ITEM_NUGGET:
+    case ITEM_STAR_PIECE:
+    case ITEM_HEART_SCALE:
+    case ITEM_STARDUST:
         return TRUE;
     default:
         return FALSE;
