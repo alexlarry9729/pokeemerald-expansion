@@ -62,7 +62,7 @@ Crafting_Text_Intro:
 
 Crafting_Text_Recipe:
 	.string "Recipe for {STR_VAR_1}:\n"
-	.string "{STR_VAR_2} + {STR_VAR_3}{STR_VAR_4}$"
+	.string "{STR_VAR_2} + {STR_VAR_3}$"
 
 Crafting_Text_ConfirmCraft:
 	.string "Craft this item?$"
