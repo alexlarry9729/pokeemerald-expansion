@@ -18,7 +18,8 @@ Crafting_EventScript_CategoryMenu::
 	goto_if_eq VAR_RESULT, FALSE, Crafting_EventScript_InvalidOutput
 	special Crafting_CheckRecipe
 	goto_if_eq VAR_RESULT, FALSE, Crafting_EventScript_MissingMaterials
-	msgbox Crafting_Text_Recipe, MSGBOX_YESNO
+	msgbox Crafting_Text_Recipe, MSGBOX_DEFAULT
+	msgbox Crafting_Text_ConfirmCraft, MSGBOX_YESNO
 	goto_if_eq VAR_RESULT, YES, Crafting_EventScript_ConfirmCraft
 	goto Crafting_EventScript_CategoryMenu
 
@@ -61,7 +62,9 @@ Crafting_Text_Intro:
 
 Crafting_Text_Recipe:
 	.string "Recipe for {STR_VAR_1}:\n"
-	.string "{STR_VAR_2} + {STR_VAR_3}{STR_VAR_4}\p"
+	.string "{STR_VAR_2} + {STR_VAR_3}{STR_VAR_4}$"
+
+Crafting_Text_ConfirmCraft:
 	.string "Craft this item?$"
 
 Crafting_Text_MissingMaterials:

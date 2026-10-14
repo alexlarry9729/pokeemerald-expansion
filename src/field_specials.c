@@ -350,7 +350,7 @@ void Crafting_ChooseOutput(void)
 {
     struct ListMenuItem *items;
     u16 category = VarGet(VAR_0x8004);
-    u16 itemId;
+    enum Item itemId;
     u8 count = 0;
 
     items = AllocZeroed(CRAFTING_MENU_MAX_ITEMS * sizeof(*items));
