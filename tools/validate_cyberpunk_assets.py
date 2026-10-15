@@ -708,10 +708,10 @@ def validate_cuordilava_fascia_metatile(root: Path) -> list[str]:
         entry = struct.unpack_from("<H", data, offset + slot * 2)[0]
         encoded_tile = entry & 0x3FF
         palette_index = (entry >> 12) & 0xF
-        if encoded_tile < 512 or encoded_tile - 512 != tile_id or palette_index != 7:
+        if encoded_tile < 512 or encoded_tile - 512 != tile_id or palette_index != 8:
             errors.append(
                 f"{metatiles_path}: fascia metatile 50 overlay slot {slot} "
-                f"must use secondary tile {tile_id} with palette 7"
+                f"must use secondary tile {tile_id} with palette 8"
             )
 
     try:
