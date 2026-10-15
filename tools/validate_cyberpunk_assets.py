@@ -367,6 +367,39 @@ def validate_facade_light_wiring(root: Path) -> list[str]:
     return errors
 
 
+def validate_lavaridge_palette_cycle(root: Path) -> list[str]:
+    """Ensure Lavaridge's facade palette is actually blended toward its night companion."""
+    errors: list[str] = []
+    header_path = root / "src/data/tilesets/headers.h"
+    palette_dir = root / "data/tilesets/secondary/lavaridge/palettes"
+    try:
+        header = header_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return [f"{header_path}: unable to inspect Lavaridge palette-swap declaration: {exc}"]
+
+    start = header.find("const struct Tileset gTileset_Lavaridge")
+    end = header.find("\n};", start) if start >= 0 else -1
+    if start < 0 or end < 0 or ".swapPalettes = SWAP_PAL(8)," not in header[start:end]:
+        errors.append(
+            f"{header_path}: Lavaridge must declare SWAP_PAL(8) so palette 08 blends toward 01 at night"
+        )
+
+    day_path = palette_dir / "08.pal"
+    night_path = palette_dir / "01.pal"
+    try:
+        day = parse_palette(day_path)
+        night = parse_palette(night_path)
+        # The cool highlight and the hot orange/red ramp should gain energy at night.
+        for index in (9, 11, 12, 13):
+            if luminance(night[index]) <= luminance(day[index]):
+                errors.append(
+                    f"{night_path}: accent colour {index} must be brighter than {day_path} for night blending"
+                )
+    except (OSError, ValueError, IndexError) as exc:
+        errors.append(f"{palette_dir}: unable to validate the day/night facade palette pair: {exc}")
+    return errors
+
+
 def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -> list[str]:
     """Check the warm windows and cool pipe trims on secondary tiles used by Lavaridge."""
     errors: list[str] = []
@@ -469,6 +502,7 @@ def validate(root: Path) -> list[str]:
     errors: list[str] = []
     errors.extend(validate_lavaridge_light_events(root))
     errors.extend(validate_lavaridge_map_access(root))
+    errors.extend(validate_lavaridge_palette_cycle(root))
     errors.extend(validate_facade_light_wiring(root))
     palette_dir = root / "data/tilesets/secondary/lavaridge/palettes"
     object_palette_dir = root / "graphics/object_events/palettes"

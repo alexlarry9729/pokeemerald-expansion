@@ -102,6 +102,8 @@ const struct Tileset gTileset_Mauville =
 const struct Tileset gTileset_Lavaridge =
 {
     .isCompressed = TRUE,
+    // Palette 8 (file 08.pal) has a brighter companion in 01.pal for nighttime blending.
+    .swapPalettes = SWAP_PAL(8),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Lavaridge,
     .palettes = gTilesetPalettes_Lavaridge,
