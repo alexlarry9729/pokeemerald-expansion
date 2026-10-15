@@ -474,12 +474,14 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
             errors.append(f"{path}: active window/panel tile {tile_id} is missing warm orange/red pixels")
         if tile_id in window_tiles + facade_panel_tiles and not any(index in (9, 10, 15) for index in indices):
             errors.append(f"{path}: active window/panel tile {tile_id} is missing cyan/purple trim pixels")
-        if tile_id in window_tiles and 11 not in indices:
-            errors.append(f"{path}: active window tile {tile_id} is missing an amber glass-reflection pixel (index 11)")
+        if tile_id in window_tiles + facade_panel_tiles and 11 not in indices:
+            errors.append(f"{path}: active window/panel tile {tile_id} is missing a warm amber highlight (index 11)")
         if tile_id in pipe_tiles and not any(index in (9, 10, 15) for index in indices):
             errors.append(f"{path}: pipe tile {tile_id} is missing a cool neon accent")
-        if tile_id in roof_seam_tiles and not any(index in (11, 12, 13, 14) for index in indices):
-            errors.append(f"{path}: roof seam tile {tile_id} is missing warm furnace-orange pixels")
+        if tile_id in (312, 328, 344) and 9 not in indices:
+            errors.append(f"{path}: conduit tile {tile_id} is missing a bright cyan service LED (index 9)")
+        if tile_id in roof_seam_tiles and 11 not in indices:
+            errors.append(f"{path}: roof seam tile {tile_id} is missing a bright furnace-orange seam pixel (index 11)")
 
     # Keep the window mullions as visible dark breaks between repeated lit panes.
     mullion_columns = {315: 3, 331: 4, 345: 3, 346: 4}
