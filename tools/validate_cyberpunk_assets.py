@@ -401,6 +401,33 @@ def validate_lavaridge_palette_cycle(root: Path) -> list[str]:
     return errors
 
 
+def validate_lavaridge_architecture_palette(root: Path) -> list[str]:
+    """Keep the Lavaridge building palette industrial-dark with furnace-warm highlights."""
+    path = root / "data/tilesets/secondary/lavaridge/palettes/07.pal"
+    try:
+        colours = parse_palette(path)
+    except (OSError, ValueError) as exc:
+        return [f"{path}: unable to validate the volcanic architecture palette: {exc}"]
+
+    errors: list[str] = []
+    for index in range(1, 9):
+        if max(colours[index]) > 110:
+            errors.append(
+                f"{path}: structural colour {index} must stay in the dark iron/charcoal range"
+            )
+
+    for index in (11, 12, 13, 14):
+        red, green, blue = colours[index]
+        if red < 180 or red < green or red < blue:
+            errors.append(
+                f"{path}: architectural highlight {index} must remain in the warm amber/orange/red family"
+            )
+
+    if colours[9][2] <= colours[9][0] or colours[10][1] < 200:
+        errors.append(f"{path}: cyan service-light accents at indices 9 and 10 must remain legible")
+    return errors
+
+
 def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -> list[str]:
     """Check the warm windows and cool pipe trims on secondary tiles used by Lavaridge."""
     errors: list[str] = []
@@ -508,6 +535,7 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_lavaridge_light_events(root))
     errors.extend(validate_lavaridge_map_access(root))
     errors.extend(validate_lavaridge_palette_cycle(root))
+    errors.extend(validate_lavaridge_architecture_palette(root))
     errors.extend(validate_facade_light_wiring(root))
     palette_dir = root / "data/tilesets/secondary/lavaridge/palettes"
     object_palette_dir = root / "graphics/object_events/palettes"
