@@ -440,64 +440,55 @@ def validate_facade_light_wiring(root: Path) -> list[str]:
     return errors
 
 
-def validate_lavaridge_palette_cycle(root: Path) -> list[str]:
-    """Ensure Lavaridge's facade palette is actually blended toward its night companion."""
+def validate_cuordilava_palette_pair(root: Path) -> list[str]:
+    """Validate the private palette pair reserved for Cuordilava architecture."""
     errors: list[str] = []
     header_path = root / "src/data/tilesets/headers.h"
     palette_dir = root / "data/tilesets/secondary/lavaridge/palettes"
     try:
         header = header_path.read_text(encoding="utf-8")
     except OSError as exc:
-        return [f"{header_path}: unable to inspect Lavaridge palette-swap declaration: {exc}"]
-
+        return [f"{header_path}: unable to inspect local palette-swap declaration: {exc}"]
     start = header.find("const struct Tileset gTileset_Lavaridge")
-    end = header.find("\n};", start) if start >= 0 else -1
-    if start < 0 or end < 0 or ".swapPalettes = SWAP_PAL(8)," not in header[start:end]:
-        errors.append(
-            f"{header_path}: Lavaridge must declare SWAP_PAL(8) so palette 08 blends toward 01 at night"
-        )
-
-    day_path = palette_dir / "08.pal"
-    night_path = palette_dir / "01.pal"
+    end = header.find("\\n};", start) if start >= 0 else -1
+    block = header[start:end] if start >= 0 and end >= 0 else ""
+    if ".swapPalettes = SWAP_PAL(12)," not in block:
+        errors.append(f"{header_path}: reserved palette 12 must swap to palette 13 at night")
+    if ".swapPalettes = SWAP_PAL(8)," in block:
+        errors.append(f"{header_path}: shared palette 08 must not be globally swapped for this feature")
     try:
-        day = parse_palette(day_path)
-        night = parse_palette(night_path)
-        # Every colour listed in the day palette's glow mask must intensify at night.
-        mask_indices = parse_palette_mask(palette_dir / "08.pla")
-        for index in mask_indices:
+        day = parse_palette(palette_dir / "12.pal")
+        night = parse_palette(palette_dir / "13.pal")
+        for index in range(1, 9):
+            if max(day[index]) > 110:
+                errors.append(f"{palette_dir / '12.pal'}: structural colour {index} must stay dark")
+        for index in range(9, 16):
             if luminance(night[index]) <= luminance(day[index]):
-                errors.append(
-                    f"{night_path}: glow-mask colour {index} must be brighter than {day_path} for night blending"
-                )
+                errors.append(f"{palette_dir / '13.pal'}: local neon colour {index} must be brighter at night")
     except (OSError, ValueError, IndexError) as exc:
-        errors.append(f"{palette_dir}: unable to validate the day/night facade palette pair: {exc}")
-    return errors
+        errors.append(f"{palette_dir}: invalid Cuordilava day/night palette pair: {exc}")
 
-
-def validate_lavaridge_architecture_palette(root: Path) -> list[str]:
-    """Keep the Lavaridge building palette industrial-dark with furnace-warm highlights."""
-    path = root / "data/tilesets/secondary/lavaridge/palettes/07.pal"
-    try:
-        colours = parse_palette(path)
-    except (OSError, ValueError) as exc:
-        return [f"{path}: unable to validate the volcanic architecture palette: {exc}"]
-
-    errors: list[str] = []
-    for index in range(1, 9):
-        if max(colours[index]) > 110:
-            errors.append(
-                f"{path}: structural colour {index} must stay in the dark iron/charcoal range"
-            )
-
-    for index in (11, 12, 13, 14):
-        red, green, blue = colours[index]
-        if red < 180 or red < green or red < blue:
-            errors.append(
-                f"{path}: architectural highlight {index} must remain in the warm amber/orange/red family"
-            )
-
-    if colours[9][2] <= colours[9][0] or colours[10][1] < 200:
-        errors.append(f"{path}: cyan service-light accents at indices 9 and 10 must remain legible")
+    shared_baselines = {
+        "07.pal": [
+            (49, 49, 255), (94, 58, 56), (68, 44, 45), (49, 32, 42),
+            (30, 23, 34), (79, 82, 96), (57, 61, 79), (35, 40, 60),
+            (15, 20, 33), (0, 172, 230), (0, 244, 255), (255, 173, 91),
+            (255, 92, 43), (235, 53, 33), (255, 115, 65), (40, 255, 180),
+        ],
+        "08.pal": [
+            (49, 49, 255), (255, 255, 255), (0, 0, 0), (0, 0, 0),
+            (197, 197, 172), (148, 148, 139), (98, 98, 123), (65, 74, 106),
+            (41, 49, 90), (139, 205, 246), (115, 189, 238), (255, 230, 139),
+            (222, 189, 98), (180, 156, 74), (139, 123, 32), (115, 82, 41),
+        ],
+    }
+    for filename, expected in shared_baselines.items():
+        path = palette_dir / filename
+        try:
+            if parse_palette(path) != expected:
+                errors.append(f"{path}: shared palette changed; keep its original colours")
+        except (OSError, ValueError) as exc:
+            errors.append(f"{path}: unable to validate shared palette integrity: {exc}")
     return errors
 
 
@@ -639,10 +630,10 @@ def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
             entry = struct.unpack_from("<H", data, offset + slot * 2)[0]
             encoded_tile = entry & 0x3FF
             palette_index = (entry >> 12) & 0xF
-            if encoded_tile < 512 or encoded_tile - 512 != expected_tile or palette_index != 8:
+            if encoded_tile < 512 or encoded_tile - 512 != expected_tile or palette_index != 12:
                 errors.append(
                     f"{metatiles_path}: Cuordilava metatile {metatile_id} slot {slot} "
-                    f"must use secondary tile {expected_tile} with palette 8"
+                    f"must use secondary tile {expected_tile} with palette 12"
                 )
 
     try:
@@ -711,10 +702,10 @@ def validate_cuordilava_roof_vent_metatiles(root: Path) -> list[str]:
             entry = struct.unpack_from("<H", data, offset + local_slot * 2)[0]
             encoded_tile = entry & 0x3FF
             palette_index = (entry >> 12) & 0xF
-            if encoded_tile < 512 or encoded_tile - 512 != tile_id or palette_index != 8:
+            if encoded_tile < 512 or encoded_tile - 512 != tile_id or palette_index != 12:
                 errors.append(
                     f"{metatiles_path}: roof metatile {metatile_id} overlay slot {local_slot} "
-                    f"must use secondary tile {tile_id} with palette 8"
+                    f"must use secondary tile {tile_id} with palette 12"
                 )
 
     try:
@@ -760,8 +751,7 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_lavaridge_light_events(root))
     errors.extend(validate_sign_light_placements(root))
     errors.extend(validate_lavaridge_map_access(root))
-    errors.extend(validate_lavaridge_palette_cycle(root))
-    errors.extend(validate_lavaridge_architecture_palette(root))
+    errors.extend(validate_cuordilava_palette_pair(root))
     errors.extend(validate_cuordilava_architecture_metatiles(root))
     errors.extend(validate_cuordilava_roof_vent_metatiles(root))
     errors.extend(validate_facade_light_wiring(root))
@@ -814,8 +804,6 @@ def validate(root: Path) -> list[str]:
 
     if not palette_paths:
         errors.append(f"No Lavaridge palette files found under {palette_dir}")
-    if not mask_paths:
-        errors.append(f"No Lavaridge palette masks found under {palette_dir}")
 
     return errors
 
@@ -836,7 +824,7 @@ def main() -> int:
             print(f"  - {error}", file=sys.stderr)
         return 1
     print(
-        "Cyberpunk asset validation passed: indexed Lavaridge PNG, palettes/masks, "
+        "Cyberpunk asset validation passed: indexed Lavaridge PNG, reserved Cuordilava palettes, "
         "day/night ramps, and Lavaridge facade-light placements look valid."
     )
     return 0

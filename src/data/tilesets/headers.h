@@ -3,9 +3,6 @@
 // Whether a palette has a night version, located at ((x + 9) % 16).pal
 #define SWAP_PAL(x) ((x) < NUM_PALS_IN_PRIMARY ? 1 << (x) : 1 << ((x) - NUM_PALS_IN_PRIMARY))
 
-// Per-tileset palette masks can be authored in .pla files for selective nighttime glow.
-#define LIGHT_PAL(x) ((x) < NUM_PALS_IN_PRIMARY ? 1 << (x) : 1 << ((x) - NUM_PALS_IN_PRIMARY))
-
 const struct Tileset gTileset_SecretBase =
 {
     .isCompressed = FALSE,
@@ -102,8 +99,8 @@ const struct Tileset gTileset_Mauville =
 const struct Tileset gTileset_Lavaridge =
 {
     .isCompressed = TRUE,
-    // Palette 8 (file 08.pal) has a brighter companion in 01.pal for nighttime blending.
-    .swapPalettes = SWAP_PAL(8),
+    // Palette 12 is reserved for Cuordilava-only architecture; palette 13 is its night variant.
+    .swapPalettes = SWAP_PAL(12),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Lavaridge,
     .palettes = gTilesetPalettes_Lavaridge,
