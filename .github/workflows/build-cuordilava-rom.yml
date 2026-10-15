@@ -1,4 +1,5 @@
 name: Build Cuordilava test ROM
+# Trigger build per testare Cuordilava nell'emulatore
 
 on:
   workflow_dispatch:
