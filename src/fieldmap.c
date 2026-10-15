@@ -1041,83 +1041,12 @@ void CopyMapTilesetsToVram(struct MapLayout const *mapLayout)
     }
 }
 
-static u16 GetCuordilavaIndustrialColor(u16 color)
-{
-    u16 red = color & 0x1F;
-    u16 green = (color >> 5) & 0x1F;
-    u16 blue = (color >> 10) & 0x1F;
-
-    // Darken shared palettes by colour family rather than scaling every channel
-    // equally: magenta becomes deep furnace-wine, cyan becomes dark teal, and
-    // orange/red highlights remain visible against charcoal architecture.
-    if (red > green + 5 && blue > green + 5)
-    {
-        red = (red * 17) / 32;
-        green = (green * 7) / 32;
-        blue = (blue * 5) / 32;
-    }
-    else if (green > red + 5 && blue > red + 5)
-    {
-        red = (red * 7) / 32;
-        green = (green * 13) / 32;
-        blue = (blue * 10) / 32;
-    }
-    else if (red > green + 5 && red > blue + 5)
-    {
-        red = (red * 24) / 32;
-        green = (green * 15) / 32;
-        blue = (blue * 11) / 32;
-    }
-    else if (blue > red + 5 && blue > green + 5)
-    {
-        red = (red * 8) / 32;
-        green = (green * 12) / 32;
-        blue = (blue * 18) / 32;
-    }
-    else
-    {
-        red = (red * 19) / 32;
-        green = (green * 13) / 32;
-        blue = (blue * 13) / 32;
-    }
-
-    return RGB(red, green, blue);
-}
-
-static void ApplyCuordilavaIndustrialPaletteStyle(void)
-{
-    u16 paletteIndex;
-    u16 colorIndex;
-
-    // Palette 12 is the town's dedicated architecture palette. Keep it vivid
-    // for furnace LEDs/windows; grade shared palette slots only after they have
-    // been loaded for Cuordilava, never in their global source files.
-    for (paletteIndex = 0; paletteIndex < NUM_PALS_TOTAL - 1; paletteIndex++)
-    {
-        for (colorIndex = 1; colorIndex < 16; colorIndex++)
-        {
-            u16 index = paletteIndex * 16 + colorIndex;
-            u16 color = GetCuordilavaIndustrialColor(gPlttBufferUnfaded[index]);
-
-            gPlttBufferUnfaded[index] = color;
-            gPlttBufferFaded[index] = color;
-        }
-    }
-}
-
-static bool8 IsCuordilavaLayout(struct MapLayout const *mapLayout)
-{
-    return mapLayout == GetMapLayout(LAYOUT_LAVARIDGE_TOWN);
-}
-
 void LoadMapTilesetPalettes(struct MapLayout const *mapLayout)
 {
     if (mapLayout)
     {
         LoadPrimaryTilesetPalette(mapLayout);
         LoadSecondaryTilesetPalette(mapLayout, FALSE);
-        if (IsCuordilavaLayout(mapLayout))
-            ApplyCuordilavaIndustrialPaletteStyle();
     }
 }
 

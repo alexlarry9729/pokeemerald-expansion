@@ -30,9 +30,9 @@ const struct Tileset *const gTilesetPointer_SecretBaseRedCave = &gTileset_Secret
 
 #if !IS_FRLG
 
-const struct Tileset gTileset_General = {
+const struct Tileset gTileset_General =
+{
     .isCompressed = TRUE,
-    .swapPalettes = SWAP_PAL(4),
     .isSecondary = FALSE,
     .tiles = gTilesetTiles_General,
     .palettes = gTilesetPalettes_General,
@@ -41,9 +41,9 @@ const struct Tileset gTileset_General = {
     .callback = InitTilesetAnim_General,
 };
 
-const struct Tileset gTileset_Petalburg = {
+const struct Tileset gTileset_Petalburg =
+{
     .isCompressed = TRUE,
-    .swapPalettes = SWAP_PAL(9),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Petalburg,
     .palettes = gTilesetPalettes_Petalburg,
@@ -74,9 +74,9 @@ const struct Tileset gTileset_Dewford =
     .callback = InitTilesetAnim_Dewford,
 };
 
-const struct Tileset gTileset_Slateport = {
+const struct Tileset gTileset_Slateport =
+{
     .isCompressed = TRUE,
-    .swapPalettes = SWAP_PAL(6),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Slateport,
     .palettes = gTilesetPalettes_Slateport,
@@ -99,7 +99,7 @@ const struct Tileset gTileset_Mauville =
 const struct Tileset gTileset_Lavaridge =
 {
     .isCompressed = TRUE,
-    // Palette 12 is reserved for Cuordilava-only architecture; palette 05 supplies its night variant.
+    // Custom architecture palette 12 is paired with palette 05 after dark.
     .swapPalettes = SWAP_PAL(12),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Lavaridge,
@@ -109,9 +109,9 @@ const struct Tileset gTileset_Lavaridge =
     .callback = InitTilesetAnim_Lavaridge,
 };
 
-const struct Tileset gTileset_Fallarbor = {
+const struct Tileset gTileset_Fallarbor =
+{
     .isCompressed = TRUE,
-    .swapPalettes = SWAP_PAL(7),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Fallarbor,
     .palettes = gTilesetPalettes_Fallarbor,
@@ -131,9 +131,9 @@ const struct Tileset gTileset_Fortree =
     .callback = InitTilesetAnim_Fortree,
 };
 
-const struct Tileset gTileset_Lilycove = {
+const struct Tileset gTileset_Lilycove =
+{
     .isCompressed = TRUE,
-    .swapPalettes = SWAP_PAL(6),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Lilycove,
     .palettes = gTilesetPalettes_Lilycove,
@@ -142,9 +142,9 @@ const struct Tileset gTileset_Lilycove = {
     .callback = InitTilesetAnim_Lilycove,
 };
 
-const struct Tileset gTileset_Mossdeep = {
+const struct Tileset gTileset_Mossdeep =
+{
     .isCompressed = TRUE,
-    .swapPalettes = SWAP_PAL(8),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Mossdeep,
     .palettes = gTilesetPalettes_Mossdeep,
@@ -153,9 +153,9 @@ const struct Tileset gTileset_Mossdeep = {
     .callback = InitTilesetAnim_Mossdeep,
 };
 
-const struct Tileset gTileset_EverGrande = {
+const struct Tileset gTileset_EverGrande =
+{
     .isCompressed = TRUE,
-    .swapPalettes = SWAP_PAL(8),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_EverGrande,
     .palettes = gTilesetPalettes_EverGrande,
@@ -164,9 +164,9 @@ const struct Tileset gTileset_EverGrande = {
     .callback = InitTilesetAnim_EverGrande,
 };
 
-const struct Tileset gTileset_Pacifidlog = {
+const struct Tileset gTileset_Pacifidlog =
+{
     .isCompressed = TRUE,
-    .swapPalettes = SWAP_PAL(9),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Pacifidlog,
     .palettes = gTilesetPalettes_Pacifidlog,
@@ -175,9 +175,9 @@ const struct Tileset gTileset_Pacifidlog = {
     .callback = InitTilesetAnim_Pacifidlog,
 };
 
-const struct Tileset gTileset_Sootopolis = {
+const struct Tileset gTileset_Sootopolis =
+{
     .isCompressed = TRUE,
-    .swapPalettes = SWAP_PAL(6),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Sootopolis,
     .palettes = gTilesetPalettes_Sootopolis,
