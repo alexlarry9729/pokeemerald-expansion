@@ -19,4 +19,8 @@ Use the supplied cyberpunk town image as the mood and density reference, adapted
 
 ## Current scope and caveat
 
-The current branch establishes the day/night light-sprite behaviour, map sign-light placements and the start of palette work. The warmed orange palette is a lighting refinement, **not** a complete architectural tileset redesign. The pilot should not be marked visually complete until the facade/roof/window tiles are substantially reauthored and an in-game screenshot confirms the result.
+The current branch establishes the day/night light-sprite behaviour, map sign-light placements and an early architectural-detail pass in the Lavaridge tileset. The active secondary tiles include warm window/panel pixels and restrained cyan service lights on conduit pieces; the asset validator checks that these tile IDs are actually referenced by the town layout instead of passing on unused atlas tiles.
+
+This is still **not** a complete architectural tileset redesign. The current changes are local detail accents, not replacement silhouettes for every roof, facade, chimney and structure in the reference. Keep the existing map geometry and access events intact while the artwork is expanded. The automated checks cover indexed PNG integrity, palette/mask structure, day/night palette intensity, active facade pixels, light-sprite wiring and key map access invariants.
+
+Do not mark the pilot visually complete until the larger facade/roof/window redesign is in place and screenshots from a compiled build have been inspected in an emulator in both daylight and night conditions. A successful palette validator alone is not sufficient.
