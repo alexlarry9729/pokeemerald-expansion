@@ -273,6 +273,79 @@ def validate_lavaridge_light_events(root: Path) -> list[str]:
     return errors
 
 
+SIGN_LIGHT_TYPES = {
+    "LIGHT_TYPE_PKMN_CENTER_SIGN",
+    "LIGHT_TYPE_POKE_MART_SIGN",
+    "LIGHT_TYPE_FACADE",
+}
+
+
+def validate_sign_light_placements(root: Path) -> list[str]:
+    """Ensure town-sign/facade light anchors resolve to visible map cells."""
+    errors: list[str] = []
+    layouts_path = root / "data/layouts/layouts.json"
+    try:
+        layouts_data = json.loads(layouts_path.read_text(encoding="utf-8"))
+        layouts = {
+            item.get("id"): item
+            for item in layouts_data.get("layouts", [])
+            if isinstance(item, dict) and isinstance(item.get("id"), str)
+        }
+    except (OSError, json.JSONDecodeError, AttributeError) as exc:
+        return [f"{layouts_path}: unable to load layouts for sign-light placement checks: {exc}"]
+
+    maps_root = root / "data/maps"
+    for map_path in sorted(maps_root.rglob("map.json")):
+        try:
+            map_data = json.loads(map_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            errors.append(f"{map_path}: unable to inspect sign-light placements: {exc}")
+            continue
+
+        object_events = map_data.get("object_events", [])
+        if not isinstance(object_events, list):
+            continue
+        lights = [
+            event for event in object_events
+            if isinstance(event, dict)
+            and event.get("graphics_id") == "OBJ_EVENT_GFX_LIGHT_SPRITE"
+            and event.get("trainer_sight_or_berry_tree_id") in SIGN_LIGHT_TYPES
+        ]
+        if not lights:
+            continue
+
+        layout_id = map_data.get("layout")
+        layout = layouts.get(layout_id)
+        if layout is None:
+            errors.append(f"{map_path}: cannot resolve layout {layout_id!r} for sign-light placements")
+            continue
+        try:
+            width, height = int(layout["width"]), int(layout["height"])
+        except (KeyError, TypeError, ValueError) as exc:
+            errors.append(f"{map_path}: invalid layout dimensions for {layout_id!r}: {exc}")
+            continue
+
+        seen: set[tuple[int, int]] = set()
+        for event in lights:
+            x, y = event.get("x"), event.get("y")
+            if type(x) is not int or type(y) is not int:
+                errors.append(f"{map_path}: sign/facade light has non-integer coordinates ({x!r}, {y!r})")
+                continue
+            coord = (x, y)
+            if coord in seen:
+                errors.append(f"{map_path}: duplicate sign/facade lights at ({x}, {y})")
+            seen.add(coord)
+            if not (0 <= x < width and 0 <= y < height):
+                errors.append(
+                    f"{map_path}: sign/facade light at ({x}, {y}) is outside the {width}x{height} layout"
+                )
+            if event.get("movement_type") != "MOVEMENT_TYPE_NONE" or event.get("script") != "NULL":
+                errors.append(
+                    f"{map_path}: sign/facade light at ({x}, {y}) must be stationary and script-free"
+                )
+    return errors
+
+
 def validate_lavaridge_map_access(root: Path) -> list[str]:
     """Guard the town's original exits, hot-spring trigger, and hidden item."""
     errors: list[str] = []
@@ -533,6 +606,7 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     errors.extend(validate_lavaridge_light_events(root))
+    errors.extend(validate_sign_light_placements(root))
     errors.extend(validate_lavaridge_map_access(root))
     errors.extend(validate_lavaridge_palette_cycle(root))
     errors.extend(validate_lavaridge_architecture_palette(root))
