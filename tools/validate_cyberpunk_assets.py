@@ -371,8 +371,9 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     """Check the warm windows and cool pipe trims on secondary tiles used by Lavaridge."""
     errors: list[str] = []
     window_tiles = (315, 331, 345, 346)
+    facade_panel_tiles = (308, 309, 326)
     pipe_tiles = (312, 328, 344)
-    target_tiles = window_tiles + pipe_tiles
+    target_tiles = window_tiles + facade_panel_tiles + pipe_tiles
 
     # Ensure the art check covers tiles actually referenced by this map, not
     # unrelated atlas tiles that happen to contain neon-colored pixels.
@@ -434,10 +435,10 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
         ]
         if not any(index in range(9, 16) for index in indices):
             errors.append(f"{path}: active facade tile {tile_id} has no neon accent pixels (indices 9..15)")
-        if tile_id in window_tiles and not any(index in (11, 12, 13, 14) for index in indices):
-            errors.append(f"{path}: window tile {tile_id} is missing warm orange/red pixels")
-        if tile_id in window_tiles and not any(index in (9, 10, 15) for index in indices):
-            errors.append(f"{path}: window tile {tile_id} is missing cyan/purple trim pixels")
+        if tile_id in window_tiles + facade_panel_tiles and not any(index in (11, 12, 13, 14) for index in indices):
+            errors.append(f"{path}: active window/panel tile {tile_id} is missing warm orange/red pixels")
+        if tile_id in window_tiles + facade_panel_tiles and not any(index in (9, 10, 15) for index in indices):
+            errors.append(f"{path}: active window/panel tile {tile_id} is missing cyan/purple trim pixels")
         if tile_id in pipe_tiles and not any(index in (9, 10, 15) for index in indices):
             errors.append(f"{path}: pipe tile {tile_id} is missing a cool neon accent")
 
