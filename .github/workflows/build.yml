@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - upcoming
+      - feature/daytime-cyberpunk-lights
   pull_request:
 
 env:
@@ -51,6 +52,28 @@ jobs:
         env:
           GAME_VERSION: EMERALD
         run: make -j$(nproc) -O all
+
+      - name: Prepare ROM artifact metadata
+        run: |
+          test -s pokeemerald.gba
+          sha256sum pokeemerald.gba > pokeemerald.gba.sha256
+          {
+            echo "branch=\${GITHUB_REF_NAME}"
+            echo "commit=\${GITHUB_SHA}"
+            echo "game=Pokemon Emerald Expansion"
+            echo "target=Emerald"
+          } > cuordilava-build-info.txt
+
+      - name: Upload playable Emerald ROM
+        uses: actions/upload-artifact@v4
+        with:
+          name: cuordilava-pokeemerald-\${{ github.sha }}
+          path: |
+            pokeemerald.gba
+            pokeemerald.gba.sha256
+            cuordilava-build-info.txt
+          if-no-files-found: error
+          retention-days: 14
 
   build-firered:
     if: github.actor != 'allcontributors[bot]'
