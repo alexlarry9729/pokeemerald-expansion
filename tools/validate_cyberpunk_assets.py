@@ -450,7 +450,7 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
     except OSError as exc:
         return [f"{header_path}: unable to inspect local palette-swap declaration: {exc}"]
     start = header.find("const struct Tileset gTileset_Lavaridge")
-    end = header.find("\\n};", start) if start >= 0 else -1
+    end = header.find("\n};", start) if start >= 0 else -1
     block = header[start:end] if start >= 0 and end >= 0 else ""
     if ".swapPalettes = SWAP_PAL(12)," not in block:
         errors.append(f"{header_path}: reserved palette 12 must swap to palette 13 at night")
