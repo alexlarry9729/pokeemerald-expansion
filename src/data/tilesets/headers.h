@@ -99,7 +99,7 @@ const struct Tileset gTileset_Mauville =
 const struct Tileset gTileset_Lavaridge =
 {
     .isCompressed = TRUE,
-    // Palette 12 is reserved for Cuordilava-only architecture; palette 13 is its night variant.
+    // Palette 12 is reserved for Cuordilava-only architecture; palette 05 supplies its night variant.
     .swapPalettes = SWAP_PAL(12),
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Lavaridge,

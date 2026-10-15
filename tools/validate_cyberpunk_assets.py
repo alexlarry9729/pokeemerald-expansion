@@ -453,18 +453,18 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
     end = header.find("\n};", start) if start >= 0 else -1
     block = header[start:end] if start >= 0 and end >= 0 else ""
     if ".swapPalettes = SWAP_PAL(12)," not in block:
-        errors.append(f"{header_path}: reserved palette 12 must swap to palette 13 at night")
+        errors.append(f"{header_path}: reserved palette 12 must swap to palette 05 at night")
     if ".swapPalettes = SWAP_PAL(8)," in block:
         errors.append(f"{header_path}: shared palette 08 must not be globally swapped for this feature")
     try:
         day = parse_palette(palette_dir / "12.pal")
-        night = parse_palette(palette_dir / "13.pal")
+        night = parse_palette(palette_dir / "05.pal")
         for index in range(1, 9):
             if max(day[index]) > 110:
                 errors.append(f"{palette_dir / '12.pal'}: structural colour {index} must stay dark")
         for index in range(9, 16):
             if luminance(night[index]) <= luminance(day[index]):
-                errors.append(f"{palette_dir / '13.pal'}: local neon colour {index} must be brighter at night")
+                errors.append(f"{palette_dir / '05.pal'}: local neon colour {index} must be brighter at night")
     except (OSError, ValueError, IndexError) as exc:
         errors.append(f"{palette_dir}: invalid Cuordilava day/night palette pair: {exc}")
 
