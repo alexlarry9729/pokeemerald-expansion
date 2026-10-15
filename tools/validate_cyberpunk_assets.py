@@ -367,13 +367,64 @@ def validate_facade_light_wiring(root: Path) -> list[str]:
     return errors
 
 
-def validate_facade_art_tiles(path: Path, pixels: list[list[int]]) -> list[str]:
-    """Ensure the intended facade tiles still contain both warm and cool neon accents."""
+def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -> list[str]:
+    """Check the warm windows and cool pipe trims on secondary tiles used by Lavaridge."""
     errors: list[str] = []
-    target_tiles = (224, 226, 240, 242)
-    warm_pixels = 0
-    cool_pixels = 0
+    window_tiles = (315, 331, 345, 346)
+    pipe_tiles = (312, 328, 344)
+    target_tiles = window_tiles + pipe_tiles
+
+    # Ensure the art check covers tiles actually referenced by this map, not
+    # unrelated atlas tiles that happen to contain neon-colored pixels.
+    map_path = root / "data/layouts/LavaridgeTown/map.bin"
+    metatiles_path = root / "data/tilesets/secondary/lavaridge/metatiles.bin"
+    try:
+        map_bytes = map_path.read_bytes()
+        metatiles_bytes = metatiles_path.read_bytes()
+    except OSError as exc:
+        return [f"{path}: unable to inspect active Lavaridge metatiles: {exc}"]
+
+    layouts_path = root / "data/layouts/layouts.json"
+    map_json_path = root / "data/maps/LavaridgeTown/map.json"
+    try:
+        map_json = json.loads(map_json_path.read_text(encoding="utf-8"))
+        layouts = json.loads(layouts_path.read_text(encoding="utf-8"))["layouts"]
+        layout = next(item for item in layouts if item.get("id") == map_json.get("layout"))
+        width, height = int(layout["width"]), int(layout["height"])
+    except (OSError, json.JSONDecodeError, KeyError, StopIteration, TypeError, ValueError) as exc:
+        return [f"{path}: unable to resolve Lavaridge layout for facade-art check: {exc}"]
+
+    required_map_bytes = width * height * 2
+    if len(map_bytes) < required_map_bytes:
+        return [f"{map_path}: expected at least {required_map_bytes} bytes for {width}x{height} layout"]
+    if len(metatiles_bytes) % 16:
+        return [f"{metatiles_path}: metatile data length is not a multiple of 16 bytes"]
+
+    active_secondary_tiles: set[int] = set()
+    secondary_metatile_count = len(metatiles_bytes) // 16
+    for cell_index in range(width * height):
+        metatile_id = struct.unpack_from("<H", map_bytes, cell_index * 2)[0] & 0x3FF
+        if metatile_id < 512:
+            continue
+        secondary_metatile_id = metatile_id - 512
+        offset = secondary_metatile_id * 16
+        if secondary_metatile_id >= secondary_metatile_count or offset + 16 > len(metatiles_bytes):
+            errors.append(
+                f"{map_path}: secondary metatile {secondary_metatile_id} at cell {cell_index} is out of range"
+            )
+            continue
+        for tile_slot in range(8):
+            tile_entry = struct.unpack_from("<H", metatiles_bytes, offset + tile_slot * 2)[0]
+            tile_id = tile_entry & 0x3FF
+            if tile_id >= 512:
+                active_secondary_tiles.add(tile_id - 512)
+
     for tile_id in target_tiles:
+        if tile_id not in active_secondary_tiles:
+            errors.append(
+                f"{path}: facade tile {tile_id} is not referenced by LavaridgeTown; check the art target"
+            )
+            continue
         tile_x = (tile_id % 16) * 8
         tile_y = (tile_id // 16) * 8
         indices = [
@@ -381,15 +432,15 @@ def validate_facade_art_tiles(path: Path, pixels: list[list[int]]) -> list[str]:
             for y in range(tile_y, tile_y + 8)
             for x in range(tile_x, tile_x + 8)
         ]
-        accents = [index for index in indices if index in range(9, 16)]
-        if not accents:
-            errors.append(f"{path}: facade-detail tile {tile_id} has no neon accent pixels (indices 9..15)")
-        warm_pixels += sum(index in (11, 12, 13, 14) for index in accents)
-        cool_pixels += sum(index in (9, 10, 15) for index in accents)
-    if warm_pixels == 0:
-        errors.append(f"{path}: facade-detail tiles are missing warm orange/red accent pixels")
-    if cool_pixels == 0:
-        errors.append(f"{path}: facade-detail tiles are missing cyan accent pixels")
+        if not any(index in range(9, 16) for index in indices):
+            errors.append(f"{path}: active facade tile {tile_id} has no neon accent pixels (indices 9..15)")
+        if tile_id in window_tiles and not any(index in (11, 12, 13, 14) for index in indices):
+            errors.append(f"{path}: window tile {tile_id} is missing warm orange/red pixels")
+        if tile_id in window_tiles and not any(index in (9, 10, 15) for index in indices):
+            errors.append(f"{path}: window tile {tile_id} is missing cyan/purple trim pixels")
+        if tile_id in pipe_tiles and not any(index in (9, 10, 15) for index in indices):
+            errors.append(f"{path}: pipe tile {tile_id} is missing a cool neon accent")
+
     return errors
 
 
@@ -409,7 +460,7 @@ def validate(root: Path) -> list[str]:
 
     try:
         decoded_pixels = validate_indexed_tileset_png(tiles_png)
-        errors.extend(validate_facade_art_tiles(tiles_png, decoded_pixels))
+        errors.extend(validate_facade_art_tiles(root, tiles_png, decoded_pixels))
     except (OSError, ValueError, struct.error, IndexError) as exc:
         errors.append(str(exc))
 
