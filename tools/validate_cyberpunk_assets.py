@@ -372,8 +372,9 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     errors: list[str] = []
     window_tiles = (315, 331, 345, 346)
     facade_panel_tiles = (308, 309, 326, 327, 338, 339)
-    pipe_tiles = (312, 328, 344)
-    target_tiles = window_tiles + facade_panel_tiles + pipe_tiles
+    roof_seam_tiles = (343,)
+    pipe_tiles = (312, 328, 344, 347)
+    target_tiles = window_tiles + facade_panel_tiles + roof_seam_tiles + pipe_tiles
 
     # Ensure the art check covers tiles actually referenced by this map, not
     # unrelated atlas tiles that happen to contain neon-colored pixels.
@@ -441,6 +442,25 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
             errors.append(f"{path}: active window/panel tile {tile_id} is missing cyan/purple trim pixels")
         if tile_id in pipe_tiles and not any(index in (9, 10, 15) for index in indices):
             errors.append(f"{path}: pipe tile {tile_id} is missing a cool neon accent")
+        if tile_id in roof_seam_tiles and not any(index in (11, 12, 13, 14) for index in indices):
+            errors.append(f"{path}: roof seam tile {tile_id} is missing warm furnace-orange pixels")
+
+    # Keep the window mullions as visible dark breaks between repeated lit panes.
+    mullion_columns = {315: 3, 331: 4, 345: 3, 346: 4}
+    for tile_id, column in mullion_columns.items():
+        tile_x = (tile_id % 16) * 8
+        tile_y = (tile_id // 16) * 8
+        rows = range(tile_y + 2, tile_y + 8) if tile_id == 315 else (
+            range(tile_y + 1, tile_y + 6) if tile_id == 331 else range(tile_y + 2, tile_y + 6)
+        )
+        if any(pixels[y][tile_x + column] != 7 for y in rows):
+            errors.append(f"{path}: window tile {tile_id} lost its dark metal mullion")
+
+    # Two cool pixels define the maintenance LEDs on the exhaust-pipe tile.
+    pipe_x = (347 % 16) * 8 + 4
+    pipe_y = (347 // 16) * 8
+    if pixels[pipe_y + 2][pipe_x] != 10 or pixels[pipe_y + 4][pipe_x] != 10:
+        errors.append(f"{path}: exhaust-pipe tile 347 lost its cyan service LEDs")
 
     return errors
 
