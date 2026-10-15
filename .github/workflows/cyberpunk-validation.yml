@@ -6,7 +6,10 @@ on:
       - feature/daytime-cyberpunk-lights
   pull_request:
     paths:
+      - 'data/layouts/LavaridgeTown/map.bin'
       - 'data/tilesets/secondary/lavaridge/**'
+      - 'docs/cyberpunk-hoenn-art-direction.md'
+      - 'src/data/tilesets/headers.h'
       - 'data/maps/LavaridgeTown/map.json'
       - 'graphics/object_events/palettes/neon_light*.pal'
       - 'graphics/object_events/pics/misc/facade_light.png'
