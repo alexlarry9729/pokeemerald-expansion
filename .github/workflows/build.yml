@@ -58,8 +58,8 @@ jobs:
           test -s pokeemerald.gba
           sha256sum pokeemerald.gba > pokeemerald.gba.sha256
           {
-            echo "branch=\${GITHUB_REF_NAME}"
-            echo "commit=\${GITHUB_SHA}"
+            echo "branch=${GITHUB_REF_NAME}"
+            echo "commit=${GITHUB_SHA}"
             echo "game=Pokemon Emerald Expansion"
             echo "target=Emerald"
           } > cuordilava-build-info.txt
@@ -67,7 +67,7 @@ jobs:
       - name: Upload playable Emerald ROM
         uses: actions/upload-artifact@v4
         with:
-          name: cuordilava-pokeemerald-\${{ github.sha }}
+          name: cuordilava-pokeemerald-${{ github.sha }}
           path: |
             pokeemerald.gba
             pokeemerald.gba.sha256
