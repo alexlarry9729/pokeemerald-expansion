@@ -473,6 +473,8 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
             errors.append(f"{path}: active window/panel tile {tile_id} is missing warm orange/red pixels")
         if tile_id in window_tiles + facade_panel_tiles and not any(index in (9, 10, 15) for index in indices):
             errors.append(f"{path}: active window/panel tile {tile_id} is missing cyan/purple trim pixels")
+        if tile_id in window_tiles and 11 not in indices:
+            errors.append(f"{path}: active window tile {tile_id} is missing an amber glass-reflection pixel (index 11)")
         if tile_id in pipe_tiles and not any(index in (9, 10, 15) for index in indices):
             errors.append(f"{path}: pipe tile {tile_id} is missing a cool neon accent")
         if tile_id in roof_seam_tiles and not any(index in (11, 12, 13, 14) for index in indices):
