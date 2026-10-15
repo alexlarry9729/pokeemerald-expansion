@@ -1,4 +1,10 @@
-# Cyberpunk Hoenn — Lavaridge visual direction
+# Cyberpunk Hoenn — Cuordilava (Lavaridge Town) visual direction
+
+## Italian naming and ROM identifiers
+
+- **Cuordilava** is the Italian name of the town; its internal map identifier stays `LavaridgeTown` and the English ROM may display `Lavaridge Town`.
+- **Fiammetta** is the Gym Leader associated with Cuordilava, not the name of the town.
+- Keep code paths, map IDs, event scripts and upstream identifiers unchanged unless a technical change explicitly requires it. Use the Italian names in Italian-facing documentation and communication.
 
 ## Reference target
 
@@ -13,14 +19,14 @@ Use the supplied cyberpunk town image as the mood and density reference, adapted
 
 ## Implementation order
 
-1. Complete Lavaridge as the pilot: building facades and roof/window tile art, industrial pipe details, palette assignment, then controlled placement in the town map.
+1. Complete Cuordilava (internal map ID `LavaridgeTown`) as the pilot: building facades and roof/window tile art, industrial pipe details, palette assignment, then controlled placement in the town map.
 2. Preserve every existing warp, connection, sign, hidden item, trigger, NPC and collision/metatile attribute unless a deliberate and separately tested layout change is needed.
 3. Run `python3 tools/validate_cyberpunk_assets.py`, then the repository CI build. Inspect Lavaridge in an emulator during daytime and at night; the automated palette checks do not replace this visual test.
 4. Only after the pilot is visually and functionally approved, port the same art language to other Hoenn towns with local colour variations.
 
 ## Current scope and caveat
 
-The current branch establishes the day/night light-sprite behaviour, map sign-light placements and an early architectural-detail pass in the Lavaridge tileset. The active secondary tiles include warm window/panel pixels, dark window mullions, a furnace-orange roof seam and restrained cyan service lights on conduit pieces; the asset validator checks that these tile IDs are actually referenced by the town layout instead of passing on unused atlas tiles.
+The current branch establishes the day/night light-sprite behaviour, map sign-light placements and an early architectural-detail pass in the Cuordilava/Lavaridge tileset. The active secondary tiles include warm window/panel pixels, dark window mullions, a furnace-orange roof seam and restrained cyan service lights on conduit pieces; the asset validator checks that these tile IDs are actually referenced by the town layout instead of passing on unused atlas tiles.
 
 The Lavaridge tileset now declares `SWAP_PAL(8)`, so the facade palette in `08.pal` blends toward its `01.pal` companion at night. The paired palette keeps the structural tones controlled while strengthening the cyan highlight and warm orange/red ramp after dark. Object sign-lights also retain their separate subdued-day / vivid-night sprite palettes. The architectural surfaces using palette `07.pal` now use a charcoal/iron structural ramp with amber, furnace-orange and red highlights; the magenta-heavy structural tones were removed from that building palette while cyan remains the cool counterpoint.
 
