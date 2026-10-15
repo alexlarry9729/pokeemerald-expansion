@@ -371,7 +371,7 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     """Check the warm windows and cool pipe trims on secondary tiles used by Lavaridge."""
     errors: list[str] = []
     window_tiles = (315, 331, 345, 346)
-    facade_panel_tiles = (308, 309, 326)
+    facade_panel_tiles = (308, 309, 326, 327, 338, 339)
     pipe_tiles = (312, 328, 344)
     target_tiles = window_tiles + facade_panel_tiles + pipe_tiles
 
