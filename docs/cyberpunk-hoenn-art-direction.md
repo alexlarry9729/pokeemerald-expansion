@@ -24,6 +24,10 @@ Use the supplied cyberpunk town image as the mood and density reference, adapted
 3. Run `python3 tools/validate_cyberpunk_assets.py`, then the repository CI build. Inspect Lavaridge in an emulator during daytime and at night; the automated palette checks do not replace this visual test.
 4. Only after the pilot is visually and functionally approved, port the same art language to other Hoenn towns with local colour variations.
 
+## Cuordilava facade pass (2026-10-15)
+
+The current incremental art pass reworks three existing Cuordilava-only metatiles into a furnace control panel, a service hatch with cyan conduit indicators, and a louvered thermal vent. The art uses reserved atlas tiles with palette 08 and a transparent overlay layer, keeping the established day/night palette workflow intact. The three metatile definitions (165, 173 and 179) were checked against all layouts that share the Lavaridge tileset; they are used by Cuordilava only. Map geometry, collision/metatile attributes, warps, object events and triggers are not changed by this art pass. The validator now guards the exact tile/palette wiring and checks that these metatiles are not reused by other shared-tileset layouts.
+
 ## Current scope and caveat
 
 The current branch establishes the day/night light-sprite behaviour, map sign-light placements and an early architectural-detail pass in the Cuordilava/Lavaridge tileset. The active secondary tiles include warm window/panel pixels, dark window mullions, a furnace-orange roof seam and restrained cyan service lights on conduit pieces; the asset validator checks that these tile IDs are actually referenced by the town layout instead of passing on unused atlas tiles.

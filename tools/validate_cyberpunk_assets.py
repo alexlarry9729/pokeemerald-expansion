@@ -505,10 +505,12 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     """Check the warm windows and cool pipe trims on secondary tiles used by Lavaridge."""
     errors: list[str] = []
     window_tiles = (315, 331, 345, 346)
-    facade_panel_tiles = (308, 309, 326, 327, 338, 339)
+    facade_panel_tiles = (308, 326, 327, 338, 339)
     roof_seam_tiles = (343,)
     pipe_tiles = (312, 328, 344, 347)
-    target_tiles = window_tiles + facade_panel_tiles + roof_seam_tiles + pipe_tiles
+    architecture_base_tiles = (348, 349, 360, 361, 376, 377, 392, 393, 396, 397, 412, 413)
+    architecture_overlay_tiles = (350, 351, 362, 363, 378, 379, 394, 395, 398, 399, 414, 415)
+    target_tiles = window_tiles + facade_panel_tiles + roof_seam_tiles + pipe_tiles + architecture_base_tiles + architecture_overlay_tiles
 
     # Ensure the art check covers tiles actually referenced by this map, not
     # unrelated atlas tiles that happen to contain neon-colored pixels.
@@ -603,6 +605,90 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     return errors
 
 
+def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
+    """Protect the three custom Cuordilava facades from atlas/metatile regressions.
+
+    These metatile IDs are unique to LavaridgeTown among layouts sharing the
+    Lavaridge secondary tileset. Keep the shared Route 112 / Mt. Chimney /
+    Magma Hideout architecture unaffected.
+    """
+    errors: list[str] = []
+    metatiles_path = root / "data/tilesets/secondary/lavaridge/metatiles.bin"
+    layouts_path = root / "data/layouts/layouts.json"
+    expected_tiles = {
+        165: (396, 397, 412, 413, 398, 399, 414, 415),
+        173: (348, 349, 360, 361, 350, 351, 362, 363),
+        179: (376, 377, 392, 393, 378, 379, 394, 395),
+    }
+    try:
+        data = metatiles_path.read_bytes()
+    except OSError as exc:
+        return [f"{metatiles_path}: unable to inspect Cuordilava architecture metatiles: {exc}"]
+    if len(data) % 16:
+        errors.append(f"{metatiles_path}: metatile data length is not a multiple of 16 bytes")
+        return errors
+
+    for metatile_id, tile_ids in expected_tiles.items():
+        offset = metatile_id * 16
+        if offset + 16 > len(data):
+            errors.append(f"{metatiles_path}: missing custom Cuordilava metatile {metatile_id}")
+            continue
+        for slot, expected_tile in enumerate(tile_ids):
+            entry = struct.unpack_from("<H", data, offset + slot * 2)[0]
+            encoded_tile = entry & 0x3FF
+            palette_index = (entry >> 12) & 0xF
+            if encoded_tile < 512 or encoded_tile - 512 != expected_tile or palette_index != 8:
+                errors.append(
+                    f"{metatiles_path}: Cuordilava metatile {metatile_id} slot {slot} "
+                    f"must use secondary tile {expected_tile} with palette 8"
+                )
+
+    try:
+        layouts = json.loads(layouts_path.read_text(encoding="utf-8"))["layouts"]
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
+        return errors + [f"{layouts_path}: unable to inspect layouts for custom Cuordilava metatiles: {exc}"]
+
+    counts = {metatile_id: 0 for metatile_id in expected_tiles}
+    for layout in layouts:
+        if not isinstance(layout, dict) or layout.get("secondary_tileset") != "gTileset_Lavaridge":
+            continue
+        layout_id = layout.get("id")
+        name = layout.get("name", "")
+        directory_name = name[:-7] if isinstance(name, str) and name.endswith("_Layout") else name
+        map_path = root / "data/layouts" / directory_name / "map.bin"
+        try:
+            map_data = map_path.read_bytes()
+            width, height = int(layout["width"]), int(layout["height"])
+        except (OSError, KeyError, TypeError, ValueError) as exc:
+            errors.append(f"{map_path}: unable to check custom Cuordilava metatile reuse: {exc}")
+            continue
+        required_bytes = width * height * 2
+        if len(map_data) < required_bytes:
+            errors.append(f"{map_path}: expected at least {required_bytes} bytes for {width}x{height} layout")
+            continue
+        for cell in range(width * height):
+            map_entry = struct.unpack_from("<H", map_data, cell * 2)[0] & 0x3FF
+            if map_entry < 512:
+                continue
+            metatile_id = map_entry - 512
+            if metatile_id not in expected_tiles:
+                continue
+            if layout_id != "LAYOUT_LAVARIDGE_TOWN":
+                errors.append(
+                    f"{map_path}: custom Cuordilava metatile {metatile_id} is also used by {layout_id}"
+                )
+            else:
+                counts[metatile_id] += 1
+
+    for metatile_id, count in counts.items():
+        if count == 0:
+            errors.append(
+                f"{root / 'data/layouts/LavaridgeTown/map.bin'}: custom architecture metatile {metatile_id} "
+                "is not used by Cuordilava"
+            )
+    return errors
+
+
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     errors.extend(validate_lavaridge_light_events(root))
@@ -610,6 +696,7 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_lavaridge_map_access(root))
     errors.extend(validate_lavaridge_palette_cycle(root))
     errors.extend(validate_lavaridge_architecture_palette(root))
+    errors.extend(validate_cuordilava_architecture_metatiles(root))
     errors.extend(validate_facade_light_wiring(root))
     palette_dir = root / "data/tilesets/secondary/lavaridge/palettes"
     object_palette_dir = root / "graphics/object_events/palettes"
