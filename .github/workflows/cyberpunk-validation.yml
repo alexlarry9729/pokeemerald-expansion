@@ -9,6 +9,11 @@ on:
       - 'data/tilesets/secondary/lavaridge/**'
       - 'data/maps/LavaridgeTown/map.json'
       - 'graphics/object_events/palettes/neon_light*.pal'
+      - 'graphics/object_events/pics/misc/facade_light.png'
+      - 'include/constants/event_objects.h'
+      - 'src/event_object_movement.c'
+      - 'src/data/field_effects/field_effect_objects.h'
+      - 'src/data/object_events/object_event_graphics.h'
       - 'tools/validate_cyberpunk_assets.py'
       - '.github/workflows/cyberpunk-validation.yml'
   workflow_dispatch:

@@ -61,7 +61,7 @@ def parse_palette_mask(path: Path) -> list[int]:
     return values
 
 
-def validate_indexed_tileset_png(path: Path) -> None:
+def validate_indexed_tileset_png(path: Path) -> list[list[int]]:
     """Validate PNG chunks, CRCs, data stream and the expected indexed 4bpp format."""
     data = path.read_bytes()
     if len(data) < 45 or data[:8] != b"\x89PNG\r\n\x1a\n":
@@ -134,10 +134,47 @@ def validate_indexed_tileset_png(path: Path) -> None:
             f"{path}: decoded image data has {len(raw)} bytes; "
             f"expected {height * row_stride}"
         )
+    # Reverse PNG's byte-wise row filters, then unpack each 4bpp byte into two indices.
+    # The atlas is indexed: these indices are later mapped through the per-map .pal files.
+    pixels: list[list[int]] = []
+    previous = bytearray(row_bytes)
     for row in range(height):
-        filter_type = raw[row * row_stride]
+        raw_offset = row * row_stride
+        filter_type = raw[raw_offset]
         if filter_type not in range(5):
             raise ValueError(f"{path}: invalid PNG filter {filter_type} on row {row}")
+        scanline = bytearray(raw[raw_offset + 1:raw_offset + 1 + row_bytes])
+        for i in range(row_bytes):
+            left = scanline[i - 1] if i else 0
+            up = previous[i]
+            upper_left = previous[i - 1] if i else 0
+            if filter_type == 1:  # Sub
+                predictor = left
+            elif filter_type == 2:  # Up
+                predictor = up
+            elif filter_type == 3:  # Average
+                predictor = (left + up) // 2
+            elif filter_type == 4:  # Paeth
+                estimate = left + up - upper_left
+                distance_left = abs(estimate - left)
+                distance_up = abs(estimate - up)
+                distance_upper_left = abs(estimate - upper_left)
+                if distance_left <= distance_up and distance_left <= distance_upper_left:
+                    predictor = left
+                elif distance_up <= distance_upper_left:
+                    predictor = up
+                else:
+                    predictor = upper_left
+            else:  # None
+                predictor = 0
+            scanline[i] = (scanline[i] + predictor) & 0xFF
+
+        decoded_row: list[int] = []
+        for packed in scanline:
+            decoded_row.extend((packed >> 4, packed & 0x0F))
+        pixels.append(decoded_row)
+        previous = scanline
+    return pixels
 
 
 def luminance(rgb: tuple[int, int, int]) -> float:
@@ -236,9 +273,131 @@ def validate_lavaridge_light_events(root: Path) -> list[str]:
     return errors
 
 
+def validate_lavaridge_map_access(root: Path) -> list[str]:
+    """Guard the town's original exits, hot-spring trigger, and hidden item."""
+    errors: list[str] = []
+    map_path = root / "data/maps/LavaridgeTown/map.json"
+    try:
+        map_data = json.loads(map_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [f"{map_path}: unable to parse map for access checks: {exc}"]
+
+    expected_warps = {
+        (12, 15, "MAP_LAVARIDGE_TOWN_HERB_SHOP", "0"),
+        (5, 15, "MAP_LAVARIDGE_TOWN_GYM_1F", "0"),
+        (15, 5, "MAP_LAVARIDGE_TOWN_MART", "0"),
+        (9, 6, "MAP_LAVARIDGE_TOWN_POKEMON_CENTER_1F", "0"),
+        (16, 15, "MAP_LAVARIDGE_TOWN_HOUSE", "0"),
+        (9, 2, "MAP_LAVARIDGE_TOWN_POKEMON_CENTER_1F", "3"),
+    }
+    actual_warps = {
+        (event.get("x"), event.get("y"), event.get("dest_map"), str(event.get("dest_warp_id")))
+        for event in map_data.get("warp_events", [])
+        if isinstance(event, dict)
+    }
+    if actual_warps != expected_warps:
+        errors.append(f"{map_path}: original Lavaridge warp set changed; review exits before changing this baseline")
+
+    expected_connections = [{"map": "MAP_ROUTE112", "offset": -40, "direction": "right"}]
+    if map_data.get("connections") != expected_connections:
+        errors.append(f"{map_path}: original Route 112 connection changed")
+
+    triggers = [
+        event for event in map_data.get("coord_events", [])
+        if isinstance(event, dict)
+        and event.get("script") == "LavaridgeTown_EventScript_HotSpringsTrigger"
+    ]
+    if len(triggers) != 1 or (triggers[0].get("x"), triggers[0].get("y")) != (6, 3):
+        errors.append(f"{map_path}: original hot-springs trigger at (6, 3) is missing or moved")
+
+    object_events = map_data.get("object_events", [])
+    non_light_events = [
+        event for event in object_events
+        if isinstance(event, dict) and event.get("graphics_id") != "OBJ_EVENT_GFX_LIGHT_SPRITE"
+    ] if isinstance(object_events, list) else []
+    if len(non_light_events) != 9:
+        errors.append(
+            f"{map_path}: expected the 9 original non-light NPC/object events, found {len(non_light_events)}"
+        )
+
+    bg_events = map_data.get("bg_events", [])
+    if not any(
+        isinstance(event, dict)
+        and event.get("type") == "hidden_item"
+        and event.get("item") == "ITEM_ICE_HEAL"
+        and (event.get("x"), event.get("y")) == (4, 5)
+        for event in bg_events
+    ):
+        errors.append(f"{map_path}: original hidden Ice Heal at (4, 5) is missing")
+    return errors
+
+
+def validate_facade_light_wiring(root: Path) -> list[str]:
+    """Catch source/asset regressions that a successful atlas check cannot see."""
+    errors: list[str] = []
+    required_markers = {
+        "include/constants/event_objects.h": ("LIGHT_TYPE_FACADE",),
+        "src/event_object_movement.c": (
+            "case LIGHT_TYPE_FACADE:",
+            "OBJ_EVENT_PAL_TAG_NEON_LIGHT_DAY",
+            "OBJ_EVENT_PAL_TAG_NEON_LIGHT",
+        ),
+        "src/data/field_effects/field_effect_objects.h": (
+            "gFieldEffectObjectTemplate_FacadeLight",
+            "&gFieldEffectObjectTemplate_FacadeLight",
+        ),
+        "src/data/object_events/object_event_graphics.h": (
+            "graphics/object_events/pics/misc/facade_light.png",
+        ),
+    }
+    for relative_path, markers in required_markers.items():
+        path = root / relative_path
+        try:
+            source = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            errors.append(f"{path}: unable to read facade-light wiring source: {exc}")
+            continue
+        for marker in markers:
+            if marker not in source:
+                errors.append(f"{path}: missing required facade-light wiring marker {marker!r}")
+
+    sprite_path = root / "graphics/object_events/pics/misc/facade_light.png"
+    if not sprite_path.is_file():
+        errors.append(f"{sprite_path}: missing generic facade/window light sprite")
+    return errors
+
+
+def validate_facade_art_tiles(path: Path, pixels: list[list[int]]) -> list[str]:
+    """Ensure the intended facade tiles still contain both warm and cool neon accents."""
+    errors: list[str] = []
+    target_tiles = (224, 226, 240, 242)
+    warm_pixels = 0
+    cool_pixels = 0
+    for tile_id in target_tiles:
+        tile_x = (tile_id % 16) * 8
+        tile_y = (tile_id // 16) * 8
+        indices = [
+            pixels[y][x]
+            for y in range(tile_y, tile_y + 8)
+            for x in range(tile_x, tile_x + 8)
+        ]
+        accents = [index for index in indices if index in range(9, 16)]
+        if not accents:
+            errors.append(f"{path}: facade-detail tile {tile_id} has no neon accent pixels (indices 9..15)")
+        warm_pixels += sum(index in (11, 12, 13, 14) for index in accents)
+        cool_pixels += sum(index in (9, 10, 15) for index in accents)
+    if warm_pixels == 0:
+        errors.append(f"{path}: facade-detail tiles are missing warm orange/red accent pixels")
+    if cool_pixels == 0:
+        errors.append(f"{path}: facade-detail tiles are missing cyan accent pixels")
+    return errors
+
+
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     errors.extend(validate_lavaridge_light_events(root))
+    errors.extend(validate_lavaridge_map_access(root))
+    errors.extend(validate_facade_light_wiring(root))
     palette_dir = root / "data/tilesets/secondary/lavaridge/palettes"
     object_palette_dir = root / "graphics/object_events/palettes"
     tiles_png = root / "data/tilesets/secondary/lavaridge/tiles.png"
@@ -249,8 +408,9 @@ def validate(root: Path) -> list[str]:
     neon_day = object_palette_dir / "neon_light_day.pal"
 
     try:
-        validate_indexed_tileset_png(tiles_png)
-    except (OSError, ValueError, struct.error) as exc:
+        decoded_pixels = validate_indexed_tileset_png(tiles_png)
+        errors.extend(validate_facade_art_tiles(tiles_png, decoded_pixels))
+    except (OSError, ValueError, struct.error, IndexError) as exc:
         errors.append(str(exc))
 
     for path in palette_paths + [p for p in (neon_night, neon_day) if p.exists()]:
