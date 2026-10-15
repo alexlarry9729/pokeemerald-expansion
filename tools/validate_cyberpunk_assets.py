@@ -499,8 +499,8 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     facade_panel_tiles = (308, 326, 327, 338, 339)
     roof_seam_tiles = (343,)
     pipe_tiles = (312, 328, 344, 347)
-    architecture_base_tiles = (164, 165, 180, 181, 168, 169, 184, 185, 348, 349, 360, 361, 376, 377, 392, 393, 396, 397, 412, 413)
-    architecture_overlay_tiles = (166, 167, 182, 183, 170, 171, 186, 187, 230, 231, 246, 247, 350, 351, 362, 363, 378, 379, 394, 395, 398, 399, 414, 415)
+    architecture_base_tiles = (164, 165, 180, 181, 168, 169, 184, 185, 200, 201, 216, 217, 204, 205, 220, 221, 348, 349, 360, 361, 376, 377, 392, 393, 396, 397, 412, 413)
+    architecture_overlay_tiles = (166, 167, 182, 183, 170, 171, 186, 187, 202, 203, 218, 219, 206, 207, 222, 223, 230, 231, 246, 247, 350, 351, 362, 363, 378, 379, 394, 395, 398, 399, 414, 415)
     target_tiles = window_tiles + facade_panel_tiles + roof_seam_tiles + pipe_tiles + architecture_base_tiles + architecture_overlay_tiles
 
     # Ensure the art check covers tiles actually referenced by this map, not
@@ -597,7 +597,7 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
 
 
 def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
-    """Protect the five custom Cuordilava facades from atlas/metatile regressions.
+    """Protect the seven custom Cuordilava architecture pieces from atlas/metatile regressions.
 
     These metatile IDs are unique to LavaridgeTown among layouts sharing the
     Lavaridge secondary tileset. Keep the shared Route 112 / Mt. Chimney /
@@ -612,6 +612,8 @@ def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
         174: (164, 165, 180, 181, 166, 167, 182, 183),
         179: (376, 377, 392, 393, 378, 379, 394, 395),
         181: (168, 169, 184, 185, 170, 171, 186, 187),
+        170: (200, 201, 216, 217, 202, 203, 218, 219),
+        187: (204, 205, 220, 221, 206, 207, 222, 223),
     }
     try:
         data = metatiles_path.read_bytes()
