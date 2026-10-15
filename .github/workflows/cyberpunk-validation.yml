@@ -7,6 +7,18 @@ on:
   pull_request:
     paths:
       - 'data/layouts/LavaridgeTown/map.bin'
+      - 'data/layouts/Route112/map.bin'
+      - 'data/layouts/MtChimney/map.bin'
+      - 'data/layouts/JaggedPass/map.bin'
+      - 'data/layouts/FieryPath/map.bin'
+      - 'data/layouts/MagmaHideout_1F/map.bin'
+      - 'data/layouts/MagmaHideout_2F_1R/map.bin'
+      - 'data/layouts/MagmaHideout_2F_2R/map.bin'
+      - 'data/layouts/MagmaHideout_2F_3R/map.bin'
+      - 'data/layouts/MagmaHideout_3F_1R/map.bin'
+      - 'data/layouts/MagmaHideout_3F_2R/map.bin'
+      - 'data/layouts/MagmaHideout_3F_3R/map.bin'
+      - 'data/layouts/MagmaHideout_4F/map.bin'
       - 'data/tilesets/secondary/lavaridge/**'
       - 'docs/cyberpunk-hoenn-art-direction.md'
       - 'src/data/tilesets/headers.h'
