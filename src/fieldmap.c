@@ -1041,12 +1041,54 @@ void CopyMapTilesetsToVram(struct MapLayout const *mapLayout)
     }
 }
 
+static u16 GetCuordilavaIndustrialColor(u16 color)
+{
+    u16 red = color & 0x1F;
+    u16 green = (color >> 5) & 0x1F;
+    u16 blue = (color >> 10) & 0x1F;
+
+    // Keep furnace reds legible while moving shared cyan and magenta art into a
+    // darker iron/teal range. These are BGR555 palette components (0..31).
+    red = (red * 3) / 4;
+    green = (green * 9) / 16;
+    blue = (blue * 9) / 16;
+    return RGB(red, green, blue);
+}
+
+static void ApplyCuordilavaIndustrialPaletteStyle(void)
+{
+    u16 paletteIndex;
+    u16 colorIndex;
+
+    // Palette 12 is the town's dedicated architecture palette. Leave it vivid
+    // for furnace LEDs/windows; grade the shared background palettes only after
+    // loading them for Cuordilava, never in their shared source files.
+    for (paletteIndex = 0; paletteIndex < NUM_PALS_TOTAL - 1; paletteIndex++)
+    {
+        for (colorIndex = 1; colorIndex < 16; colorIndex++)
+        {
+            u16 index = paletteIndex * 16 + colorIndex;
+            u16 color = GetCuordilavaIndustrialColor(gPlttBufferUnfaded[index]);
+
+            gPlttBufferUnfaded[index] = color;
+            gPlttBufferFaded[index] = color;
+        }
+    }
+}
+
+static bool8 IsCuordilavaLayout(struct MapLayout const *mapLayout)
+{
+    return mapLayout == GetMapLayout(LAYOUT_LAVARIDGE_TOWN);
+}
+
 void LoadMapTilesetPalettes(struct MapLayout const *mapLayout)
 {
     if (mapLayout)
     {
         LoadPrimaryTilesetPalette(mapLayout);
         LoadSecondaryTilesetPalette(mapLayout, FALSE);
+        if (IsCuordilavaLayout(mapLayout))
+            ApplyCuordilavaIndustrialPaletteStyle();
     }
 }
 
