@@ -26,7 +26,7 @@ Use the supplied cyberpunk town image as the mood and density reference, adapted
 
 ## Cuordilava facade pass (2026-10-15)
 
-The current incremental art pass reworks three existing Cuordilava-only metatiles into a furnace control panel, a service hatch with cyan conduit indicators, and a louvered thermal vent. The art uses reserved atlas tiles with palette 08 and a transparent overlay layer, keeping the established day/night palette workflow intact. The three metatile definitions (165, 173 and 179) were checked against all layouts that share the Lavaridge tileset; they are used by Cuordilava only. Map geometry, collision/metatile attributes, warps, object events and triggers are not changed by this art pass. The validator now guards the exact tile/palette wiring and checks that these metatiles are not reused by other shared-tileset layouts.
+The current incremental art pass reworks five Cuordilava-only metatiles into illuminated industrial windows, a furnace control panel, a service hatch with cyan conduit indicators, a louvered thermal vent, and a pipe/conduit insert. The art uses reserved atlas tiles with palette 08 and a transparent overlay layer, keeping the established day/night palette workflow intact. The five metatile definitions (165, 173, 174, 179 and 181) were checked against all layouts that share the Lavaridge tileset; they are used by Cuordilava only. Map geometry, collision/metatile attributes, warps, object events and triggers are not changed by this art pass. The validator now guards the exact tile/palette wiring and checks that these metatiles are not reused by other shared-tileset layouts.
 
 ## Current scope and caveat
 
