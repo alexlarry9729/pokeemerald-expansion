@@ -389,11 +389,12 @@ def validate_lavaridge_palette_cycle(root: Path) -> list[str]:
     try:
         day = parse_palette(day_path)
         night = parse_palette(night_path)
-        # The cool highlight and the hot orange/red ramp should gain energy at night.
-        for index in (9, 11, 12, 13):
+        # Every colour listed in the day palette's glow mask must intensify at night.
+        mask_indices = parse_palette_mask(palette_dir / "08.pla")
+        for index in mask_indices:
             if luminance(night[index]) <= luminance(day[index]):
                 errors.append(
-                    f"{night_path}: accent colour {index} must be brighter than {day_path} for night blending"
+                    f"{night_path}: glow-mask colour {index} must be brighter than {day_path} for night blending"
                 )
     except (OSError, ValueError, IndexError) as exc:
         errors.append(f"{palette_dir}: unable to validate the day/night facade palette pair: {exc}")
