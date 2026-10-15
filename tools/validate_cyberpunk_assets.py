@@ -499,7 +499,7 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     facade_panel_tiles = (308, 326, 327, 338, 339)
     roof_seam_tiles = (343,)
     pipe_tiles = (312, 328, 344, 347)
-    architecture_base_tiles = (164, 165, 180, 181, 168, 169, 184, 185, 200, 201, 216, 217, 204, 205, 220, 221, 348, 349, 360, 361, 376, 377, 392, 393, 396, 397, 412, 413)
+    architecture_base_tiles = (164, 165, 180, 181, 168, 169, 184, 185, 200, 201, 216, 217, 204, 205, 220, 221, 232, 233, 248, 249, 348, 349, 360, 361, 376, 377, 392, 393, 396, 397, 412, 413)
     architecture_overlay_tiles = (166, 167, 182, 183, 170, 171, 186, 187, 202, 203, 218, 219, 206, 207, 222, 223, 230, 231, 246, 247, 350, 351, 362, 363, 378, 379, 394, 395, 398, 399, 414, 415)
     target_tiles = window_tiles + facade_panel_tiles + roof_seam_tiles + pipe_tiles + architecture_base_tiles + architecture_overlay_tiles
 
@@ -685,35 +685,41 @@ def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
 
 
 def validate_cuordilava_roof_vent_metatiles(root: Path) -> list[str]:
-    """Guard the Cuordilava-only rooftop exhaust overlay on metatile 163."""
+    """Guard the Cuordilava-only industrial roof cap and vent overlay on metatile 163."""
     errors: list[str] = []
     metatiles_path = root / "data/tilesets/secondary/lavaridge/metatiles.bin"
     layouts_path = root / "data/layouts/layouts.json"
-    expected = (230, 231, 246, 247)
+    expected_base = (232, 233, 248, 249)
+    expected_overlay = (230, 231, 246, 247)
     try:
         data = metatiles_path.read_bytes()
     except OSError as exc:
-        return [f"{metatiles_path}: unable to inspect Cuordilava rooftop vents: {exc}"]
+        return [f"{metatiles_path}: unable to inspect Cuordilava rooftop architecture: {exc}"]
 
     metatile_id = 163
     offset = metatile_id * 16
     if offset + 16 > len(data):
         errors.append(f"{metatiles_path}: missing rooftop metatile {metatile_id}")
     else:
-        for local_slot, tile_id in enumerate(expected, start=4):
-            entry = struct.unpack_from("<H", data, offset + local_slot * 2)[0]
-            encoded_tile = entry & 0x3FF
-            palette_index = (entry >> 12) & 0xF
-            if encoded_tile != 512 + tile_id or palette_index != 12:
+        for slot, tile_id in enumerate(expected_base):
+            entry = struct.unpack_from("<H", data, offset + slot * 2)[0]
+            if (entry & 0x3FF) != 512 + tile_id or ((entry >> 12) & 0xF) != 12:
                 errors.append(
-                    f"{metatiles_path}: roof metatile {metatile_id} overlay slot {local_slot} "
+                    f"{metatiles_path}: roof metatile {metatile_id} base slot {slot} "
+                    f"must use secondary tile {tile_id} with palette 12"
+                )
+        for slot, tile_id in enumerate(expected_overlay, start=4):
+            entry = struct.unpack_from("<H", data, offset + slot * 2)[0]
+            if (entry & 0x3FF) != 512 + tile_id or ((entry >> 12) & 0xF) != 12:
+                errors.append(
+                    f"{metatiles_path}: roof metatile {metatile_id} overlay slot {slot} "
                     f"must use secondary tile {tile_id} with palette 12"
                 )
 
     try:
         layouts = json.loads(layouts_path.read_text(encoding="utf-8"))["layouts"]
     except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
-        return errors + [f"{layouts_path}: unable to inspect shared layouts for rooftop vent reuse: {exc}"]
+        return errors + [f"{layouts_path}: unable to inspect shared layouts for rooftop reuse: {exc}"]
 
     count = 0
     for layout in layouts:
@@ -726,7 +732,7 @@ def validate_cuordilava_roof_vent_metatiles(root: Path) -> list[str]:
             map_data = map_path.read_bytes()
             width, height = int(layout["width"]), int(layout["height"])
         except (OSError, KeyError, TypeError, ValueError) as exc:
-            errors.append(f"{map_path}: unable to check rooftop vent metatile reuse: {exc}")
+            errors.append(f"{map_path}: unable to check rooftop metatile reuse: {exc}")
             continue
         if len(map_data) < width * height * 2:
             errors.append(f"{map_path}: map data is too short for {width}x{height} layout")
