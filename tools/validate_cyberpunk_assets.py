@@ -500,7 +500,7 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     roof_seam_tiles = (343,)
     pipe_tiles = (312, 328, 344, 347)
     architecture_base_tiles = (164, 165, 180, 181, 168, 169, 184, 185, 348, 349, 360, 361, 376, 377, 392, 393, 396, 397, 412, 413)
-    architecture_overlay_tiles = (166, 167, 182, 183, 170, 171, 186, 187, 230, 231, 246, 247, 350, 351, 362, 363, 378, 379, 394, 395, 398, 399, 414, 415)
+    architecture_overlay_tiles = (166, 167, 182, 183, 170, 171, 186, 187, 230, 231, 232, 233, 246, 247, 248, 249, 350, 351, 362, 363, 378, 379, 394, 395, 398, 399, 414, 415)
     target_tiles = window_tiles + facade_panel_tiles + roof_seam_tiles + pipe_tiles + architecture_base_tiles + architecture_overlay_tiles
 
     # Ensure the art check covers tiles actually referenced by this map, not
@@ -683,17 +683,20 @@ def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
 
 
 def validate_cuordilava_roof_vent_metatiles(root: Path) -> list[str]:
-    """Guard the Cuordilava-only rooftop exhaust overlay on metatile 163."""
+    """Guard both Cuordilava-only rooftop exhaust variants on metatiles 162 and 163."""
     errors: list[str] = []
     metatiles_path = root / "data/tilesets/secondary/lavaridge/metatiles.bin"
     layouts_path = root / "data/layouts/layouts.json"
-    expected = (230, 231, 246, 247)
+    expected_tiles = {
+        162: (232, 233, 248, 249),
+        163: (230, 231, 246, 247),
+    }
     try:
         data = metatiles_path.read_bytes()
     except OSError as exc:
         return [f"{metatiles_path}: unable to inspect Cuordilava rooftop vents: {exc}"]
 
-    for metatile_id in (163,):
+    for metatile_id, expected in expected_tiles.items():
         offset = metatile_id * 16
         if offset + 16 > len(data):
             errors.append(f"{metatiles_path}: missing rooftop metatile {metatile_id}")
@@ -702,7 +705,7 @@ def validate_cuordilava_roof_vent_metatiles(root: Path) -> list[str]:
             entry = struct.unpack_from("<H", data, offset + local_slot * 2)[0]
             encoded_tile = entry & 0x3FF
             palette_index = (entry >> 12) & 0xF
-            if encoded_tile < 512 or encoded_tile - 512 != tile_id or palette_index != 12:
+            if encoded_tile != 512 + tile_id or palette_index != 12:
                 errors.append(
                     f"{metatiles_path}: roof metatile {metatile_id} overlay slot {local_slot} "
                     f"must use secondary tile {tile_id} with palette 12"
@@ -713,7 +716,7 @@ def validate_cuordilava_roof_vent_metatiles(root: Path) -> list[str]:
     except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
         return errors + [f"{layouts_path}: unable to inspect shared layouts for rooftop vent reuse: {exc}"]
 
-    counts = {metatile_id: 0 for metatile_id in (163,)}
+    counts = {metatile_id: 0 for metatile_id in expected_tiles}
     for layout in layouts:
         if not isinstance(layout, dict) or layout.get("secondary_tileset") != "gTileset_Lavaridge":
             continue

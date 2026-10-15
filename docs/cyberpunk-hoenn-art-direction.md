@@ -26,7 +26,7 @@ Use the supplied cyberpunk town image as the mood and density reference, adapted
 
 ## Cuordilava facade pass (2026-10-15)
 
-The architecture pass rebuilds six active modular pieces with a consistent industrial palette: paired illuminated windows, a service hatch, a louvered ventilation wall, a furnace awning, a hot-core machine facade and twin rooftop exhaust stacks. All use reserved palette 12 for daytime structure and controlled orange/cyan accents; palette 05 is the brighter night companion. The five architectural metatiles (165, 173, 174, 179, 181) and rooftop metatile 163 are validated as Cuordilava-specific. Shared metatile 50 remains unchanged because validation found it is also used by Mt. Chimney. Shared palette files 07/08 and all other town map objects remain unchanged.
+The architecture pass rebuilds six active modular pieces with a consistent industrial palette: paired illuminated windows, a service hatch, a louvered ventilation wall, a furnace awning, a hot-core machine facade and two distinct rooftop exhaust variants (the twin-stack form and a narrow offset chimney). All use reserved palette 12 for daytime structure and controlled orange/cyan accents; palette 05 is the brighter night companion. The five architectural metatiles (165, 173, 174, 179, 181) and rooftop metatiles 162 and 163 are validated as Cuordilava-specific. Shared metatile 50 remains unchanged because validation found it is also used by Mt. Chimney. Shared palette files 07/08 and all other town map objects remain unchanged.
 
 ## Current scope and caveat
 
