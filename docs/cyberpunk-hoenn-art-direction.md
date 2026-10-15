@@ -19,7 +19,9 @@ Use the supplied cyberpunk town image as the mood and density reference, adapted
 
 ## Current scope and caveat
 
-The current branch establishes the day/night light-sprite behaviour, map sign-light placements and an early architectural-detail pass in the Lavaridge tileset. The active secondary tiles include warm window/panel pixels and restrained cyan service lights on conduit pieces; the asset validator checks that these tile IDs are actually referenced by the town layout instead of passing on unused atlas tiles.
+The current branch establishes the day/night light-sprite behaviour, map sign-light placements and an early architectural-detail pass in the Lavaridge tileset. The active secondary tiles include warm window/panel pixels, dark window mullions, a furnace-orange roof seam and restrained cyan service lights on conduit pieces; the asset validator checks that these tile IDs are actually referenced by the town layout instead of passing on unused atlas tiles.
+
+The Lavaridge tileset now declares `SWAP_PAL(8)`, so the facade palette in `08.pal` blends toward its `01.pal` companion at night. The paired palette keeps the structural tones controlled while strengthening the cyan highlight and warm orange/red ramp after dark. Object sign-lights also retain their separate subdued-day / vivid-night sprite palettes.
 
 This is still **not** a complete architectural tileset redesign. The current changes are local detail accents, not replacement silhouettes for every roof, facade, chimney and structure in the reference. Keep the existing map geometry and access events intact while the artwork is expanded. The automated checks cover indexed PNG integrity, palette/mask structure, day/night palette intensity, active facade pixels, light-sprite wiring and key map access invariants.
 
