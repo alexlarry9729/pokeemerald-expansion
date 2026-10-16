@@ -528,6 +528,52 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
                 errors.append(f"{path}: shared palette changed; keep its original colours")
         except (OSError, ValueError) as exc:
             errors.append(f"{path}: unable to validate shared palette integrity: {exc}")
+    layouts_path = root / "data/layouts/layouts.json"
+    metatiles_path = root / "data/tilesets/secondary/lavaridge/metatiles.bin"
+    try:
+        layouts = json.loads(layouts_path.read_text(encoding="utf-8"))["layouts"]
+        metatiles = metatiles_path.read_bytes()
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
+        errors.append(f"Unable to prove Cuordilava palette isolation from shared maps: {exc}")
+        return errors
+    if len(metatiles) % 16:
+        errors.append(f"{metatiles_path}: cannot audit palette use because metatile data length is invalid")
+        return errors
+    meta_count = len(metatiles) // 16
+    for layout in layouts:
+        if not isinstance(layout, dict) or layout.get("secondary_tileset") != "gTileset_Lavaridge":
+            continue
+        if layout.get("id") == "LAYOUT_LAVARIDGE_TOWN":
+            continue
+        name = layout.get("name", "")
+        directory = name[:-7] if isinstance(name, str) and name.endswith("_Layout") else name
+        map_path = root / "data/layouts" / directory / "map.bin"
+        try:
+            map_data = map_path.read_bytes()
+            width, height = int(layout["width"]), int(layout["height"])
+        except (OSError, KeyError, TypeError, ValueError) as exc:
+            errors.append(f"{map_path}: unable to audit non-Cuordilava palette 12 usage: {exc}")
+            continue
+        required_bytes = width * height * 2
+        if len(map_data) < required_bytes:
+            errors.append(f"{map_path}: map data is too short for palette-isolation audit")
+            continue
+        for cell in range(width * height):
+            encoded = struct.unpack_from("<H", map_data, cell * 2)[0] & 0x3FF
+            if encoded < 512:
+                continue
+            metatile_id = encoded - 512
+            if metatile_id >= meta_count:
+                continue
+            offset = metatile_id * 16
+            for slot in range(8):
+                entry = struct.unpack_from("<H", metatiles, offset + slot * 2)[0]
+                palette_index = (entry >> 12) & 0xF
+                if palette_index == 12:
+                    errors.append(
+                        f"{map_path}: non-Cuordilava layout {layout.get('id')} uses palette 12 "
+                        f"through metatile {metatile_id}, slot {slot}; keep the glow palette town-local"
+                    )
     return errors
 
 
