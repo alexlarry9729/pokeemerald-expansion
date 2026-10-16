@@ -462,6 +462,8 @@ def validate_cuordilava_palette_isolation(root: Path) -> list[str]:
     if "u16 CuordilavaIndustrialColor(u16 color);" not in fieldmap_header:
         errors.append(f"{fieldmap_header_path}: local palette transform prototype is missing")
     if "if (paletteIndex == 12)" not in fieldmap or "gPlttBufferFaded[index] = color;" not in fieldmap:
+        errors.append(f"{fieldmap_path}: reserved palette 12 must stay bright and faded/unfaded buffers stay synchronized")
+
     grade_start = fieldmap.find("static void ApplyCuordilavaPaletteGrade(void)")
     grade_end = fieldmap.find("static bool8 IsCuordilavaLayout", grade_start)
     grade_block = fieldmap[grade_start:grade_end] if grade_start >= 0 and grade_end > grade_start else ""
@@ -469,7 +471,6 @@ def validate_cuordilava_palette_isolation(root: Path) -> list[str]:
         errors.append(f"{fieldmap_path}: local color grade must be restricted to BG palettes 1..15, not OBJ palettes")
     if "paletteIndex < NUM_PALS_TOTAL" in grade_block:
         errors.append(f"{fieldmap_path}: local color grade must not modify character/object sprite palettes")
-        errors.append(f"{fieldmap_path}: reserved palette 12 must stay bright and faded/unfaded buffers stay synchronized")
 
     scoped_blend = "gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN && i != 12"
     if scoped_blend not in overworld:
