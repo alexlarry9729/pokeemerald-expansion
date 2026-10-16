@@ -475,8 +475,9 @@ def validate_cuordilava_palette_isolation(root: Path) -> list[str]:
     scoped_blend = "gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN && i != 12"
     if scoped_blend not in overworld:
         errors.append(f"{overworld_path}: time-blended palettes must be regraded only in Cuordilava, excluding palette 12")
-    town_swap = "if (gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN)\\n        palettes |= (1 << 12);"
-    if town_swap not in overworld:
+    town_layout_guard = "if (gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN)" in overworld
+    local_palette_bit = "palettes |= (1 << 12);" in overworld
+    if not town_layout_guard or not local_palette_bit:
         errors.append(f"{overworld_path}: palette 12 night blending must be enabled only by the Cuordilava layout")
     if "CuordilavaIndustrialColor(gPlttBufferUnfaded[index])" not in overworld:
         errors.append(f"{overworld_path}: blended shared palettes are not regraded after day/night mixing")
