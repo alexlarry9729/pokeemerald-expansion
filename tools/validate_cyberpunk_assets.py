@@ -530,7 +530,7 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     window_tiles = (345, 346)
     facade_panel_tiles = (308, 326, 327, 338, 339)
     roof_seam_tiles = (343,)
-    pipe_tiles = (312, 328, 344, 347)
+    pipe_tiles = (312, 328, 344)
     architecture_base_tiles = (164, 165, 180, 181, 168, 169, 184, 185, 200, 201, 216, 217, 204, 205, 220, 221, 232, 233, 248, 249, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454, 455, 457, 348, 349, 360, 361, 376, 377, 392, 393, 396, 397, 412, 413)
     architecture_overlay_tiles = (166, 167, 182, 183, 170, 171, 186, 187, 202, 203, 218, 219, 206, 207, 222, 223, 258, 259, 260, 261, 424, 425, 426, 427, 428, 429, 430, 431, 230, 231, 246, 247, 350, 351, 362, 363, 378, 379, 394, 395, 398, 399, 414, 415)
     target_tiles = window_tiles + facade_panel_tiles + roof_seam_tiles + pipe_tiles + architecture_base_tiles + architecture_overlay_tiles
@@ -619,11 +619,7 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
         if any(pixels[y][tile_x + column] != 7 for y in rows):
             errors.append(f"{path}: window tile {tile_id} lost its dark metal mullion")
 
-    # Two cool pixels define the maintenance LEDs on the exhaust-pipe tile.
-    pipe_x = (347 % 16) * 8 + 4
-    pipe_y = (347 // 16) * 8
-    if pixels[pipe_y + 2][pipe_x] != 10 or pixels[pipe_y + 4][pipe_x] != 10:
-        errors.append(f"{path}: exhaust-pipe tile 347 lost its cyan service LEDs")
+    # Former pipe tile 347 was replaced by the custom roof-corner overlay (258..261).
 
     return errors
 
