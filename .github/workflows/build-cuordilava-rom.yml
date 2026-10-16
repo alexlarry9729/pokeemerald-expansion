@@ -1,0 +1,62 @@
+name: Build Cuordilava test ROM
+# Trigger build per testare Cuordilava nell'emulatore
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/daytime-cyberpunk-lights
+
+permissions:
+  contents: read
+
+jobs:
+  build-rom:
+    name: Compile playable Emerald ROM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+
+      - name: Install ROM build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends binutils-arm-none-eabi gcc-arm-none-eabi libnewlib-arm-none-eabi libpng-dev python3
+
+      - name: Compile Pokémon Emerald
+        env:
+          GAME_VERSION: EMERALD
+        run: make -j$(nproc) -O all
+
+      - name: Verify ROM and generate checksum
+        run: |
+          test -s pokeemerald.gba
+          sha256sum pokeemerald.gba > pokeemerald.gba.sha256
+          {
+            echo "branch=${GITHUB_REF_NAME}"
+            echo "commit=${GITHUB_SHA}"
+            echo "game=Pokemon Emerald Expansion"
+            echo "region=English"
+            echo "town=Cuordilava (Lavaridge Town)"
+          } > cuordilava-build-info.txt
+
+      - name: Render Cuordilava day/night layout previews (diagnostic)
+        run: python3 tools/render_cuordilava_preview.py --output-dir build-preview
+        continue-on-error: true
+
+      - name: Upload ROM and visual diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: cuordilava-pokeemerald-${{ github.sha }}
+          path: |
+            pokeemerald.gba
+            pokeemerald.gba.sha256
+            cuordilava-build-info.txt
+            build-preview/cuordilava-day.png
+            build-preview/cuordilava-night.png
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Validate cyberpunk assets (diagnostic)
+        if: always()
+        run: python3 tools/validate_cyberpunk_assets.py

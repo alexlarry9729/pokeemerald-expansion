@@ -1,0 +1,67 @@
+name: Cyberpunk Hoenn validation
+
+on:
+  push:
+    branches:
+      - feature/daytime-cyberpunk-lights
+  pull_request:
+    paths:
+      - 'data/layouts/LavaridgeTown/map.bin'
+      - 'data/layouts/Route112/map.bin'
+      - 'data/layouts/MtChimney/map.bin'
+      - 'data/layouts/JaggedPass/map.bin'
+      - 'data/layouts/FieryPath/map.bin'
+      - 'data/layouts/MagmaHideout_1F/map.bin'
+      - 'data/layouts/MagmaHideout_2F_1R/map.bin'
+      - 'data/layouts/MagmaHideout_2F_2R/map.bin'
+      - 'data/layouts/MagmaHideout_2F_3R/map.bin'
+      - 'data/layouts/MagmaHideout_3F_1R/map.bin'
+      - 'data/layouts/MagmaHideout_3F_2R/map.bin'
+      - 'data/layouts/MagmaHideout_3F_3R/map.bin'
+      - 'data/layouts/MagmaHideout_4F/map.bin'
+      - 'data/tilesets/secondary/lavaridge/**'
+      - 'docs/cyberpunk-hoenn-art-direction.md'
+      - 'src/data/tilesets/headers.h'
+      - 'data/maps/LavaridgeTown/map.json'
+      - 'graphics/object_events/palettes/neon_light*.pal'
+      - 'graphics/object_events/pics/misc/facade_light.png'
+      - 'include/constants/event_objects.h'
+      - 'src/event_object_movement.c'
+      - 'src/data/field_effects/field_effect_objects.h'
+      - 'src/data/object_events/object_event_graphics.h'
+      - 'tools/validate_cyberpunk_assets.py'
+      - '.github/workflows/cyberpunk-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-cyberpunk-assets:
+    name: Validate Lavaridge palettes and masks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate palettes and day/night glow
+        run: python3 tools/validate_cyberpunk_assets.py
+
+  build-emerald:
+    name: Build Pokémon Emerald ROM
+    runs-on: ubuntu-latest
+    needs: validate-cyberpunk-assets
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends binutils-arm-none-eabi gcc-arm-none-eabi libnewlib-arm-none-eabi libpng-dev python3
+      - name: Build Emerald
+        env:
+          GAME_VERSION: EMERALD
+        run: make -j$(nproc) -O all
