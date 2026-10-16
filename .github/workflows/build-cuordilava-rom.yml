@@ -40,7 +40,11 @@ jobs:
             echo "town=Cuordilava (Lavaridge Town)"
           } > cuordilava-build-info.txt
 
-      - name: Upload ROM for emulator testing
+      - name: Render Cuordilava day/night layout previews (diagnostic)
+        run: python3 tools/render_cuordilava_preview.py --output-dir build-preview
+        continue-on-error: true
+
+      - name: Upload ROM and visual diagnostics
         uses: actions/upload-artifact@v4
         with:
           name: cuordilava-pokeemerald-${{ github.sha }}
@@ -48,6 +52,8 @@ jobs:
             pokeemerald.gba
             pokeemerald.gba.sha256
             cuordilava-build-info.txt
+            build-preview/cuordilava-day.png
+            build-preview/cuordilava-night.png
           if-no-files-found: error
           retention-days: 14
 

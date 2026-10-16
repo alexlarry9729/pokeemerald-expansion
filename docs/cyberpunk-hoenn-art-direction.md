@@ -36,3 +36,6 @@ The work preserves map geometry, collision/metatile-attribute bytes, warps, obje
 
 Do not mark the town visually complete solely on successful compilation. The final candidate must pass the full validator and ROM build, then be reviewed in the target emulator for both daytime and nighttime; any remaining tile seams or map-specific overlap should be corrected before release.
 
+
+
+The ROM artifact workflow also renders two layout-only PNGs from the current map, primary/secondary tile atlases and JASC palettes. These previews reproduce the custom BG colour-grade and private day/night palette, but intentionally omit NPC/event sprites, shadows, weather and emulator effects; they are a fast map-layout review, not a substitute for in-emulator verification.
