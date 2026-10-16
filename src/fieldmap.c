@@ -1094,10 +1094,11 @@ static void ApplyCuordilavaPaletteGrade(void)
     u16 paletteIndex;
     u16 colorIndex;
 
-    // This touches only loaded background palette buffers for Cuordilava.
+    // The BG palette block is indices 0..15. Never grade OBJ palettes (16..31),
+    // which carry the player, NPCs and overworld object sprites.
     // The local architecture palette 12 stays ungraded: its day/night pair
     // controls the readable furnace LEDs and window glow.
-    for (paletteIndex = 1; paletteIndex < NUM_PALS_TOTAL; paletteIndex++)
+    for (paletteIndex = 1; paletteIndex < 16; paletteIndex++)
     {
         if (paletteIndex == 12)
             continue;
