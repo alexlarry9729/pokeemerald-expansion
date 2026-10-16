@@ -467,8 +467,8 @@ def validate_cuordilava_palette_isolation(root: Path) -> list[str]:
     grade_start = fieldmap.find("static void ApplyCuordilavaPaletteGrade(void)")
     grade_end = fieldmap.find("static bool8 IsCuordilavaLayout", grade_start)
     grade_block = fieldmap[grade_start:grade_end] if grade_start >= 0 and grade_end > grade_start else ""
-    if "for (paletteIndex = 1; paletteIndex < 16; paletteIndex++)" not in grade_block:
-        errors.append(f"{fieldmap_path}: local color grade must be restricted to BG palettes 1..15, not OBJ palettes")
+    if "for (paletteIndex = 0; paletteIndex < 16; paletteIndex++)" not in grade_block or "for (colorIndex = 1; colorIndex < 16; colorIndex++)" not in grade_block:
+        errors.append(f"{fieldmap_path}: grade BG palettes 0..15 while preserving transparent color index 0, and never grade OBJ palettes")
     if "paletteIndex < NUM_PALS_TOTAL" in grade_block:
         errors.append(f"{fieldmap_path}: local color grade must not modify character/object sprite palettes")
 
