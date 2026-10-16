@@ -721,30 +721,33 @@ def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
 
 
 def validate_cuordilava_roof_vent_metatiles(root: Path) -> list[str]:
-    """Guard the Cuordilava-only industrial roof cap and vent overlay on metatile 163."""
+    """Guard both Cuordilava-only industrial chimney/roof variants."""
     errors: list[str] = []
     metatiles_path = root / "data/tilesets/secondary/lavaridge/metatiles.bin"
     layouts_path = root / "data/layouts/layouts.json"
-    expected_base = (232, 233, 248, 249)
-    expected_overlay = (230, 231, 246, 247)
+    expected = {
+        162: {"overlay": (234, 235, 250, 251), "base": None},
+        163: {"overlay": (230, 231, 246, 247), "base": (232, 233, 248, 249)},
+    }
     try:
         data = metatiles_path.read_bytes()
     except OSError as exc:
         return [f"{metatiles_path}: unable to inspect Cuordilava rooftop architecture: {exc}"]
 
-    metatile_id = 163
-    offset = metatile_id * 16
-    if offset + 16 > len(data):
-        errors.append(f"{metatiles_path}: missing rooftop metatile {metatile_id}")
-    else:
-        for slot, tile_id in enumerate(expected_base):
-            entry = struct.unpack_from("<H", data, offset + slot * 2)[0]
-            if (entry & 0x3FF) != 512 + tile_id or ((entry >> 12) & 0xF) != 12:
-                errors.append(
-                    f"{metatiles_path}: roof metatile {metatile_id} base slot {slot} "
-                    f"must use secondary tile {tile_id} with palette 12"
-                )
-        for slot, tile_id in enumerate(expected_overlay, start=4):
+    for metatile_id, spec in expected.items():
+        offset = metatile_id * 16
+        if offset + 16 > len(data):
+            errors.append(f"{metatiles_path}: missing rooftop metatile {metatile_id}")
+            continue
+        if spec["base"] is not None:
+            for slot, tile_id in enumerate(spec["base"]):
+                entry = struct.unpack_from("<H", data, offset + slot * 2)[0]
+                if (entry & 0x3FF) != 512 + tile_id or ((entry >> 12) & 0xF) != 12:
+                    errors.append(
+                        f"{metatiles_path}: roof metatile {metatile_id} base slot {slot} "
+                        f"must use secondary tile {tile_id} with palette 12"
+                    )
+        for slot, tile_id in enumerate(spec["overlay"], start=4):
             entry = struct.unpack_from("<H", data, offset + slot * 2)[0]
             if (entry & 0x3FF) != 512 + tile_id or ((entry >> 12) & 0xF) != 12:
                 errors.append(
@@ -757,7 +760,7 @@ def validate_cuordilava_roof_vent_metatiles(root: Path) -> list[str]:
     except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
         return errors + [f"{layouts_path}: unable to inspect shared layouts for rooftop reuse: {exc}"]
 
-    count = 0
+    counts = {metatile_id: 0 for metatile_id in expected}
     for layout in layouts:
         if not isinstance(layout, dict) or layout.get("secondary_tileset") != "gTileset_Lavaridge":
             continue
@@ -775,16 +778,20 @@ def validate_cuordilava_roof_vent_metatiles(root: Path) -> list[str]:
             continue
         for cell in range(width * height):
             encoded = struct.unpack_from("<H", map_data, cell * 2)[0] & 0x3FF
-            if encoded < 512 or encoded - 512 != metatile_id:
+            if encoded < 512 or encoded - 512 not in counts:
                 continue
+            metatile_id = encoded - 512
             if layout.get("id") != "LAYOUT_LAVARIDGE_TOWN":
                 errors.append(
                     f"{map_path}: Cuordilava-only rooftop metatile {metatile_id} is also used by {layout.get('id')}"
                 )
             else:
-                count += 1
-    if not count:
-        errors.append(f"{root / 'data/layouts/LavaridgeTown/map.bin'}: rooftop metatile {metatile_id} is not used by Cuordilava")
+                counts[metatile_id] += 1
+    for metatile_id, count in counts.items():
+        if not count:
+            errors.append(
+                f"{root / 'data/layouts/LavaridgeTown/map.bin'}: rooftop metatile {metatile_id} is not used by Cuordilava"
+            )
     return errors
 
 
