@@ -440,6 +440,39 @@ def validate_facade_light_wiring(root: Path) -> list[str]:
     return errors
 
 
+def validate_cuordilava_palette_isolation(root: Path) -> list[str]:
+    """Ensure the dark-town grade never changes global palette source files or other maps."""
+    errors: list[str] = []
+    fieldmap_path = root / "src/fieldmap.c"
+    fieldmap_header_path = root / "include/fieldmap.h"
+    overworld_path = root / "src/overworld.c"
+    try:
+        fieldmap = fieldmap_path.read_text(encoding="utf-8")
+        fieldmap_header = fieldmap_header_path.read_text(encoding="utf-8")
+        overworld = overworld_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return [f"Unable to verify Cuordilava-only palette grading: {exc}"]
+
+    load_start = fieldmap.find("void LoadMapTilesetPalettes(struct MapLayout const *mapLayout)")
+    load_end = fieldmap.find("\\n}", load_start) if load_start >= 0 else -1
+    load_body = fieldmap[load_start:load_end] if load_start >= 0 and load_end >= 0 else ""
+    if "IsCuordilavaLayout(mapLayout)" not in load_body or "ApplyCuordilavaPaletteGrade();" not in load_body:
+        errors.append(f"{fieldmap_path}: background grade must run only while loading Cuordilava")
+    if "u16 CuordilavaIndustrialColor(u16 color);" not in fieldmap_header:
+        errors.append(f"{fieldmap_header_path}: local palette transform prototype is missing")
+    if "if (paletteIndex == 12)" not in fieldmap or "gPlttBufferFaded[index] = color;" not in fieldmap:
+        errors.append(f"{fieldmap_path}: reserved palette 12 must stay bright and the grade must sync faded/unfaded buffers")
+
+    alt_start = overworld.find("void UpdateAltBgPalettes(u16 palettes)")
+    alt_end = overworld.find("\\n}", alt_start) if alt_start >= 0 else -1
+    alt_body = overworld[alt_start:alt_end] if alt_start >= 0 and alt_end >= 0 else ""
+    if "gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN && i != 12" not in alt_body:
+        errors.append(f"{overworld_path}: time-blended palettes must be regraded only in Cuordilava, excluding palette 12")
+    if "CuordilavaIndustrialColor(gPlttBufferUnfaded[index])" not in alt_body:
+        errors.append(f"{overworld_path}: blended shared palettes are not regraded after day/night mixing")
+    return errors
+
+
 def validate_cuordilava_palette_pair(root: Path) -> list[str]:
     """Validate the private palette pair reserved for Cuordilava architecture."""
     errors: list[str] = []
@@ -762,6 +795,7 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_sign_light_placements(root))
     errors.extend(validate_lavaridge_map_access(root))
     errors.extend(validate_cuordilava_palette_pair(root))
+    errors.extend(validate_cuordilava_palette_isolation(root))
     errors.extend(validate_cuordilava_architecture_metatiles(root))
     errors.extend(validate_cuordilava_roof_vent_metatiles(root))
     errors.extend(validate_facade_light_wiring(root))

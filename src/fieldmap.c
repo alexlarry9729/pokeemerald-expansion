@@ -1041,12 +1041,91 @@ void CopyMapTilesetsToVram(struct MapLayout const *mapLayout)
     }
 }
 
+u16 CuordilavaIndustrialColor(u16 color)
+{
+    u16 red = color & 0x1F;
+    u16 green = (color >> 5) & 0x1F;
+    u16 blue = (color >> 10) & 0x1F;
+
+    // Regrade the source's neon cyan/magenta into teal and furnace-wine,
+    // retaining warmer reds/oranges and a cool neutral iron ramp.
+    if (red > green + 5 && blue > green + 5)
+    {
+        red = (red * 17) / 32;
+        green = (green * 6) / 32;
+        blue = (blue * 9) / 32;
+    }
+    else if (green > red + 5 && blue > red + 5)
+    {
+        red = (red * 5) / 32;
+        green = (green * 15) / 32;
+        blue = (blue * 17) / 32;
+    }
+    else if (red > green + 5 && red > blue + 5)
+    {
+        red = (red * 24) / 32;
+        green = (green * 14) / 32;
+        blue = (blue * 7) / 32;
+    }
+    else if (blue > red + 5 && blue > green + 5)
+    {
+        red = (red * 8) / 32;
+        green = (green * 10) / 32;
+        blue = (blue * 17) / 32;
+    }
+    else if (green > red + 5 && green > blue + 5)
+    {
+        red = (red * 6) / 32;
+        green = (green * 16) / 32;
+        blue = (blue * 10) / 32;
+    }
+    else
+    {
+        red = (red * 15) / 32;
+        green = (green * 15) / 32;
+        blue = (blue * 18) / 32;
+    }
+
+    return RGB(red, green, blue);
+}
+
+static void ApplyCuordilavaPaletteGrade(void)
+{
+    u16 paletteIndex;
+    u16 colorIndex;
+
+    // This touches only loaded background palette buffers for Cuordilava.
+    // The local architecture palette 12 stays ungraded: its day/night pair
+    // controls the readable furnace LEDs and window glow.
+    for (paletteIndex = 1; paletteIndex < NUM_PALS_TOTAL; paletteIndex++)
+    {
+        if (paletteIndex == 12)
+            continue;
+
+        for (colorIndex = 1; colorIndex < 16; colorIndex++)
+        {
+            u16 index = paletteIndex * 16 + colorIndex;
+            u16 color = CuordilavaIndustrialColor(gPlttBufferUnfaded[index]);
+
+            gPlttBufferUnfaded[index] = color;
+            gPlttBufferFaded[index] = color;
+        }
+    }
+}
+
+static bool8 IsCuordilavaLayout(struct MapLayout const *mapLayout)
+{
+    return mapLayout == GetMapLayout(LAYOUT_LAVARIDGE_TOWN);
+}
+
 void LoadMapTilesetPalettes(struct MapLayout const *mapLayout)
 {
     if (mapLayout)
     {
         LoadPrimaryTilesetPalette(mapLayout);
         LoadSecondaryTilesetPalette(mapLayout, FALSE);
+        if (IsCuordilavaLayout(mapLayout))
+            ApplyCuordilavaPaletteGrade();
     }
 }
 
