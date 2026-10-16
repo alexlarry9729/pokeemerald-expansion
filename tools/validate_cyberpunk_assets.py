@@ -461,7 +461,7 @@ def validate_cuordilava_palette_isolation(root: Path) -> list[str]:
         errors.append(f"{fieldmap_path}: background grade must run only while loading Cuordilava")
     if "u16 CuordilavaIndustrialColor(u16 color);" not in fieldmap_header:
         errors.append(f"{fieldmap_header_path}: local palette transform prototype is missing")
-    if "if (paletteIndex == 12)" not in fieldmap or "gPlttBufferFaded[index] = color;" not in fieldmap:
+    if "if (paletteIndex == 6)" not in fieldmap or "gPlttBufferFaded[index] = color;" not in fieldmap:
         errors.append(f"{fieldmap_path}: reserved palette 6 must stay bright and faded/unfaded buffers stay synchronized")
 
     grade_start = fieldmap.find("static void ApplyCuordilavaPaletteGrade(void)")
