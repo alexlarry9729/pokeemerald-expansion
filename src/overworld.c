@@ -1805,7 +1805,7 @@ void UpdateAltBgPalettes(u16 palettes)
     palettes &= ((1 << GetNumPalsInPrimary(gMapHeader.mapLayout)) - 1) | (secondary->swapPalettes << GetNumPalsInPrimary(gMapHeader.mapLayout));
     // Palette 12 is a private Cuordilava architecture ramp; do not swap it in other maps sharing this tileset.
     if (gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN)
-        palettes |= (1 << 12);
+        palettes |= (1 << 6);
     palettes &= PALETTES_MAP ^ (1 << 0); // don't blend palette 0, [13,15]
     palettes >>= 1; // start at palette 1
     if (!palettes)
@@ -1819,9 +1819,9 @@ void UpdateAltBgPalettes(u16 palettes)
             else
                 AvgPaletteWeighted(&((u16 *)secondary->palettes)[i * 16], &((u16 *)secondary->palettes)[((i + 9) % 16) * 16], gPlttBufferUnfaded + i * 16, gTimeBlend.altWeight);
             // The shared palettes are reloaded by the time blender. Reapply
-            // Cuordilava's local grade to those results, but never dim palette 12:
+            // Cuordilava's local grade to those results, but never dim palette 6:
             // its dedicated day/night pair supplies the architecture neon.
-            if (gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN && i != 12)
+            if (gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN && i != 6)
             {
                 for (colorIndex = 1; colorIndex < 16; colorIndex++)
                 {

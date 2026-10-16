@@ -462,7 +462,7 @@ def validate_cuordilava_palette_isolation(root: Path) -> list[str]:
     if "u16 CuordilavaIndustrialColor(u16 color);" not in fieldmap_header:
         errors.append(f"{fieldmap_header_path}: local palette transform prototype is missing")
     if "if (paletteIndex == 12)" not in fieldmap or "gPlttBufferFaded[index] = color;" not in fieldmap:
-        errors.append(f"{fieldmap_path}: reserved palette 12 must stay bright and faded/unfaded buffers stay synchronized")
+        errors.append(f"{fieldmap_path}: reserved palette 6 must stay bright and faded/unfaded buffers stay synchronized")
 
     grade_start = fieldmap.find("static void ApplyCuordilavaPaletteGrade(void)")
     grade_end = fieldmap.find("static bool8 IsCuordilavaLayout", grade_start)
@@ -472,13 +472,13 @@ def validate_cuordilava_palette_isolation(root: Path) -> list[str]:
     if "paletteIndex < NUM_PALS_TOTAL" in grade_block:
         errors.append(f"{fieldmap_path}: local color grade must not modify character/object sprite palettes")
 
-    scoped_blend = "gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN && i != 12"
+    scoped_blend = "gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN && i != 6"
     if scoped_blend not in overworld:
-        errors.append(f"{overworld_path}: time-blended palettes must be regraded only in Cuordilava, excluding palette 12")
+        errors.append(f"{overworld_path}: time-blended palettes must be regraded only in Cuordilava, excluding palette 6")
     town_layout_guard = "if (gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN)" in overworld
-    local_palette_bit = "palettes |= (1 << 12);" in overworld
+    local_palette_bit = "palettes |= (1 << 6);" in overworld
     if not town_layout_guard or not local_palette_bit:
-        errors.append(f"{overworld_path}: palette 12 night blending must be enabled only by the Cuordilava layout")
+        errors.append(f"{overworld_path}: palette 6 night blending must be enabled only by the Cuordilava layout")
     if "CuordilavaIndustrialColor(gPlttBufferUnfaded[index])" not in overworld:
         errors.append(f"{overworld_path}: blended shared palettes are not regraded after day/night mixing")
     return errors
@@ -498,17 +498,17 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
     block = header[start:end] if start >= 0 and end >= 0 else ""
     if ".swapPalettes = SWAP_PAL(" in block:
         errors.append(
-            f"{header_path}: do not add a tileset-wide palette swap; Cuordilava palette 12 must be blended layout-locally"
+            f"{header_path}: do not add a tileset-wide palette swap; Cuordilava palette 6 must be blended layout-locally"
         )
     try:
-        day = parse_palette(palette_dir / "12.pal")
-        night = parse_palette(palette_dir / "05.pal")
+        day = parse_palette(palette_dir / "06.pal")
+        night = parse_palette(palette_dir / "15.pal")
         for index in range(1, 9):
             if max(day[index]) > 110:
-                errors.append(f"{palette_dir / '12.pal'}: structural colour {index} must stay dark")
+                errors.append(f"{palette_dir / '06.pal'}: structural colour {index} must stay dark")
         for index in range(9, 16):
             if luminance(night[index]) <= luminance(day[index]):
-                errors.append(f"{palette_dir / '05.pal'}: local neon colour {index} must be brighter at night")
+                errors.append(f"{palette_dir / '15.pal'}: local neon colour {index} must be brighter at night")
     except (OSError, ValueError, IndexError) as exc:
         errors.append(f"{palette_dir}: invalid Cuordilava day/night palette pair: {exc}")
 
@@ -525,6 +525,19 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
             (41, 49, 90), (139, 205, 246), (115, 189, 238), (255, 230, 139),
             (222, 189, 98), (180, 156, 74), (139, 123, 32), (115, 82, 41),
         ],
+        "05.pal": [
+            (49, 49, 255), (255, 255, 255), (222, 230, 238), (189, 205, 230),
+            (156, 180, 222), (131, 131, 139), (98, 98, 123), (65, 74, 106),
+            (41, 49, 90), (115, 189, 246), (98, 172, 238), (238, 230, 164),
+            (222, 205, 131), (213, 180, 106), (205, 156, 82), (115, 197, 164),
+        ],
+        "12.pal": [(0, 0, 0)] * 16,
+        "13.pal": [
+            (0, 0, 0), (65, 74, 106), (197, 205, 0), (230, 238, 238),
+            (255, 255, 255), (255, 115, 65), (230, 115, 65), (180, 98, 90),
+            (164, 82, 82), (205, 49, 0), (148, 49, 0), (246, 24, 24),
+            (246, 148, 0), (148, 164, 65), (106, 123, 139), (222, 222, 0),
+        ],
     }
     for filename, expected in shared_baselines.items():
         path = palette_dir / filename
@@ -533,6 +546,33 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
                 errors.append(f"{path}: shared palette changed; keep its original colours")
         except (OSError, ValueError) as exc:
             errors.append(f"{path}: unable to validate shared palette integrity: {exc}")
+    # Palette 6 is private to custom architecture; legacy palette-6 metatiles are remapped to 13.
+    custom_slots = {
+        72: (4, 5, 6, 7), 73: (4, 5, 6, 7), 74: (4, 5, 6, 7), 77: (4, 5, 6, 7),
+        75: tuple(range(8)), 76: tuple(range(8)), 78: tuple(range(8)), 79: tuple(range(8)),
+        162: (4, 5, 6, 7), 163: tuple(range(8)),
+        165: tuple(range(8)), 170: tuple(range(8)), 173: tuple(range(8)), 174: tuple(range(8)),
+        179: tuple(range(8)), 181: tuple(range(8)), 187: tuple(range(8)),
+        285: (4, 5, 6, 7),
+    }
+    try:
+        meta_bytes = (root / "data/tilesets/secondary/lavaridge/metatiles.bin").read_bytes()
+    except OSError as exc:
+        errors.append(f"Unable to audit private palette-6 metatile slots: {exc}")
+        return errors
+    if len(meta_bytes) % 16:
+        errors.append("Metatile data has invalid length during palette-6 isolation audit")
+        return errors
+    for metatile_id in range(len(meta_bytes) // 16):
+        expected_slots = set(custom_slots.get(metatile_id, ()))
+        for slot in range(8):
+            entry = struct.unpack_from("<H", meta_bytes, metatile_id * 16 + slot * 2)[0]
+            palette_index = (entry >> 12) & 0xF
+            if palette_index == 6 and slot not in expected_slots:
+                errors.append(f"metatile {metatile_id}, slot {slot} uses private palette 6 outside custom Cuordilava art")
+            if slot in expected_slots and palette_index != 6:
+                errors.append(f"metatile {metatile_id}, slot {slot} must use private Cuordilava palette 6")
+
     layouts_path = root / "data/layouts/layouts.json"
     metatiles_path = root / "data/tilesets/secondary/lavaridge/metatiles.bin"
     try:
@@ -557,7 +597,7 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
             map_data = map_path.read_bytes()
             width, height = int(layout["width"]), int(layout["height"])
         except (OSError, KeyError, TypeError, ValueError) as exc:
-            errors.append(f"{map_path}: unable to audit non-Cuordilava palette 12 usage: {exc}")
+            errors.append(f"{map_path}: unable to audit non-Cuordilava palette 6 usage: {exc}")
             continue
         required_bytes = width * height * 2
         if len(map_data) < required_bytes:
@@ -574,9 +614,9 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
             for slot in range(8):
                 entry = struct.unpack_from("<H", metatiles, offset + slot * 2)[0]
                 palette_index = (entry >> 12) & 0xF
-                if palette_index == 12:
+                if palette_index == 6:
                     errors.append(
-                        f"{map_path}: non-Cuordilava layout {layout.get('id')} uses palette 12 "
+                        f"{map_path}: non-Cuordilava layout {layout.get('id')} uses palette 6 "
                         f"through metatile {metatile_id}, slot {slot}; keep the glow palette town-local"
                     )
     return errors
@@ -722,10 +762,10 @@ def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
             entry = struct.unpack_from("<H", data, offset + slot * 2)[0]
             encoded_tile = entry & 0x3FF
             palette_index = (entry >> 12) & 0xF
-            if encoded_tile < 512 or encoded_tile - 512 != expected_tile or palette_index != 12:
+            if encoded_tile < 512 or encoded_tile - 512 != expected_tile or palette_index != 6:
                 errors.append(
                     f"{metatiles_path}: Cuordilava metatile {metatile_id} slot {slot} "
-                    f"must use secondary tile {expected_tile} with palette 12"
+                    f"must use secondary tile {expected_tile} with palette 6"
                 )
 
     try:
@@ -790,10 +830,10 @@ def validate_cuordilava_roof_intake_panel(root: Path) -> list[str]:
         return [f"{meta_path}: missing ventilation roof metatile {metatile_id}"]
     for slot, tile_id in enumerate(expected, start=4):
         entry = struct.unpack_from("<H", data, offset + slot * 2)[0]
-        if (entry & 0x3FF) != 512 + tile_id or ((entry >> 12) & 0xF) != 12:
+        if (entry & 0x3FF) != 512 + tile_id or ((entry >> 12) & 0xF) != 6:
             errors.append(
                 f"{meta_path}: ventilation metatile {metatile_id} overlay slot {slot} "
-                f"must use secondary tile {tile_id} with palette 12"
+                f"must use secondary tile {tile_id} with palette 6"
             )
     try:
         layouts = json.loads(layouts_path.read_text(encoding="utf-8"))["layouts"]
@@ -850,10 +890,10 @@ def validate_cuordilava_roof_corner_overlays(root: Path) -> list[str]:
             continue
         for slot, tile_id in enumerate(tiles, start=4):
             entry = struct.unpack_from("<H", meta, off + slot * 2)[0]
-            if (entry & 0x3FF) != 512 + tile_id or ((entry >> 12) & 0xF) != 12:
+            if (entry & 0x3FF) != 512 + tile_id or ((entry >> 12) & 0xF) != 6:
                 errors.append(
                     f"{metatiles_path}: roof-corner metatile {metatile_id} overlay slot {slot} "
-                    f"must use secondary tile {tile_id} with palette 12"
+                    f"must use secondary tile {tile_id} with palette 6"
                 )
 
     try:
@@ -918,17 +958,17 @@ def validate_cuordilava_roof_vent_metatiles(root: Path) -> list[str]:
         if spec["base"] is not None:
             for slot, tile_id in enumerate(spec["base"]):
                 entry = struct.unpack_from("<H", data, offset + slot * 2)[0]
-                if (entry & 0x3FF) != 512 + tile_id or ((entry >> 12) & 0xF) != 12:
+                if (entry & 0x3FF) != 512 + tile_id or ((entry >> 12) & 0xF) != 6:
                     errors.append(
                         f"{metatiles_path}: roof metatile {metatile_id} base slot {slot} "
-                        f"must use secondary tile {tile_id} with palette 12"
+                        f"must use secondary tile {tile_id} with palette 6"
                     )
         for slot, tile_id in enumerate(spec["overlay"], start=4):
             entry = struct.unpack_from("<H", data, offset + slot * 2)[0]
-            if (entry & 0x3FF) != 512 + tile_id or ((entry >> 12) & 0xF) != 12:
+            if (entry & 0x3FF) != 512 + tile_id or ((entry >> 12) & 0xF) != 6:
                 errors.append(
                     f"{metatiles_path}: roof metatile {metatile_id} overlay slot {slot} "
-                    f"must use secondary tile {tile_id} with palette 12"
+                    f"must use secondary tile {tile_id} with palette 6"
                 )
 
     try:

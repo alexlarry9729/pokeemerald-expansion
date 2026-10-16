@@ -1096,11 +1096,11 @@ static void ApplyCuordilavaPaletteGrade(void)
 
     // Grade BG palettes 0..15 but skip color index 0 (transparent) below.
     // Never grade OBJ palettes 16..31; those carry the player and NPC sprites.
-    // The local architecture palette 12 stays ungraded: its day/night pair
+    // The local architecture palette 6 stays ungraded: its day/night pair
     // controls the readable furnace LEDs and window glow.
     for (paletteIndex = 0; paletteIndex < 16; paletteIndex++)
     {
-        if (paletteIndex == 12)
+        if (paletteIndex == 6)
             continue;
 
         for (colorIndex = 1; colorIndex < 16; colorIndex++)
