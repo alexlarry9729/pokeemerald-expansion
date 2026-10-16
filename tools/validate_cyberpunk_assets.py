@@ -475,6 +475,9 @@ def validate_cuordilava_palette_isolation(root: Path) -> list[str]:
     scoped_blend = "gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN && i != 12"
     if scoped_blend not in overworld:
         errors.append(f"{overworld_path}: time-blended palettes must be regraded only in Cuordilava, excluding palette 12")
+    town_swap = "if (gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN)\\n        palettes |= (1 << 12);"
+    if town_swap not in overworld:
+        errors.append(f"{overworld_path}: palette 12 night blending must be enabled only by the Cuordilava layout")
     if "CuordilavaIndustrialColor(gPlttBufferUnfaded[index])" not in overworld:
         errors.append(f"{overworld_path}: blended shared palettes are not regraded after day/night mixing")
     return errors
@@ -492,10 +495,10 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
     start = header.find("const struct Tileset gTileset_Lavaridge")
     end = header.find("\n};", start) if start >= 0 else -1
     block = header[start:end] if start >= 0 and end >= 0 else ""
-    if ".swapPalettes = SWAP_PAL(12)," not in block:
-        errors.append(f"{header_path}: reserved palette 12 must swap to palette 05 at night")
-    if ".swapPalettes = SWAP_PAL(8)," in block:
-        errors.append(f"{header_path}: shared palette 08 must not be globally swapped for this feature")
+    if ".swapPalettes = SWAP_PAL(" in block:
+        errors.append(
+            f"{header_path}: do not add a tileset-wide palette swap; Cuordilava palette 12 must be blended layout-locally"
+        )
     try:
         day = parse_palette(palette_dir / "12.pal")
         night = parse_palette(palette_dir / "05.pal")

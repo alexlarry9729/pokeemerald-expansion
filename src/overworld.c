@@ -1803,6 +1803,9 @@ void UpdateAltBgPalettes(u16 palettes)
         return;
     palettes &= ~((1 << GetNumPalsInPrimary(gMapHeader.mapLayout)) - 1) | primary->swapPalettes;
     palettes &= ((1 << GetNumPalsInPrimary(gMapHeader.mapLayout)) - 1) | (secondary->swapPalettes << GetNumPalsInPrimary(gMapHeader.mapLayout));
+    // Palette 12 is a private Cuordilava architecture ramp; do not swap it in other maps sharing this tileset.
+    if (gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN)
+        palettes |= (1 << 12);
     palettes &= PALETTES_MAP ^ (1 << 0); // don't blend palette 0, [13,15]
     palettes >>= 1; // start at palette 1
     if (!palettes)

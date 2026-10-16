@@ -99,8 +99,7 @@ const struct Tileset gTileset_Mauville =
 const struct Tileset gTileset_Lavaridge =
 {
     .isCompressed = TRUE,
-    // Custom architecture palette 12 is paired with palette 05 after dark.
-    .swapPalettes = SWAP_PAL(12),
+    // Cuordilava's palette 12 night blend is applied layout-locally in overworld.c.
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Lavaridge,
     .palettes = gTilesetPalettes_Lavaridge,
