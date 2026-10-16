@@ -532,7 +532,7 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     roof_seam_tiles = (343,)
     pipe_tiles = (312, 328, 344)
     architecture_base_tiles = (164, 165, 180, 181, 168, 169, 184, 185, 200, 201, 216, 217, 204, 205, 220, 221, 232, 233, 248, 249, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454, 455, 457, 348, 349, 360, 361, 376, 377, 392, 393, 396, 397, 412, 413)
-    architecture_overlay_tiles = (166, 167, 182, 183, 170, 171, 186, 187, 202, 203, 218, 219, 206, 207, 222, 223, 258, 259, 260, 261, 424, 425, 426, 427, 428, 429, 430, 431, 230, 231, 246, 247, 350, 351, 362, 363, 378, 379, 394, 395, 398, 399, 414, 415)
+    architecture_overlay_tiles = (166, 167, 182, 183, 170, 171, 186, 187, 202, 203, 218, 219, 206, 207, 222, 223, 258, 259, 260, 261, 262, 263, 278, 279, 424, 425, 426, 427, 428, 429, 430, 431, 230, 231, 246, 247, 350, 351, 362, 363, 378, 379, 394, 395, 398, 399, 414, 415)
     target_tiles = window_tiles + facade_panel_tiles + roof_seam_tiles + pipe_tiles + architecture_base_tiles + architecture_overlay_tiles
 
     # Ensure the art check covers tiles actually referenced by this map, not
@@ -716,6 +716,64 @@ def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
     return errors
 
 
+def validate_cuordilava_roof_intake_panel(root: Path) -> list[str]:
+    """Validate the twin-cell industrial ventilation intake used by Cuordilava."""
+    errors: list[str] = []
+    meta_path = root / "data/tilesets/secondary/lavaridge/metatiles.bin"
+    layouts_path = root / "data/layouts/layouts.json"
+    metatile_id = 285
+    expected = (262, 263, 278, 279)
+    try:
+        data = meta_path.read_bytes()
+    except OSError as exc:
+        return [f"{meta_path}: unable to inspect rooftop ventilation panel: {exc}"]
+    offset = metatile_id * 16
+    if offset + 16 > len(data):
+        return [f"{meta_path}: missing ventilation roof metatile {metatile_id}"]
+    for slot, tile_id in enumerate(expected, start=4):
+        entry = struct.unpack_from("<H", data, offset + slot * 2)[0]
+        if (entry & 0x3FF) != 512 + tile_id or ((entry >> 12) & 0xF) != 12:
+            errors.append(
+                f"{meta_path}: ventilation metatile {metatile_id} overlay slot {slot} "
+                f"must use secondary tile {tile_id} with palette 12"
+            )
+    try:
+        layouts = json.loads(layouts_path.read_text(encoding="utf-8"))["layouts"]
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
+        return errors + [f"{layouts_path}: unable to inspect shared layouts for roof-panel reuse: {exc}"]
+    use_count = 0
+    for layout in layouts:
+        if not isinstance(layout, dict) or layout.get("secondary_tileset") != "gTileset_Lavaridge":
+            continue
+        name = layout.get("name", "")
+        directory = name[:-7] if isinstance(name, str) and name.endswith("_Layout") else name
+        map_path = root / "data/layouts" / directory / "map.bin"
+        try:
+            map_data = map_path.read_bytes()
+            width, height = int(layout["width"]), int(layout["height"])
+        except (OSError, KeyError, TypeError, ValueError) as exc:
+            errors.append(f"{map_path}: unable to inspect roof-panel use: {exc}")
+            continue
+        if len(map_data) < width * height * 2:
+            errors.append(f"{map_path}: map data too short for {width}x{height} layout")
+            continue
+        for cell in range(width * height):
+            encoded = struct.unpack_from("<H", map_data, cell * 2)[0] & 0x3FF
+            if encoded < 512 or encoded - 512 != metatile_id:
+                continue
+            if layout.get("id") != "LAYOUT_LAVARIDGE_TOWN":
+                errors.append(
+                    f"{map_path}: Cuordilava-only roof panel metatile {metatile_id} is also used by {layout.get('id')}"
+                )
+            else:
+                use_count += 1
+    if not use_count:
+        errors.append(
+            f"{root / 'data/layouts/LavaridgeTown/map.bin'}: roof panel metatile {metatile_id} is not used by Cuordilava"
+        )
+    return errors
+
+
 def validate_cuordilava_roof_corner_overlays(root: Path) -> list[str]:
     """Check the custom iron corner/eave overlays that replace the stock cyan edge tiles."""
     errors: list[str] = []
@@ -866,6 +924,7 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_cuordilava_palette_isolation(root))
     errors.extend(validate_cuordilava_architecture_metatiles(root))
     errors.extend(validate_cuordilava_roof_corner_overlays(root))
+    errors.extend(validate_cuordilava_roof_intake_panel(root))
     errors.extend(validate_cuordilava_roof_vent_metatiles(root))
     errors.extend(validate_facade_light_wiring(root))
     palette_dir = root / "data/tilesets/secondary/lavaridge/palettes"
