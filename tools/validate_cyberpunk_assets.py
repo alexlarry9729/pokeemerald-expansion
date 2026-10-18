@@ -441,7 +441,7 @@ def validate_facade_light_wiring(root: Path) -> list[str]:
 
 
 def validate_cuordilava_palette_isolation(root: Path) -> list[str]:
-    """Ensure the dark-town grade never changes source palettes or other maps."""
+    """Prevent broad palette grading; only Cuordilava's dedicated palette may glow."""
     errors: list[str] = []
     fieldmap_path = root / "src/fieldmap.c"
     fieldmap_header_path = root / "include/fieldmap.h"
@@ -451,38 +451,27 @@ def validate_cuordilava_palette_isolation(root: Path) -> list[str]:
         fieldmap_header = fieldmap_header_path.read_text(encoding="utf-8")
         overworld = overworld_path.read_text(encoding="utf-8")
     except OSError as exc:
-        return [f"Unable to verify Cuordilava-only palette grading: {exc}"]
+        return [f"Unable to verify Cuordilava palette isolation: {exc}"]
 
-    scoped_load = (
-        "if (IsCuordilavaLayout(mapLayout))\n"
-        "            ApplyCuordilavaPaletteGrade();"
-    )
-    if scoped_load not in fieldmap:
-        errors.append(f"{fieldmap_path}: background grade must run only while loading Cuordilava")
-    if "u16 CuordilavaIndustrialColor(u16 color);" not in fieldmap_header:
-        errors.append(f"{fieldmap_header_path}: local palette transform prototype is missing")
-    if "if (paletteIndex == 6)" not in fieldmap or "gPlttBufferFaded[index] = color;" not in fieldmap:
-        errors.append(f"{fieldmap_path}: reserved palette 6 must stay bright and faded/unfaded buffers stay synchronized")
+    # A global RGB transform made ordinary terrain/building colours look tinted.
+    # The cyberpunk appearance must come from dedicated tiles and palette 6 only.
+    for path, source in (
+        (fieldmap_path, fieldmap),
+        (fieldmap_header_path, fieldmap_header),
+        (overworld_path, overworld),
+    ):
+        if "CuordilavaIndustrialColor" in source or "ApplyCuordilavaPaletteGrade" in source:
+            errors.append(f"{path}: global Cuordilava palette grading must remain removed")
 
-    grade_start = fieldmap.find("static void ApplyCuordilavaPaletteGrade(void)")
-    grade_end = fieldmap.find("static bool8 IsCuordilavaLayout", grade_start)
-    grade_block = fieldmap[grade_start:grade_end] if grade_start >= 0 and grade_end > grade_start else ""
-    if "for (paletteIndex = 0; paletteIndex < 16; paletteIndex++)" not in grade_block or "for (colorIndex = 1; colorIndex < 16; colorIndex++)" not in grade_block:
-        errors.append(f"{fieldmap_path}: grade BG palettes 0..15 while preserving transparent color index 0, and never grade OBJ palettes")
-    if "paletteIndex < NUM_PALS_TOTAL" in grade_block:
-        errors.append(f"{fieldmap_path}: local color grade must not modify character/object sprite palettes")
-
-    scoped_blend = "gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN && i != 6"
-    if scoped_blend not in overworld:
-        errors.append(f"{overworld_path}: time-blended palettes must be regraded only in Cuordilava, excluding palette 6")
+    # Palette 6 is reserved for the town's architecture and receives the
+    # day/night blend only when this specific layout is active.
     town_layout_guard = "if (gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN)" in overworld
     local_palette_bit = "palettes |= (1 << 6);" in overworld
     if not town_layout_guard or not local_palette_bit:
         errors.append(f"{overworld_path}: palette 6 night blending must be enabled only by the Cuordilava layout")
-    if "CuordilavaIndustrialColor(gPlttBufferUnfaded[index])" not in overworld:
-        errors.append(f"{overworld_path}: blended shared palettes are not regraded after day/night mixing")
+    if "gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN && i != 6" in overworld:
+        errors.append(f"{overworld_path}: shared palettes must not be globally recoloured after day/night mixing")
     return errors
-
 
 def validate_cuordilava_palette_pair(root: Path) -> list[str]:
     """Validate the private palette pair reserved for Cuordilava architecture."""
