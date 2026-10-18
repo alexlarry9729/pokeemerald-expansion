@@ -116,15 +116,14 @@ def pack_png(path: Path, width: int, height: int, rgb: bytearray) -> None:
     path.write_bytes(content)
 
 
-def palettes_for(mode: str, day_dir: Path, night_dir: Path) -> dict[int, list[tuple[int, int, int]]]:
+def palettes_for(mode: str, palette_dir: Path, tileset: str) -> dict[int, list[tuple[int, int, int]]]:
+    """Load palette colours from the matching tileset, never mix primary and secondary palettes."""
     palettes: dict[int, list[tuple[int, int, int]]] = {}
     for index in range(16):
-        source_dir = day_dir if index < 6 else night_dir
         source_index = index
-        if index == 6 and mode == "night":
-            source_dir, source_index = night_dir, 15
-        colours = read_palette(source_dir / f"{source_index:02d}.pal")
-        palettes[index] = colours
+        if tileset == "secondary" and index == 6 and mode == "night":
+            source_index = 15
+        palettes[index] = read_palette(palette_dir / f"{source_index:02d}.pal")
     return palettes
 
 
@@ -141,7 +140,8 @@ def render(mode: str, output: Path, layout: dict, root: Path) -> None:
     cell_count = width * height
     if len(map_data) < cell_count * 2:
         raise ValueError(f"{layout_dir / 'map.bin'}: too short for {width}x{height}")
-    palettes = palettes_for(mode, primary_dir / "palettes", secondary_dir / "palettes")
+    primary_palettes = palettes_for(mode, primary_dir / "palettes", "primary")
+    secondary_palettes = palettes_for(mode, secondary_dir / "palettes", "secondary")
     out_w, out_h = width * 16, height * 16
     canvas = bytearray(out_w * out_h * 3)
 
@@ -163,7 +163,7 @@ def render(mode: str, output: Path, layout: dict, root: Path) -> None:
             if (tile_id + 1) * 8 > (atlas_width // 8) * atlas_height:
                 raise ValueError(f"Invalid tile {tile_id} at metatile {meta_id}, slot {slot}")
             palette_index = (encoded >> 12) & 0xF
-            palette = palettes[palette_index]
+            palette = (secondary_palettes if tile_is_secondary else primary_palettes)[palette_index]
             hflip, vflip = bool(encoded & 0x400), bool(encoded & 0x800)
             origin_x = cell_x * 16 + (slot % 2) * 8
             origin_y = cell_y * 16 + ((slot % 4) // 2) * 8
