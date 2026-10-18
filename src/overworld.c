@@ -1798,7 +1798,6 @@ void UpdateAltBgPalettes(u16 palettes)
     const struct Tileset *primary = gMapHeader.mapLayout->primaryTileset;
     const struct Tileset *secondary = gMapHeader.mapLayout->secondaryTileset;
     u32 i = 1;
-    u32 colorIndex;
     if (!MapHasNaturalLight(gMapHeader.mapType))
         return;
     palettes &= ~((1 << GetNumPalsInPrimary(gMapHeader.mapLayout)) - 1) | primary->swapPalettes;
@@ -1818,17 +1817,6 @@ void UpdateAltBgPalettes(u16 palettes)
                 AvgPaletteWeighted(&((u16 *)primary->palettes)[i * 16], &((u16 *)primary->palettes)[((i + 9) % 16) * 16], gPlttBufferUnfaded + i * 16, gTimeBlend.altWeight);
             else
                 AvgPaletteWeighted(&((u16 *)secondary->palettes)[i * 16], &((u16 *)secondary->palettes)[((i + 9) % 16) * 16], gPlttBufferUnfaded + i * 16, gTimeBlend.altWeight);
-            // The shared palettes are reloaded by the time blender. Reapply
-            // Cuordilava's local grade to those results, but never dim palette 6:
-            // its dedicated day/night pair supplies the architecture neon.
-            if (gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN && i != 6)
-            {
-                for (colorIndex = 1; colorIndex < 16; colorIndex++)
-                {
-                    u16 index = i * 16 + colorIndex;
-                    gPlttBufferUnfaded[index] = CuordilavaIndustrialColor(gPlttBufferUnfaded[index]);
-                }
-            }
         }
         i++;
         palettes >>= 1;
