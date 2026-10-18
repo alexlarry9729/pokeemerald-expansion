@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Render a layout-only Cuordilava day/night preview from the real 4bpp tilesets.
 
+Palette RGB values are rendered as authored; no global colour grading is applied,
+so the preview cannot make unrelated tiles look cyberpunk by recolouring them.
 This is a diagnostic renderer, not an emulator screenshot: object events, NPCs,
 weather, shadows and engine scanline effects are intentionally omitted.
 """
@@ -100,23 +102,6 @@ def read_palette(path: Path) -> list[tuple[int, int, int]]:
     return result
 
 
-def grade_cuordilava(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
-    red, green, blue = (value >> 3 for value in rgb)
-    if red > green + 5 and blue > green + 5:
-        red, green, blue = red * 17 // 32, green * 6 // 32, blue * 9 // 32
-    elif green > red + 5 and blue > red + 5:
-        red, green, blue = red * 5 // 32, green * 15 // 32, blue * 17 // 32
-    elif red > green + 5 and red > blue + 5:
-        red, green, blue = red * 24 // 32, green * 14 // 32, blue * 7 // 32
-    elif blue > red + 5 and blue > green + 5:
-        red, green, blue = red * 8 // 32, green * 10 // 32, blue * 17 // 32
-    elif green > red + 5 and green > blue + 5:
-        red, green, blue = red * 6 // 32, green * 16 // 32, blue * 10 // 32
-    else:
-        red, green, blue = red * 15 // 32, green * 15 // 32, blue * 18 // 32
-    return red * 8, green * 8, blue * 8
-
-
 def pack_png(path: Path, width: int, height: int, rgb: bytearray) -> None:
     def chunk(kind: bytes, payload: bytes) -> bytes:
         return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload) & 0xFFFFFFFF)
@@ -139,8 +124,6 @@ def palettes_for(mode: str, day_dir: Path, night_dir: Path) -> dict[int, list[tu
         if index == 6 and mode == "night":
             source_dir, source_index = night_dir, 15
         colours = read_palette(source_dir / f"{source_index:02d}.pal")
-        if index != 6:
-            colours = [colours[0]] + [grade_cuordilava(rgb) for rgb in colours[1:]]
         palettes[index] = colours
     return palettes
 
