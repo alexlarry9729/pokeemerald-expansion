@@ -650,10 +650,13 @@ def validate_cuordilava_primary_palette_isolation(root: Path) -> list[str]:
     for index in (1, 2, 3, 4):
         if max(ground[index]) > 100:
             errors.append(f"{palette_dir / '02.pal'}: ground structural colours 1–4 must remain dark basalt")
-    # Warm ground inlays lead the palette; cyan and green remain minor accents.
+    # Repeated ground texture indices must remain dark basalt/rust, not glowing orange.
+    for index in range(5, 13):
+        if max(ground[index]) > 100:
+            errors.append(f"{palette_dir / '02.pal'}: ground texture colours 5–12 must remain subdued")
     for index in (9, 10, 11, 12):
         if ground[index][0] <= max(ground[index][1], ground[index][2]):
-            errors.append(f"{palette_dir / '02.pal'}: warm accent {index} must be red/orange-led")
+            errors.append(f"{palette_dir / '02.pal'}: earthy ground accent {index} must remain warm brown")
     for filename in ("01.pal", "05.pal"):
         for index, colour in enumerate(palettes[int(filename[:2])]):
             if index in (0, 8):
