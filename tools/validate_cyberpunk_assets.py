@@ -498,6 +498,16 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
         for index in range(9, 16):
             if luminance(night[index]) <= luminance(day[index]):
                 errors.append(f"{palette_dir / '15.pal'}: local neon colour {index} must be brighter at night")
+        # Reference-driven hierarchy: furnace red/orange must lead and teal must stay secondary.
+        warm_indices = (11, 12, 13, 14)
+        if any(day[index][0] <= max(day[index][1], day[index][2]) for index in warm_indices):
+            errors.append(f"{palette_dir / '06.pal'}: furnace accents must be red/orange-led")
+        if day[9][1] > 100 or day[10][1] > 120:
+            errors.append(f"{palette_dir / '06.pal'}: daytime teal accents must remain restrained")
+        if any(night[index][0] <= max(night[index][1], night[index][2]) for index in warm_indices):
+            errors.append(f"{palette_dir / '15.pal'}: night furnace accents must stay red/orange-led")
+        if night[9][1] > 130 or night[10][1] > 160:
+            errors.append(f"{palette_dir / '15.pal'}: nighttime teal accents must remain secondary")
     except (OSError, ValueError, IndexError) as exc:
         errors.append(f"{palette_dir}: invalid Cuordilava day/night palette pair: {exc}")
 

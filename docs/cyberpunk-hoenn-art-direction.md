@@ -39,3 +39,14 @@ Do not mark the town visually complete solely on successful compilation. The fin
 
 
 The ROM artifact workflow also renders two layout-only PNGs from the current map, primary/secondary tile atlases and JASC palettes. These previews reproduce the custom BG colour-grade and private day/night palette, but intentionally omit NPC/event sprites, shadows, weather and emulator effects; they are a fast map-layout review, not a substitute for in-emulator verification.
+
+
+## Reference-driven palette pass — 2026-10-19
+
+The supplied city reference is a mood and density target, adapted to the existing GBA top-down tiles rather than copied literally. The visual hierarchy is deliberately constrained:
+
+- **Primary:** charcoal/iron structure with furnace red and incandescent orange on windows, seams and vents.
+- **Secondary:** low-energy teal service LEDs; cyan must not dominate the ground or the building faces.
+- **Night:** brighten the accent ramp while keeping structural indices 1–8 dark; the night palette is still blended only for the Cuordilava layout.
+- **Scope:** this pass changes only the private palette 6 / night companion 15 used by Cuordilava's custom metatiles. Shared Lavaridge palettes and global RGB grading remain untouched.
+- **Regression guard:** the asset validator now checks that palette 6/15 warm accents stay red/orange-led and that the teal accent ramp remains restrained.
