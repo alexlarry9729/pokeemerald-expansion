@@ -116,14 +116,32 @@ def pack_png(path: Path, width: int, height: int, rgb: bytearray) -> None:
     path.write_bytes(content)
 
 
+def transform_cuordilava_colour(rgb: tuple[int, int, int], mode: str) -> tuple[int, int, int]:
+    """Mirror the map-local GBA palette treatment used in overworld.c."""
+    r, g, b = (channel // 8 for channel in rgb)
+    night = mode == "night"
+    if r + g + b < 6:
+        return rgb
+    if r >= 22 and b >= 16 and r > g + 8 and b > g + 6:
+        r, g, b = 31, (13 if night else 9), (7 if night else 4)
+    elif g >= 22 and b >= 16 and r <= 10 and g > r + 12:
+        r, g, b = (8 if night else 6), (14 if night else 11), (18 if night else 14)
+    elif g >= 23 and g > r + 8 and g > b + 4:
+        r, g, b = r // 2, (22 if night else 20), b // 2
+    elif b >= 20 and b > r + 8 and b > g + 4:
+        r, g, b = 9, (8 if night else 9), (17 if night else 15)
+    return tuple(min(255, round(channel * 255 / 31)) for channel in (r, g, b))
+
+
 def palettes_for(mode: str, palette_dir: Path, tileset: str) -> dict[int, list[tuple[int, int, int]]]:
-    """Load palette colours from the matching tileset, never mix primary and secondary palettes."""
+    """Load matching day/night palettes and grade them for Cuordilava only."""
     palettes: dict[int, list[tuple[int, int, int]]] = {}
     for index in range(16):
         source_index = index
         if tileset == "secondary" and index == 6 and mode == "night":
             source_index = 15
-        palettes[index] = read_palette(palette_dir / f"{source_index:02d}.pal")
+        source = read_palette(palette_dir / f"{source_index:02d}.pal")
+        palettes[index] = [transform_cuordilava_colour(colour, mode) for colour in source]
     return palettes
 
 
