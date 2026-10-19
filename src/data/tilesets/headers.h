@@ -129,7 +129,7 @@ const struct Tileset gTileset_CuordilavaLavaridge =
     .palettes = gTilesetPalettes_CuordilavaLavaridge,
     .metatiles = gMetatiles_CuordilavaLavaridge,
     .metatileAttributes = gMetatileAttributes_CuordilavaLavaridge,
-    .callback = InitTilesetAnim_CuordilavaLavaridge,
+    .callback = InitTilesetAnim_Lavaridge,
 };
 
 const struct Tileset gTileset_Fallarbor =
