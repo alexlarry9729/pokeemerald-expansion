@@ -54,3 +54,7 @@ The supplied city reference is a mood and density target, adapted to the existin
 ## Pixel-art fixture pass (2026-10-19)
 
 The facade-light object now uses a dedicated 16×16 indexed pixel-art fixture: dark iron mounting, a vertical incandescent red/orange core, and a single restrained teal status light. The existing day/night object palettes still control its luminosity, so the sprite art is shared while the daytime ramp stays subdued and the nighttime ramp becomes vivid. The preview renderer composites these actual light-object sprites at their authored town coordinates and chooses the corresponding object palette for each preview; it still intentionally omits NPCs, weather, shadows, and engine effects. This improves visual review without changing town coordinates, warps, collision attributes, or the event anchor placements.
+
+## Rifinitura della gerarchia cromatica diurna (2026-10-19)
+
+Le due rampe primarie locali che controllano i dettagli caldi sono state ulteriormente attenuate di giorno: i toni rosso-arancio rimangono riconoscibili, ma la loro luminanza è più contenuta sulle superfici estese. Le companion notturne restano più brillanti, così l'effetto di fornace si concentra maggiormente su finestre, bordi e condotti al calare della luce. La modifica riguarda solo `data/tilesets/primary/cuordilava/palettes/03.pal` e `05.pal`; non modifica palette condivise, coordinate della mappa o attributi dei metatiles.
