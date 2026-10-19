@@ -442,7 +442,7 @@ def validate_facade_light_wiring(root: Path) -> list[str]:
             sprite_data = sprite_path.read_bytes()
             if (
                 len(sprite_data) < 29
-                or sprite_data[:8] != b"\\x89PNG\\r\\n\\x1a\\n"
+                or sprite_data[:8] != b"\x89PNG\r\n\x1a\n"
                 or sprite_data[12:16] != b"IHDR"
             ):
                 errors.append(f"{sprite_path}: facade-light image is not a valid PNG")
