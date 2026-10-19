@@ -1047,7 +1047,6 @@ void LoadMapTilesetPalettes(struct MapLayout const *mapLayout)
     {
         LoadPrimaryTilesetPalette(mapLayout);
         LoadSecondaryTilesetPalette(mapLayout, FALSE);
-        ApplyCuordilavaCyberpunkPalette();
     }
 }
 
