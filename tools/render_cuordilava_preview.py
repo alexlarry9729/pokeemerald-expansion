@@ -141,7 +141,12 @@ def palettes_for(mode: str, palette_dir: Path, tileset: str) -> dict[int, list[t
         if tileset == "secondary" and index == 6 and mode == "night":
             source_index = 15
         source = read_palette(palette_dir / f"{source_index:02d}.pal")
-        palettes[index] = [transform_cuordilava_colour(colour, mode) for colour in source]
+        # Palettes 6/15 carry the custom building ramp and its night companion;
+        # keep those authored colours intact while grading the shared town surfaces.
+        if tileset == "secondary" and index in (6, 15):
+            palettes[index] = source
+        else:
+            palettes[index] = [transform_cuordilava_colour(colour, mode) for colour in source]
     return palettes
 
 
