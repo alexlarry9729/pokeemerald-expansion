@@ -3,9 +3,9 @@
 
 Palette RGB values are rendered as authored; no global colour grading is applied,
 so the preview cannot make unrelated tiles look cyberpunk by recolouring them.
-This is a diagnostic renderer, not an emulator screenshot: the dedicated Cuordilava
-light sprites are composited with their real day/night palettes; NPCs, weather, shadows
-and engine scanline effects are intentionally omitted.
+This is a diagnostic renderer, not an emulator screenshot: the town's Pokémon Center,
+Poké Mart and facade light sprites are composited with their real day/night palette;
+NPCs, weather, shadows and engine scanline effects are intentionally omitted.
 """
 from __future__ import annotations
 
@@ -188,17 +188,29 @@ def render(mode: str, output: Path, layout: dict, root: Path) -> None:
                     offset = ((origin_y + py) * out_w + origin_x + px) * 3
                     canvas[offset:offset + 3] = bytes(colour)
 
-    # Composite only our dedicated light objects, so the preview reflects the actual
-    # day/night light palette without pretending to render every overworld sprite.
+    # Composite the actual day/night light-object sprites. The Pokémon Center,
+    # Poké Mart and facade use distinct indexed images in the game.
     map_name = layout["name"].removesuffix("_Layout")
     event_map = json.loads((root / "data/maps" / map_name / "map.json").read_text(encoding="utf-8"))
-    light_path = root / "graphics/object_events/pics/misc/facade_light.png"
-    light_width, light_height, light_pixels = png_indexed(light_path)
+    light_sprite_paths = {
+        "LIGHT_TYPE_PKMN_CENTER_SIGN": root / "graphics/object_events/pics/misc/poke_center_light.png",
+        "LIGHT_TYPE_POKE_MART_SIGN": root / "graphics/object_events/pics/misc/mart_light.png",
+        "LIGHT_TYPE_FACADE": root / "graphics/object_events/pics/misc/facade_light.png",
+    }
+    light_sprites = {
+        light_type: png_indexed(path)
+        for light_type, path in light_sprite_paths.items()
+    }
     light_palette_name = "neon_light_day.pal" if mode == "day" else "neon_light.pal"
     light_palette = read_palette(root / "graphics/object_events/palettes" / light_palette_name)
     for event in event_map.get("object_events", []):
         if event.get("graphics_id") != "OBJ_EVENT_GFX_LIGHT_SPRITE":
             continue
+        light_type = event.get("trainer_sight_or_berry_tree_id")
+        sprite_data = light_sprites.get(light_type)
+        if sprite_data is None:
+            continue
+        light_width, light_height, light_pixels = sprite_data
         light_x = int(event.get("x", 0)) * 16
         light_y = int(event.get("y", 0)) * 16
         for py in range(light_height):
