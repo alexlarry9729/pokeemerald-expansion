@@ -129,6 +129,7 @@ def palettes_for(mode: str, palette_dir: Path, tileset: str) -> dict[int, list[t
 
 def render(mode: str, output: Path, layout: dict, root: Path) -> None:
     primary_dir = root / "data/tilesets/primary/general"
+    primary_palette_dir = root / "data/tilesets/primary/cuordilava/palettes"
     secondary_dir = root / "data/tilesets/secondary/lavaridge"
     primary_png = png_indexed(primary_dir / "tiles.png")
     secondary_png = png_indexed(secondary_dir / "tiles.png")
@@ -140,7 +141,7 @@ def render(mode: str, output: Path, layout: dict, root: Path) -> None:
     cell_count = width * height
     if len(map_data) < cell_count * 2:
         raise ValueError(f"{layout_dir / 'map.bin'}: too short for {width}x{height}")
-    primary_palettes = palettes_for(mode, primary_dir / "palettes", "primary")
+    primary_palettes = palettes_for(mode, primary_palette_dir, "primary")
     secondary_palettes = palettes_for(mode, secondary_dir / "palettes", "secondary")
     out_w, out_h = width * 16, height * 16
     canvas = bytearray(out_w * out_h * 3)

@@ -41,6 +41,18 @@ const struct Tileset gTileset_General =
     .callback = InitTilesetAnim_General,
 };
 
+// Reuses the general geometry but owns Cuordilava-only colours.
+const struct Tileset gTileset_CuordilavaGeneral =
+{
+    .isCompressed = TRUE,
+    .isSecondary = FALSE,
+    .tiles = gTilesetTiles_General,
+    .palettes = gTilesetPalettes_CuordilavaGeneral,
+    .metatiles = gMetatiles_General,
+    .metatileAttributes = gMetatileAttributes_General,
+    .callback = InitTilesetAnim_General,
+};
+
 const struct Tileset gTileset_Petalburg =
 {
     .isCompressed = TRUE,

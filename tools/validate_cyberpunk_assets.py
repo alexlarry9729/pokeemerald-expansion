@@ -621,6 +621,49 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
     return errors
 
 
+def validate_cuordilava_primary_palette_isolation(root: Path) -> list[str]:
+    """Ensure the cloned primary palette set is dedicated to Cuordilava and keeps the intended hierarchy."""
+    errors: list[str] = []
+    layouts_path = root / "data/layouts/layouts.json"
+    palette_dir = root / "data/tilesets/primary/cuordilava/palettes"
+    try:
+        layouts = json.loads(layouts_path.read_text(encoding="utf-8"))["layouts"]
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
+        return [f"{layouts_path}: unable to verify Cuordilava primary palette isolation: {exc}"]
+
+    town = next((item for item in layouts if isinstance(item, dict) and item.get("id") == "LAYOUT_LAVARIDGE_TOWN"), None)
+    if town is None or town.get("primary_tileset") != "gTileset_CuordilavaGeneral":
+        errors.append(f"{layouts_path}: LAYOUT_LAVARIDGE_TOWN must use gTileset_CuordilavaGeneral")
+    for layout in layouts:
+        if not isinstance(layout, dict):
+            continue
+        if layout.get("primary_tileset") == "gTileset_CuordilavaGeneral" and layout.get("id") != "LAYOUT_LAVARIDGE_TOWN":
+            errors.append(f"{layouts_path}: the Cuordilava primary tileset must not be shared with {layout.get('id')}")
+
+    try:
+        palettes = {index: parse_palette(palette_dir / f"{index:02d}.pal") for index in range(16)}
+    except (OSError, ValueError) as exc:
+        return errors + [f"{palette_dir}: missing or invalid Cuordilava primary palette: {exc}"]
+
+    # Ground index 1–4 must stay in a low-luminance basalt ramp instead of returning to neon cyan/green.
+    ground = palettes[2]
+    for index in (1, 2, 3, 4):
+        if max(ground[index]) > 100:
+            errors.append(f"{palette_dir / '02.pal'}: ground structural colours 1–4 must remain dark basalt")
+    # Warm ground inlays lead the palette; cyan and green remain minor accents.
+    for index in (9, 10, 11, 12):
+        if ground[index][0] <= max(ground[index][1], ground[index][2]):
+            errors.append(f"{palette_dir / '02.pal'}: warm accent {index} must be red/orange-led")
+    for filename in ("01.pal", "05.pal"):
+        for index, colour in enumerate(palettes[int(filename[:2])]):
+            if index in (0, 8):
+                continue
+            if index <= 7 and max(colour) > 170:
+                errors.append(f"{palette_dir / filename}: structural colours 0–7 must remain subdued")
+                break
+    return errors
+
+
 def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -> list[str]:
     """Check the warm windows and cool pipe trims on secondary tiles used by Lavaridge."""
     errors: list[str] = []
@@ -1019,6 +1062,7 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_lavaridge_map_access(root))
     errors.extend(validate_cuordilava_palette_pair(root))
     errors.extend(validate_cuordilava_palette_isolation(root))
+    errors.extend(validate_cuordilava_primary_palette_isolation(root))
     errors.extend(validate_cuordilava_architecture_metatiles(root))
     errors.extend(validate_cuordilava_roof_corner_overlays(root))
     errors.extend(validate_cuordilava_roof_intake_panel(root))
