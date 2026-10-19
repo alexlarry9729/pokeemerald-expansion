@@ -3,8 +3,9 @@
 
 Palette RGB values are rendered as authored; no global colour grading is applied,
 so the preview cannot make unrelated tiles look cyberpunk by recolouring them.
-This is a diagnostic renderer, not an emulator screenshot: object events, NPCs,
-weather, shadows and engine scanline effects are intentionally omitted.
+This is a diagnostic renderer, not an emulator screenshot: the dedicated Cuordilava
+light sprites are composited with their real day/night palettes; NPCs, weather, shadows
+and engine scanline effects are intentionally omitted.
 """
 from __future__ import annotations
 
@@ -186,6 +187,35 @@ def render(mode: str, output: Path, layout: dict, root: Path) -> None:
                     colour = palette[colour_index]
                     offset = ((origin_y + py) * out_w + origin_x + px) * 3
                     canvas[offset:offset + 3] = bytes(colour)
+
+    # Composite only our dedicated light objects, so the preview reflects the actual
+    # day/night light palette without pretending to render every overworld sprite.
+    map_name = layout["name"].removesuffix("_Layout")
+    event_map = json.loads((root / "data/maps" / map_name / "map.json").read_text(encoding="utf-8"))
+    light_path = root / "graphics/object_events/pics/misc/facade_light.png"
+    light_width, light_height, light_pixels = png_indexed(light_path)
+    light_palette_name = "neon_light_day.pal" if mode == "day" else "neon_light.pal"
+    light_palette = read_palette(root / "graphics/object_events/palettes" / light_palette_name)
+    for event in event_map.get("object_events", []):
+        if event.get("graphics_id") != "OBJ_EVENT_GFX_LIGHT_SPRITE":
+            continue
+        light_x = int(event.get("x", 0)) * 16
+        light_y = int(event.get("y", 0)) * 16
+        for py in range(light_height):
+            dest_y = light_y + py
+            if dest_y < 0 or dest_y >= out_h:
+                continue
+            for px in range(light_width):
+                colour_index = light_pixels[py][px]
+                if colour_index == 0:
+                    continue
+                dest_x = light_x + px
+                if dest_x < 0 or dest_x >= out_w:
+                    continue
+                colour = light_palette[colour_index]
+                offset = (dest_y * out_w + dest_x) * 3
+                canvas[offset:offset + 3] = bytes(colour)
+
     scale = 3
     scaled = bytearray(out_w * scale * out_h * scale * 3)
     scaled_w = out_w * scale
@@ -209,7 +239,7 @@ def main() -> None:
     layout = next(item for item in layouts if item.get("id") == "LAYOUT_LAVARIDGE_TOWN")
     render("day", args.output_dir / "cuordilava-day.png", layout, ROOT)
     render("night", args.output_dir / "cuordilava-night.png", layout, ROOT)
-    print(f"Rendered layout-only day/night previews for {layout['id']} to {args.output_dir}")
+    print(f"Rendered Cuordilava day/night layout previews (including light sprites) for {layout['id']} to {args.output_dir}")
 
 
 if __name__ == "__main__":
