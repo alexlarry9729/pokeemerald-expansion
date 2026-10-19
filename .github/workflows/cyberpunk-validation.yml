@@ -20,6 +20,7 @@ on:
       - 'data/layouts/MagmaHideout_3F_3R/map.bin'
       - 'data/layouts/MagmaHideout_4F/map.bin'
       - 'data/tilesets/secondary/lavaridge/**'
+      - 'data/tilesets/secondary/cuordilava/**'
       - 'docs/cyberpunk-hoenn-art-direction.md'
       - 'src/data/tilesets/headers.h'
       - 'data/maps/LavaridgeTown/map.json'

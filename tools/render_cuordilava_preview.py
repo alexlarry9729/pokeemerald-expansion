@@ -134,7 +134,7 @@ def palettes_for(mode: str, palette_dir: Path, tileset: str) -> dict[int, list[t
 def render(mode: str, output: Path, layout: dict, root: Path) -> None:
     primary_dir = root / "data/tilesets/primary/general"
     primary_palette_dir = root / "data/tilesets/primary/cuordilava/palettes"
-    secondary_dir = root / "data/tilesets/secondary/lavaridge"
+    secondary_dir = root / "data/tilesets/secondary/cuordilava"
     primary_png = png_indexed(primary_dir / "tiles.png")
     secondary_png = png_indexed(secondary_dir / "tiles.png")
     primary_metatiles = (primary_dir / "metatiles.bin").read_bytes()

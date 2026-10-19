@@ -14,7 +14,7 @@ Use the supplied cyberpunk town image as the mood and density reference, adapted
 - **Volcanic base:** charcoal basalt, dark iron, warm stone edges, steam and hot-spring water. Keep walkable paving and water boundaries clearly readable.
 - **Light hierarchy:** lava-orange / furnace-red is the primary light family; cyan is the cool counterpoint; magenta is reserved for a smaller number of premium signs and trims.
 - **Day and night:** neon elements must remain visible during daylight, but use a lower-energy palette and normal sprite rendering. At night, use the vivid palette and blend mode. Avoid washing out the terrain or obscuring collision-relevant edges.
-- **Glow-mask invariant:** for every index listed in `data/tilesets/secondary/lavaridge/palettes/08.pla`, the paired night value in `01.pal` must be brighter than the daytime value in `08.pal`; the asset validator checks the full mask, not only selected colours.
+- **Glow-mask invariant:** for every index listed in `data/tilesets/secondary/cuordilava/palettes/08.pla`, the paired night value in `01.pal` must be brighter than the daytime value in `08.pal`; the asset validator checks the full mask, not only selected colours.
 - **Living town:** retain the contrast of palms, dense planting, flowers, waterfalls and thermal pools against metal and stone. These are important parts of the reference, not filler to remove.
 
 ## Implementation order
@@ -42,6 +42,8 @@ The ROM artifact workflow also renders two layout-only PNGs from the current map
 
 
 ## Reference-driven palette pass — 2026-10-19
+
+- **Secondary tileset isolation:** `LAYOUT_LAVARIDGE_TOWN` now uses a dedicated copy at `data/tilesets/secondary/cuordilava/` for Cuordilava's industrial metatiles, tiles and day/night palette. The shared `data/tilesets/secondary/lavaridge/` files used by Route 112, Mt. Chimney, Jagged Pass, Fiery Path and Magma Hideout remain at the upstream baseline and are guarded by the asset validator.
 
 The supplied city reference is a mood and density target, adapted to the existing GBA top-down tiles rather than copied literally. The visual hierarchy is deliberately constrained:
 

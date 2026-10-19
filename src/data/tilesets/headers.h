@@ -111,13 +111,25 @@ const struct Tileset gTileset_Mauville =
 const struct Tileset gTileset_Lavaridge =
 {
     .isCompressed = TRUE,
-    // Cuordilava's palette 6 night blend is applied layout-locally in overworld.c.
     .isSecondary = TRUE,
     .tiles = gTilesetTiles_Lavaridge,
     .palettes = gTilesetPalettes_Lavaridge,
     .metatiles = gMetatiles_Lavaridge,
     .metatileAttributes = gMetatileAttributes_Lavaridge,
     .callback = InitTilesetAnim_Lavaridge,
+};
+
+// Town-only copy: custom palette 6 / night palette 15 are isolated from shared Lavaridge maps.
+const struct Tileset gTileset_CuordilavaLavaridge =
+{
+    .isCompressed = TRUE,
+    // Cuordilava's palette 6 night blend is applied layout-locally in overworld.c.
+    .isSecondary = TRUE,
+    .tiles = gTilesetTiles_CuordilavaLavaridge,
+    .palettes = gTilesetPalettes_CuordilavaLavaridge,
+    .metatiles = gMetatiles_CuordilavaLavaridge,
+    .metatileAttributes = gMetatileAttributes_CuordilavaLavaridge,
+    .callback = InitTilesetAnim_CuordilavaLavaridge,
 };
 
 const struct Tileset gTileset_Fallarbor =

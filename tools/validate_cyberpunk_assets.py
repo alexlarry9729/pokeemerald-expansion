@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 import binascii
+import hashlib
 import json
 import struct
 import sys
@@ -501,12 +502,12 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
     """Validate the private palette pair reserved for Cuordilava architecture."""
     errors: list[str] = []
     header_path = root / "src/data/tilesets/headers.h"
-    palette_dir = root / "data/tilesets/secondary/lavaridge/palettes"
+    palette_dir = root / "data/tilesets/secondary/cuordilava/palettes"
     try:
         header = header_path.read_text(encoding="utf-8")
     except OSError as exc:
         return [f"{header_path}: unable to inspect local palette-swap declaration: {exc}"]
-    start = header.find("const struct Tileset gTileset_Lavaridge")
+    start = header.find("const struct Tileset gTileset_CuordilavaLavaridge")
     end = header.find("\n};", start) if start >= 0 else -1
     block = header[start:end] if start >= 0 and end >= 0 else ""
     if ".swapPalettes = SWAP_PAL(" in block:
@@ -579,7 +580,7 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
         285: (4, 5, 6, 7),
     }
     try:
-        meta_bytes = (root / "data/tilesets/secondary/lavaridge/metatiles.bin").read_bytes()
+        meta_bytes = (root / "data/tilesets/secondary/cuordilava/metatiles.bin").read_bytes()
     except OSError as exc:
         errors.append(f"Unable to audit private palette-6 metatile slots: {exc}")
         return errors
@@ -597,7 +598,7 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
                 errors.append(f"metatile {metatile_id}, slot {slot} must use private Cuordilava palette 6")
 
     layouts_path = root / "data/layouts/layouts.json"
-    metatiles_path = root / "data/tilesets/secondary/lavaridge/metatiles.bin"
+    metatiles_path = root / "data/tilesets/secondary/cuordilava/metatiles.bin"
     try:
         layouts = json.loads(layouts_path.read_text(encoding="utf-8"))["layouts"]
         metatiles = metatiles_path.read_bytes()
@@ -609,7 +610,7 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
         return errors
     meta_count = len(metatiles) // 16
     for layout in layouts:
-        if not isinstance(layout, dict) or layout.get("secondary_tileset") != "gTileset_Lavaridge":
+        if not isinstance(layout, dict) or layout.get("secondary_tileset") != "gTileset_CuordilavaLavaridge":
             continue
         if layout.get("id") == "LAYOUT_LAVARIDGE_TOWN":
             continue
@@ -642,6 +643,46 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
                         f"{map_path}: non-Cuordilava layout {layout.get('id')} uses palette 6 "
                         f"through metatile {metatile_id}, slot {slot}; keep the glow palette town-local"
                     )
+
+    # Shared assets are used by Route 112, Mt. Chimney, Jagged Pass, Fiery Path and Magma Hideout.
+    # Verify the source tileset remains byte-for-byte at the upstream master baseline.
+    shared_baselines = {
+        "tiles.png": "2f6898a0f7ca21efb0dfc0c1d608d8bae6931a27",
+        "metatiles.bin": "fd0314ed78ce4aad760ba39a6e6522e5f27bfdd9",
+        "palettes/06.pal": "00e1478a73ce30de3184f8e193fbef6eb72195e7",
+        "palettes/13.pal": "4b0812f094038215e9d7d7ea63170299929a834b",
+        "palettes/15.pal": "e7717d74eabffda41647b2d2a2ca7169ca4ad4c3",
+    }
+    shared_dir = root / "data/tilesets/secondary/lavaridge"
+    for relative_path, expected_blob_sha in shared_baselines.items():
+        shared_path = shared_dir / relative_path
+        try:
+            data = shared_path.read_bytes()
+            blob_header = f"blob {len(data)}\0".encode("ascii")
+            actual_blob_sha = hashlib.sha1(blob_header + data).hexdigest()
+            if actual_blob_sha != expected_blob_sha:
+                errors.append(
+                    f"{shared_path}: shared Lavaridge asset differs from its master baseline; "
+                    "keep Cuordilava-only changes in the private secondary tileset"
+                )
+        except OSError as exc:
+            errors.append(f"{shared_path}: unable to verify shared tileset integrity: {exc}")
+
+    layouts_path = root / "data/layouts/layouts.json"
+    try:
+        layouts = json.loads(layouts_path.read_text(encoding="utf-8"))["layouts"]
+        private_users = [
+            layout.get("id") for layout in layouts
+            if isinstance(layout, dict)
+            and layout.get("secondary_tileset") == "gTileset_CuordilavaLavaridge"
+        ]
+        if private_users != ["LAYOUT_LAVARIDGE_TOWN"]:
+            errors.append(
+                f"{layouts_path}: the Cuordilava-only secondary tileset must be used by "
+                f"LAYOUT_LAVARIDGE_TOWN alone (found {private_users})"
+            )
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
+        errors.append(f"{layouts_path}: unable to verify private secondary-tileset ownership: {exc}")
     return errors
 
 
@@ -728,7 +769,7 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     # Ensure the art check covers tiles actually referenced by this map, not
     # unrelated atlas tiles that happen to contain neon-colored pixels.
     map_path = root / "data/layouts/LavaridgeTown/map.bin"
-    metatiles_path = root / "data/tilesets/secondary/lavaridge/metatiles.bin"
+    metatiles_path = root / "data/tilesets/secondary/cuordilava/metatiles.bin"
     try:
         map_bytes = map_path.read_bytes()
         metatiles_bytes = metatiles_path.read_bytes()
@@ -822,7 +863,7 @@ def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
     Magma Hideout architecture unaffected.
     """
     errors: list[str] = []
-    metatiles_path = root / "data/tilesets/secondary/lavaridge/metatiles.bin"
+    metatiles_path = root / "data/tilesets/secondary/cuordilava/metatiles.bin"
     layouts_path = root / "data/layouts/layouts.json"
     expected_tiles = {
         165: (396, 397, 412, 413, 398, 399, 414, 415),
@@ -867,7 +908,7 @@ def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
 
     counts = {metatile_id: 0 for metatile_id in expected_tiles}
     for layout in layouts:
-        if not isinstance(layout, dict) or layout.get("secondary_tileset") != "gTileset_Lavaridge":
+        if not isinstance(layout, dict) or layout.get("secondary_tileset") != "gTileset_CuordilavaLavaridge":
             continue
         layout_id = layout.get("id")
         name = layout.get("name", "")
@@ -909,7 +950,7 @@ def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
 def validate_cuordilava_roof_intake_panel(root: Path) -> list[str]:
     """Validate the twin-cell industrial ventilation intake used by Cuordilava."""
     errors: list[str] = []
-    meta_path = root / "data/tilesets/secondary/lavaridge/metatiles.bin"
+    meta_path = root / "data/tilesets/secondary/cuordilava/metatiles.bin"
     layouts_path = root / "data/layouts/layouts.json"
     metatile_id = 285
     expected = (262, 263, 278, 279)
@@ -933,7 +974,7 @@ def validate_cuordilava_roof_intake_panel(root: Path) -> list[str]:
         return errors + [f"{layouts_path}: unable to inspect shared layouts for roof-panel reuse: {exc}"]
     use_count = 0
     for layout in layouts:
-        if not isinstance(layout, dict) or layout.get("secondary_tileset") != "gTileset_Lavaridge":
+        if not isinstance(layout, dict) or layout.get("secondary_tileset") != "gTileset_CuordilavaLavaridge":
             continue
         name = layout.get("name", "")
         directory = name[:-7] if isinstance(name, str) and name.endswith("_Layout") else name
@@ -967,7 +1008,7 @@ def validate_cuordilava_roof_intake_panel(root: Path) -> list[str]:
 def validate_cuordilava_roof_corner_overlays(root: Path) -> list[str]:
     """Check the custom iron corner/eave overlays that replace the stock cyan edge tiles."""
     errors: list[str] = []
-    metatiles_path = root / "data/tilesets/secondary/lavaridge/metatiles.bin"
+    metatiles_path = root / "data/tilesets/secondary/cuordilava/metatiles.bin"
     layouts_path = root / "data/layouts/layouts.json"
     expected = {72: (258, 259, 260, 261), 73: (258, 259, 260, 261),
                 74: (258, 259, 260, 261), 77: (258, 259, 260, 261)}
@@ -995,7 +1036,7 @@ def validate_cuordilava_roof_corner_overlays(root: Path) -> list[str]:
 
     counts = {metatile_id: 0 for metatile_id in expected}
     for layout in layouts:
-        if not isinstance(layout, dict) or layout.get("secondary_tileset") != "gTileset_Lavaridge":
+        if not isinstance(layout, dict) or layout.get("secondary_tileset") != "gTileset_CuordilavaLavaridge":
             continue
         name = layout.get("name", "")
         directory = name[:-7] if isinstance(name, str) and name.endswith("_Layout") else name
@@ -1031,7 +1072,7 @@ def validate_cuordilava_roof_corner_overlays(root: Path) -> list[str]:
 def validate_cuordilava_roof_vent_metatiles(root: Path) -> list[str]:
     """Guard both Cuordilava-only industrial chimney/roof variants."""
     errors: list[str] = []
-    metatiles_path = root / "data/tilesets/secondary/lavaridge/metatiles.bin"
+    metatiles_path = root / "data/tilesets/secondary/cuordilava/metatiles.bin"
     layouts_path = root / "data/layouts/layouts.json"
     expected = {
         162: {"overlay": (234, 235, 250, 251), "base": None},
@@ -1070,7 +1111,7 @@ def validate_cuordilava_roof_vent_metatiles(root: Path) -> list[str]:
 
     counts = {metatile_id: 0 for metatile_id in expected}
     for layout in layouts:
-        if not isinstance(layout, dict) or layout.get("secondary_tileset") != "gTileset_Lavaridge":
+        if not isinstance(layout, dict) or layout.get("secondary_tileset") != "gTileset_CuordilavaLavaridge":
             continue
         name = layout.get("name", "")
         directory = name[:-7] if isinstance(name, str) and name.endswith("_Layout") else name
@@ -1118,9 +1159,9 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_cuordilava_roof_intake_panel(root))
     errors.extend(validate_cuordilava_roof_vent_metatiles(root))
     errors.extend(validate_facade_light_wiring(root))
-    palette_dir = root / "data/tilesets/secondary/lavaridge/palettes"
+    palette_dir = root / "data/tilesets/secondary/cuordilava/palettes"
     object_palette_dir = root / "graphics/object_events/palettes"
-    tiles_png = root / "data/tilesets/secondary/lavaridge/tiles.png"
+    tiles_png = root / "data/tilesets/secondary/cuordilava/tiles.png"
 
     palette_paths = sorted(palette_dir.glob("*.pal"))
     mask_paths = sorted(palette_dir.glob("*.pla"))
