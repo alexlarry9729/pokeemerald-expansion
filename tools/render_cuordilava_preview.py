@@ -123,6 +123,9 @@ def palettes_for(mode: str, palette_dir: Path, tileset: str) -> dict[int, list[t
         source_index = index
         if tileset == "secondary" and index == 6 and mode == "night":
             source_index = 15
+        elif tileset == "primary" and mode == "night" and 1 <= index <= 5:
+            # General palette companion banks (x + 9) supply Cuordilava's warm night pass.
+            source_index = index + 9
         palettes[index] = read_palette(palette_dir / f"{source_index:02d}.pal")
     return palettes
 

@@ -661,6 +661,23 @@ def validate_cuordilava_primary_palette_isolation(root: Path) -> list[str]:
             if index <= 7 and max(colour) > 170:
                 errors.append(f"{palette_dir / filename}: structural colours 0–7 must remain subdued")
                 break
+    # The primary tileset's standard night companion banks are index + 9.
+    for day_index, night_index in ((1, 10), (2, 11), (3, 12), (4, 13), (5, 14)):
+        day_palette, night_palette = palettes[day_index], palettes[night_index]
+        for colour_index in (*range(1, 8), *range(9, 16)):
+            if luminance(night_palette[colour_index]) <= luminance(day_palette[colour_index]):
+                errors.append(
+                    f"{palette_dir / f'{night_index:02d}.pal'}: night colour {colour_index} "
+                    f"must be brighter than primary palette {day_index:02d}"
+                )
+    for night_index in (10, 11, 12, 14):
+        for colour_index in (9, 10, 11, 12):
+            colour = palettes[night_index][colour_index]
+            if colour[0] <= max(colour[1], colour[2]):
+                errors.append(
+                    f"{palette_dir / f'{night_index:02d}.pal'}: furnace accent {colour_index} "
+                    "must remain red/orange-led at night"
+                )
     return errors
 
 
