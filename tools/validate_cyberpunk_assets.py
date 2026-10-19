@@ -437,6 +437,30 @@ def validate_facade_light_wiring(root: Path) -> list[str]:
     sprite_path = root / "graphics/object_events/pics/misc/facade_light.png"
     if not sprite_path.is_file():
         errors.append(f"{sprite_path}: missing generic facade/window light sprite")
+    else:
+        try:
+            sprite_data = sprite_path.read_bytes()
+            if (
+                len(sprite_data) < 29
+                or sprite_data[:8] != b"\\x89PNG\\r\\n\\x1a\\n"
+                or sprite_data[12:16] != b"IHDR"
+            ):
+                errors.append(f"{sprite_path}: facade-light image is not a valid PNG")
+            else:
+                sprite_width, sprite_height = struct.unpack(">II", sprite_data[16:24])
+                bit_depth, colour_type = sprite_data[24:26]
+                if (sprite_width, sprite_height) != (16, 16):
+                    errors.append(
+                        f"{sprite_path}: expected a 16x16 facade-light sprite, "
+                        f"found {sprite_width}x{sprite_height}"
+                    )
+                if bit_depth != 4 or colour_type != 3:
+                    errors.append(
+                        f"{sprite_path}: expected 4-bit indexed pixel art, "
+                        f"found bit depth {bit_depth}, colour type {colour_type}"
+                    )
+        except OSError as exc:
+            errors.append(f"{sprite_path}: unable to read facade-light sprite: {exc}")
     return errors
 
 
