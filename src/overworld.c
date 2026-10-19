@@ -1792,81 +1792,6 @@ bool32 CurrentMapHasShadows(void)
     return (gMapHeader.mapType != MAP_TYPE_UNDERGROUND);
 }
 
-/*
- * Cuordilava uses the shared General tileset, whose stock palettes contain
- * electric cyan ground and magenta roads. Grade the loaded BG colours only
- * while this map is active, so other maps using the same tileset are untouched.
- * The thresholds deliberately map only the most saturated colours and are
- * idempotent: palette refreshes won't progressively darken the same colours.
- */
-static u16 TransformCuordilavaColor(u16 color, bool32 night)
-{
-    u8 r = color & 0x1F;
-    u8 g = (color >> 5) & 0x1F;
-    u8 b = (color >> 10) & 0x1F;
-
-    if (r + g + b < 6)
-        return color;
-
-    // Magenta and violet highlights become lava-red / ember-orange.
-    if (r >= 22 && b >= 16 && r > g + 8 && b > g + 6)
-    {
-        g = night ? 13 : 9;
-        b = night ? 7 : 4;
-        r = 31;
-    }
-    // The oversaturated cyan/mint pavement becomes cool, dark volcanic stone.
-    else if (g >= 22 && b >= 16 && r <= 10 && g > r + 12)
-    {
-        r = night ? 8 : 6;
-        g = night ? 14 : 11;
-        b = night ? 18 : 14;
-    }
-    // Keep foliage green, but remove the fluorescent lime cast.
-    else if (g >= 23 && g > r + 8 && g > b + 4)
-    {
-        r = r / 2;
-        g = night ? 22 : 20;
-        b = b / 2;
-    }
-    // Electric blue roofs and trim become charcoal / steel rather than purple.
-    else if (b >= 20 && b > r + 8 && b > g + 4)
-    {
-        r = 9;
-        g = night ? 8 : 9;
-        b = night ? 17 : 15;
-    }
-
-    return (r & 0x1F) | ((g & 0x1F) << 5) | ((b & 0x1F) << 10);
-}
-
-void ApplyCuordilavaCyberpunkPalette(void)
-{
-    u32 paletteNum;
-    bool32 night;
-
-    if (gMapHeader.mapLayoutId != LAYOUT_LAVARIDGE_TOWN)
-        return;
-
-    night = (gTimeOfDay == TIME_NIGHT);
-    for (paletteNum = 0; paletteNum < 16; paletteNum++)
-    {
-        u32 colorNum;
-        if (!((PALETTES_MAP | 1) & (1 << paletteNum)))
-            continue;
-        // Palette 6 and its palette-15 night companion are private architecture ramps.
-        if (paletteNum == 6 || paletteNum == 15)
-            continue;
-
-        // Entry 0 is transparent/backdrop and must remain untouched.
-        for (colorNum = 1; colorNum < 16; colorNum++)
-        {
-            u32 index = paletteNum * 16 + colorNum;
-            gPlttBufferFaded[index] = TransformCuordilavaColor(gPlttBufferFaded[index], night);
-        }
-    }
-}
-
 // Update & mix day / night bg palettes (into unfaded)
 void UpdateAltBgPalettes(u16 palettes)
 {
@@ -1896,7 +1821,6 @@ void UpdateAltBgPalettes(u16 palettes)
         i++;
         palettes >>= 1;
     }
-    ApplyCuordilavaCyberpunkPalette();
 }
 
 void UpdatePalettesWithTime(u32 palettes)
@@ -1916,7 +1840,6 @@ void UpdatePalettesWithTime(u32 palettes)
     if (!palettes)
         return;
     TimeMixPalettes(palettes, gPlttBufferUnfaded, gPlttBufferFaded, &gTimeBlend.startBlend, &gTimeBlend.endBlend, gTimeBlend.weight);
-    ApplyCuordilavaCyberpunkPalette();
 }
 
 u8 UpdateSpritePaletteWithTime(u8 paletteNum)
