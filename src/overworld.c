@@ -1854,6 +1854,9 @@ void ApplyCuordilavaCyberpunkPalette(void)
         u32 colorNum;
         if (!((PALETTES_MAP | 1) & (1 << paletteNum)))
             continue;
+        // Palette 6 and its palette-15 night companion are private architecture ramps.
+        if (paletteNum == 6 || paletteNum == 15)
+            continue;
 
         // Entry 0 is transparent/backdrop and must remain untouched.
         for (colorNum = 1; colorNum < 16; colorNum++)
