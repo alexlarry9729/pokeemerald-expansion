@@ -644,17 +644,13 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
                         f"through metatile {metatile_id}, slot {slot}; keep the glow palette town-local"
                     )
 
-    # Shared assets are used by Route 112, Mt. Chimney, Jagged Pass, Fiery Path and Magma Hideout.
-    # Verify the source tileset remains byte-for-byte at the upstream master baseline.
-    shared_baselines = {
+    # Shared binary assets must remain at their upstream Git-object baseline.
+    shared_binary_baselines = {
         "tiles.png": "2f6898a0f7ca21efb0dfc0c1d608d8bae6931a27",
         "metatiles.bin": "fd0314ed78ce4aad760ba39a6e6522e5f27bfdd9",
-        "palettes/06.pal": "00e1478a73ce30de3184f8e193fbef6eb72195e7",
-        "palettes/13.pal": "4b0812f094038215e9d7d7ea63170299929a834b",
-        "palettes/15.pal": "e7717d74eabffda41647b2d2a2ca7169ca4ad4c3",
     }
     shared_dir = root / "data/tilesets/secondary/lavaridge"
-    for relative_path, expected_blob_sha in shared_baselines.items():
+    for relative_path, expected_blob_sha in shared_binary_baselines.items():
         shared_path = shared_dir / relative_path
         try:
             data = shared_path.read_bytes()
@@ -667,6 +663,33 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
                 )
         except OSError as exc:
             errors.append(f"{shared_path}: unable to verify shared tileset integrity: {exc}")
+
+    # Git's checkout can normalize palette-file line endings, so compare parsed RGB content.
+    shared_palette_baselines = {
+        "palettes/06.pal": [
+            (0, 0, 0), (65, 74, 106), (197, 205, 0), (230, 238, 238),
+            (255, 255, 255), (255, 115, 65), (230, 115, 65), (180, 98, 90),
+            (164, 82, 82), (205, 49, 0), (148, 49, 0), (246, 24, 24),
+            (246, 148, 0), (148, 164, 65), (106, 123, 139), (222, 222, 0),
+        ],
+        "palettes/13.pal": [(0, 0, 0)] * 16,
+        "palettes/15.pal": [
+            (115, 197, 164), (255, 213, 180), (255, 197, 148), (222, 148, 115),
+            (123, 65, 65), (57, 74, 123), (41, 57, 98), (24, 41, 82),
+            (16, 32, 57), (222, 230, 238), (255, 197, 90), (189, 156, 90),
+            (255, 98, 90), (197, 65, 65), (255, 255, 255), (0, 0, 0),
+        ],
+    }
+    for relative_path, expected_colours in shared_palette_baselines.items():
+        shared_path = shared_dir / relative_path
+        try:
+            if parse_palette(shared_path) != expected_colours:
+                errors.append(
+                    f"{shared_path}: shared palette differs from master baseline; "
+                    "keep Cuordilava-only palette changes in the private secondary tileset"
+                )
+        except (OSError, ValueError) as exc:
+            errors.append(f"{shared_path}: unable to verify shared palette integrity: {exc}")
 
     layouts_path = root / "data/layouts/layouts.json"
     try:
