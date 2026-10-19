@@ -1852,7 +1852,7 @@ void ApplyCuordilavaCyberpunkPalette(void)
     for (paletteNum = 0; paletteNum < 16; paletteNum++)
     {
         u32 colorNum;
-        if (!(PALETTES_MAP & (1 << paletteNum)))
+        if (!((PALETTES_MAP | 1) & (1 << paletteNum)))
             continue;
 
         // Entry 0 is transparent/backdrop and must remain untouched.
