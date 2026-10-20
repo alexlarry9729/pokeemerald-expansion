@@ -46,7 +46,7 @@ jobs:
       - name: Render Cuordilava day/night layout previews
         run: python3 tools/render_cuordilava_preview.py --output-dir build-preview
 
-      - name: Upload ROM and verified visual diagnostics
+      - name: Upload ROM, diagnostics and tile sources
         uses: actions/upload-artifact@v4
         with:
           name: cuordilava-pokeemerald-${{ github.sha }}
@@ -56,5 +56,10 @@ jobs:
             cuordilava-build-info.txt
             build-preview/cuordilava-day.png
             build-preview/cuordilava-night.png
+            data/tilesets/secondary/cuordilava/tiles.png
+            data/tilesets/secondary/cuordilava/metatiles.bin
+            data/tilesets/secondary/cuordilava/metatile_attributes.bin
+            data/tilesets/primary/general/tiles.png
+            data/tilesets/primary/general/metatiles.bin
           if-no-files-found: error
           retention-days: 14
