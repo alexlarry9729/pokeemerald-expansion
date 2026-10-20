@@ -176,6 +176,8 @@ const u16 gTilesetPalettes_Lavaridge[][16] =
     INCGFX_U16("data/tilesets/secondary/lavaridge/palettes/15.pal", ".gbapal"),
 };
 
+const u32 gTilesetTiles_CuordilavaGeneral[] = INCGFX_U32("data/tilesets/primary/cuordilava/tiles.png", ".4bpp.smol");
+
 const u32 gTilesetTiles_CuordilavaLavaridge[] = INCGFX_U32("data/tilesets/secondary/cuordilava/tiles.png", ".4bpp.fastSmol", "-num_tiles 458 -Wnum_tiles");
 
 const u16 gTilesetPalettes_CuordilavaLavaridge[][16] =

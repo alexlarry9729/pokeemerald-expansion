@@ -59,6 +59,7 @@ jobs:
             data/tilesets/secondary/cuordilava/tiles.png
             data/tilesets/secondary/cuordilava/metatiles.bin
             data/tilesets/secondary/cuordilava/metatile_attributes.bin
+            data/tilesets/primary/cuordilava/tiles.png
             data/tilesets/primary/general/tiles.png
             data/tilesets/primary/general/metatiles.bin
           if-no-files-found: error

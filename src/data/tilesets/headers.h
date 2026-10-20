@@ -46,7 +46,7 @@ const struct Tileset gTileset_CuordilavaGeneral =
 {
     .isCompressed = TRUE,
     .isSecondary = FALSE,
-    .tiles = gTilesetTiles_General,
+    .tiles = gTilesetTiles_CuordilavaGeneral,
     .palettes = gTilesetPalettes_CuordilavaGeneral,
     .metatiles = gMetatiles_General,
     .metatileAttributes = gMetatileAttributes_General,
