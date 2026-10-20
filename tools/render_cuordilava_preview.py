@@ -3,9 +3,10 @@
 
 Palette RGB values are rendered as authored; no global colour grading is applied,
 so the preview cannot make unrelated tiles look cyberpunk by recolouring them.
-This is a diagnostic renderer, not an emulator screenshot: the town's Pokémon Center,
-Poké Mart and facade light sprites are composited with their real day/night palette;
-NPCs, weather, shadows and engine scanline effects are intentionally omitted.
+This is a diagnostic renderer, not an emulator screenshot: animation frame zero is
+composited for water, lava, steam and flowers, and the Pokémon Center, Poké Mart and
+facade light sprites use their real day/night palettes. NPCs, weather, shadows and
+engine scanline effects are intentionally omitted.
 """
 from __future__ import annotations
 
@@ -87,6 +88,38 @@ def png_indexed(path: Path) -> tuple[int, int, list[list[int]]]:
     return width, height, pixels
 
 
+def overlay_animation_tiles(
+    atlas: tuple[int, int, list[list[int]]],
+    frame_path: Path,
+    start_tile: int,
+) -> None:
+    """Apply an engine animation frame to an 8x8 tile atlas for faithful previews.
+
+    Animation PNGs are packed tightly in their source image, while the runtime writes
+    their individual tiles sequentially into the GBA character block. Copy tile-by-tile
+    instead of pasting the source rectangle into the atlas.
+    """
+    atlas_width, atlas_height, atlas_pixels = atlas
+    frame_width, frame_height, frame_pixels = png_indexed(frame_path)
+    if frame_width % 8 or frame_height % 8 or atlas_width % 8 or atlas_height % 8:
+        raise ValueError(f"{frame_path}: animation and atlas dimensions must be multiples of 8")
+    source_tiles_w = frame_width // 8
+    tile_count = source_tiles_w * (frame_height // 8)
+    atlas_tiles_w = atlas_width // 8
+    for tile_offset in range(tile_count):
+        destination_tile = start_tile + tile_offset
+        destination_x = (destination_tile % atlas_tiles_w) * 8
+        destination_y = (destination_tile // atlas_tiles_w) * 8
+        if destination_y + 8 > atlas_height:
+            raise ValueError(f"{frame_path}: animation exceeds atlas at tile {destination_tile}")
+        source_x = (tile_offset % source_tiles_w) * 8
+        source_y = (tile_offset // source_tiles_w) * 8
+        for row in range(8):
+            atlas_pixels[destination_y + row][destination_x:destination_x + 8] = (
+                frame_pixels[source_y + row][source_x:source_x + 8]
+            )
+
+
 def read_palette(path: Path) -> list[tuple[int, int, int]]:
     lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines()]
     if len(lines) < 19 or lines[0] != "JASC-PAL" or lines[1] != "0100" or int(lines[2]) != 16:
@@ -137,6 +170,37 @@ def render(mode: str, output: Path, layout: dict, root: Path) -> None:
     secondary_dir = root / "data/tilesets/secondary/cuordilava"
     primary_png = png_indexed(primary_palette_dir.parent / "tiles.png")
     secondary_png = png_indexed(secondary_dir / "tiles.png")
+
+    # These tile ranges are rewritten by the game engine's animation callbacks.
+    # A static atlas leaves water/lava/steam placeholders looking black, so render
+    # a real source frame into the matching sequential tile IDs for the preview.
+    for animation, tile_start in (
+        ("flower", 508),
+        ("water", 432),
+        ("sand_water_edge", 464),
+        ("land_water_edge", 480),
+        ("waterfall", 496),
+    ):
+        overlay_animation_tiles(
+            primary_png,
+            primary_dir / "anim" / animation / "0.png",
+            tile_start,
+        )
+    overlay_animation_tiles(
+        secondary_png,
+        root / "data/tilesets/secondary/cave/anim/lava/0.png",
+        160,
+    )
+    overlay_animation_tiles(
+        secondary_png,
+        secondary_dir / "anim/steam/0.png",
+        288,
+    )
+    overlay_animation_tiles(
+        secondary_png,
+        secondary_dir / "anim/steam/2.png",
+        292,
+    )
     primary_metatiles = (primary_dir / "metatiles.bin").read_bytes()
     secondary_metatiles = (secondary_dir / "metatiles.bin").read_bytes()
     layout_dir = root / "data/layouts" / layout["name"].removesuffix("_Layout")
