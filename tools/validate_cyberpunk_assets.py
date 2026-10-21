@@ -520,6 +520,12 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
         for index in range(1, 9):
             if max(day[index]) > 110:
                 errors.append(f"{palette_dir / '06.pal'}: structural colour {index} must stay dark")
+        for index in range(1, 9):
+            if luminance(night[index]) >= luminance(day[index]):
+                errors.append(
+                    f"{palette_dir / '15.pal'}: night-time structural colour "
+                    f"{index} must be darker than sunlit steel"
+                )
         for index in range(9, 16):
             if luminance(night[index]) <= luminance(day[index]):
                 errors.append(f"{palette_dir / '15.pal'}: local neon colour {index} must be brighter at night")
@@ -758,15 +764,45 @@ def validate_cuordilava_primary_palette_isolation(root: Path) -> list[str]:
             errors.append(f"{palette_dir / '01.pal'}: daytime path/iron accents 9–14 must remain subdued")
         if palettes[1][index][0] <= max(palettes[1][index][1], palettes[1][index][2]):
             errors.append(f"{palette_dir / '01.pal'}: oxide accent {index} must remain red-led")
-    # The primary tileset's standard night companion banks are index + 9.
+    # Ensure the actual game engine blends the night companion banks:
+    # a renderer-only night palette must never disguise an unconfigured tileset.
+    header_path = root / "src/data/tilesets/headers.h"
+    try:
+        header = header_path.read_text(encoding="utf-8")
+        tileset_start = header.index("const struct Tileset gTileset_CuordilavaGeneral")
+        tileset_end = header.index("\n};", tileset_start)
+        tileset_block = header[tileset_start:tileset_end]
+        flags = " | ".join(f"SWAP_PAL({i})" for i in range(1, 6))
+        if flags not in tileset_block:
+            errors.append(
+                f"{header_path}: town-private primary tileset must enable "
+                "day/night swap banks 1..5 for the real game"
+            )
+    except (OSError, ValueError) as exc:
+        errors.append(f"{header_path}: cannot verify primary day/night swap flags: {exc}")
+
+    # Structural stone/metal/basalt gets darker at night; fire/neon glows
+    # brighter. The old validation incorrectly required every night colour
+    # to be brighter, making nighttime resemble a stronger daytime.
     for day_index, night_index in ((1, 10), (2, 11), (3, 12), (4, 13), (5, 14)):
         day_palette, night_palette = palettes[day_index], palettes[night_index]
-        for colour_index in (*range(1, 8), *range(9, 16)):
-            if luminance(night_palette[colour_index]) <= luminance(day_palette[colour_index]):
+        for colour_index in range(1, 8):
+            if luminance(day_palette[colour_index]) <= luminance(night_palette[colour_index]) + 12:
                 errors.append(
-                    f"{palette_dir / f'{night_index:02d}.pal'}: night colour {colour_index} "
-                    f"must be brighter than primary palette {day_index:02d}"
+                    f"{palette_dir / f'{night_index:02d}.pal'}: structural colour "
+                    f"{colour_index} must be visibly darker than day bank {day_index}"
                 )
+        if day_index != 2:
+            for colour_index in range(9, 15):
+                if luminance(night_palette[colour_index]) <= luminance(day_palette[colour_index]):
+                    errors.append(
+                        f"{palette_dir / f'{night_index:02d}.pal'}: glowing colour "
+                        f"{colour_index} must outshine day bank {day_index}"
+                    )
+        else:
+            # Brown ground pigments cannot glow like signage.
+            if any(luminance(night_palette[i]) >= luminance(day_palette[i]) for i in range(9, 13)):
+                errors.append(f"{palette_dir / '11.pal'}: ground rust is too luminous at night")
     for night_index in (10, 11, 12, 14):
         for colour_index in (9, 10, 11, 12):
             colour = palettes[night_index][colour_index]

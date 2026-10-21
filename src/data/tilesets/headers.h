@@ -46,6 +46,8 @@ const struct Tileset gTileset_CuordilavaGeneral =
 {
     .isCompressed = TRUE,
     .isSecondary = FALSE,
+    // Only this town uses the sunny structural and shadowed night palette companions.
+    .swapPalettes = SWAP_PAL(1) | SWAP_PAL(2) | SWAP_PAL(3) | SWAP_PAL(4) | SWAP_PAL(5),
     .tiles = gTilesetTiles_CuordilavaGeneral,
     .palettes = gTilesetPalettes_CuordilavaGeneral,
     .metatiles = gMetatiles_General,
