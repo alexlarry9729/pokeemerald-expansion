@@ -84,3 +84,7 @@ Le precedenti anteprime mostravano un falso night pass per i banchi primari: la 
 ### Controllo di contaminazione luminosa: strade e tetti
 
 La prima preview del nuovo pass aveva acceso intere strade e superfici dei tetti perché i banchi condivisi di materiali (01/10 e 05/14) usavano la stessa rampa fluorescente delle finestre. L'ispezione delle anteprime ha rivelato il difetto; i banchi 10 e 14 restano ora scuri anche sugli indici 9–14. Il bagliore notturno forte rimane riservato alle palette 03/12, 04/13 e alla coppia industriale secondaria 06/15. Il validatore controlla entrambe le categorie, impedendo che le rampe dei materiali non emissivi diventino neon per errore.
+
+### Intervento sui metatile architettonici (2026-10-21)
+
+Il tileset industriale secondario privato ora incorpora una forma di fiamma incandescente nel pannello-fornace 170/181, una cucitura termica a segmenti nei pannelli metallici 441–444 e piccole spie calore nelle prese di ventilazione 262/263/278/279. L'intervento ridisegna 36 pixel indicizzati nei tile attivamente utilizzati dalla città. È un intervento sulla grafica degli edifici, non una regolazione cromatica. Metatile, dimensioni dei tetti, trasparenze esterne, collisioni, mappa, eventi e porte rimangono invariati; sono da ispezionare entrambe le anteprime e l'emulatore.
