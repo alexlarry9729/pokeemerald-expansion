@@ -72,3 +72,7 @@ This pass uses the supplied Lavaridge/Cuordilava volcanic cyberpunk reference as
 - The town map's `map.bin`, collision data, warp points, NPC positions, primary tileset and all globally shared tilesets are unchanged.
 
 **Review gate:** re-run the dedicated asset validator and Pokémon Emerald build, then inspect both day/night previews and test walkability, signs, warm/cool contrast and tile layering in an emulator before calling the city finished. CI build success is necessary but not a complete in-game visual review.
+
+## Correzione delle anteprime delle terme (2026-10-21)
+
+Le palette GBA della mappa non vanno selezionate in base all'origine grafica della tile: gli slot 0–5 sono caricati dal tileset primario, mentre gli slot 6–15 provengono dal secondario. Alcuni metatile delle terme usano grafica primaria con palette secondaria 8; la vecchia scelta per origine della tile li mostrava falsamente neri. `tools/render_cuordilava_preview.py` ora sceglie lo slot effettivamente caricato dal motore e il validatore verifica l'instradamento delle palette sia di giorno sia di notte. È una correzione alle anteprime diagnostiche; le risorse grafiche, la mappa e la ROM rimangono inalterate da questo specifico intervento.

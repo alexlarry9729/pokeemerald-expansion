@@ -150,6 +150,23 @@ def pack_png(path: Path, width: int, height: int, rgb: bytearray) -> None:
     path.write_bytes(content)
 
 
+def select_bg_palette(
+    index: int,
+    primary_palettes: dict[int, list[tuple[int, int, int]]],
+    secondary_palettes: dict[int, list[tuple[int, int, int]]],
+) -> list[tuple[int, int, int]]:
+    """Select the globally loaded GBA background palette bank, not the tile art source.
+
+    Emerald loads palette banks 0..5 from the primary tileset and 6..15
+    from the secondary tileset. A secondary metatile can legitimately
+    reference primary tile artwork with palette bank 8 (the hot springs);
+    switching palette *source* on the tile's 512 boundary makes it black.
+    """
+    if not 0 <= index < 16:
+        raise ValueError(f"Invalid BG palette bank {index}")
+    return (primary_palettes if index < 6 else secondary_palettes)[index]
+
+
 def palettes_for(mode: str, palette_dir: Path, tileset: str) -> dict[int, list[tuple[int, int, int]]]:
     """Load palette colours from the matching tileset, never mix primary and secondary palettes."""
     palettes: dict[int, list[tuple[int, int, int]]] = {}
@@ -232,7 +249,8 @@ def render(mode: str, output: Path, layout: dict, root: Path) -> None:
             if (tile_id + 1) * 8 > (atlas_width // 8) * atlas_height:
                 raise ValueError(f"Invalid tile {tile_id} at metatile {meta_id}, slot {slot}")
             palette_index = (encoded >> 12) & 0xF
-            palette = (secondary_palettes if tile_is_secondary else primary_palettes)[palette_index]
+            # Palette bank assignment is independent from tile graphics origin.
+            palette = select_bg_palette(palette_index, primary_palettes, secondary_palettes)
             hflip, vflip = bool(encoded & 0x400), bool(encoded & 0x800)
             origin_x = cell_x * 16 + (slot % 2) * 8
             origin_y = cell_y * 16 + ((slot % 4) // 2) * 8

@@ -1169,6 +1169,33 @@ def validate_cuordilava_roof_vent_metatiles(root: Path) -> list[str]:
     return errors
 
 
+def validate_cuordilava_preview_palette_routing(root: Path) -> list[str]:
+    """Guard cross-tileset map tiles that use a *secondary* palette bank."""
+    errors: list[str] = []
+    try:
+        from render_cuordilava_preview import palettes_for, select_bg_palette
+        primary_dir = root / "data/tilesets/primary/cuordilava/palettes"
+        secondary_dir = root / "data/tilesets/secondary/cuordilava/palettes"
+        for mode in ("day", "night"):
+            primary = palettes_for(mode, primary_dir, "primary")
+            secondary = palettes_for(mode, secondary_dir, "secondary")
+            # Palette 8 from CuordilavaGeneral is deliberately blank; the
+            # hot-spring tiles need *secondary* palette 8 even when they use
+            # primary artwork indices (< 512).
+            if all(c == (0, 0, 0) for c in secondary[8]):
+                errors.append(f"{secondary_dir / '08.pal'}: hot-spring palette must not be blank")
+            for index in (2, 5, 6, 8, 13):
+                intended = (primary if index < 6 else secondary)[index]
+                if select_bg_palette(index, primary, secondary) != intended:
+                    errors.append(
+                        f"Cuordilava preview: palette bank {index} must resolve to "
+                        f"{'primary' if index < 6 else 'secondary'} in {mode} mode"
+                    )
+    except (ImportError, OSError, ValueError, KeyError) as exc:
+        errors.append(f"Cuordilava preview palette routing failed: {exc}")
+    return errors
+
+
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     errors.extend(validate_lavaridge_light_events(root))
@@ -1182,6 +1209,7 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_cuordilava_roof_intake_panel(root))
     errors.extend(validate_cuordilava_roof_vent_metatiles(root))
     errors.extend(validate_facade_light_wiring(root))
+    errors.extend(validate_cuordilava_preview_palette_routing(root))
     palette_dir = root / "data/tilesets/secondary/cuordilava/palettes"
     object_palette_dir = root / "graphics/object_events/palettes"
     tiles_png = root / "data/tilesets/secondary/cuordilava/tiles.png"
