@@ -809,6 +809,28 @@ def validate_cuordilava_primary_palette_isolation(root: Path) -> list[str]:
                         f"{palette_dir / f'{night_index:02d}.pal'}: nonemissive oxide "
                         f"colour {colour_index} must darken at night"
                     )
+    # Navigation baseline: Moon-dark tones below RGB 20 were unreadable on
+    # physical GBA-class displays and in the user's night playtest.
+    # This checks the town-private palette sources used by the *engine*, not a
+    # screen-wide postprocess that could also flatten the furnace lights.
+    for index in (10, 11, 12, 14):
+        if luminance(palettes[index][8]) < 37:
+            errors.append(
+                f"{palette_dir / f'{index:02d}.pal'}: night outline index 8 "
+                "is too dark for unlit routes"
+            )
+    for index in (5, 6, 7):
+        if luminance(palettes[11][index]) < 48:
+            errors.append(
+                f"{palette_dir / '11.pal'}: night pavement index "
+                f"{index} cannot drop below readable basalt"
+            )
+    for index in (9, 10, 11, 12, 13, 14):
+        if luminance(palettes[14][index]) < 40:
+            errors.append(
+                f"{palette_dir / '14.pal'}: nonemissive roof colour "
+                f"{index} cannot vanish in darkness"
+            )
     for night_index in (10, 11, 12, 14):
         for colour_index in (9, 10, 11, 12):
             colour = palettes[night_index][colour_index]
