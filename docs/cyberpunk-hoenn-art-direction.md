@@ -60,3 +60,15 @@ The facade-light object now uses a dedicated 16×16 indexed pixel-art fixture: d
 ## Rifinitura della gerarchia cromatica diurna (2026-10-19)
 
 Le due rampe primarie locali che controllano i dettagli caldi sono state ulteriormente attenuate di giorno: i toni rosso-arancio rimangono riconoscibili, ma la loro luminanza è più contenuta sulle superfici estese. Le companion notturne restano più brillanti, così l'effetto di fornace si concentra maggiormente su finestre, bordi e condotti al calare della luce. La modifica riguarda solo `data/tilesets/primary/cuordilava/palettes/03.pal` e `05.pal`; non modifica palette condivise, coordinate della mappa o attributi dei metatiles.
+
+## Refinement pass: magma furnace windows and industrial roofs (2026-10-21)
+
+This pass uses the supplied Lavaridge/Cuordilava volcanic cyberpunk reference as an *art-direction target*, not an importable GBA map. It changes indexed pixel artwork in `data/tilesets/secondary/cuordilava/tiles.png`, while retaining its original dimensions (128×232), palette-indexed 4bpp format, transparency index and existing metatile placement.
+
+- Reinforce red furnace glints in the four repeated building-face modules, thermal panels, window banks and roof bulkheads.
+- Replace selected high-energy cyan control-panel highlights with hot red/orange, keeping the teal LEDs as a restrained secondary signal.
+- Introduce tiny incandescent accents in rooftop corners, ventilation-intake grilles and service conduits without redrawing their silhouettes or transparency edges.
+- Preserve the window mullions, cooling-pipe status LEDs and palette-6 industrial metatile references protected by `tools/validate_cyberpunk_assets.py`.
+- The town map's `map.bin`, collision data, warp points, NPC positions, primary tileset and all globally shared tilesets are unchanged.
+
+**Review gate:** re-run the dedicated asset validator and Pokémon Emerald build, then inspect both day/night previews and test walkability, signs, warm/cool contrast and tile layering in an emulator before calling the city finished. CI build success is necessary but not a complete in-game visual review.
