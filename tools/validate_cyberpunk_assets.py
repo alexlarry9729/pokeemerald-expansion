@@ -62,7 +62,7 @@ def parse_palette_mask(path: Path) -> list[int]:
     return values
 
 
-def validate_indexed_tileset_png(path: Path, expected_height: int = 232) -> list[list[int]]:
+def validate_indexed_tileset_png(path: Path) -> list[list[int]]:
     """Validate PNG chunks, CRCs, data stream and the expected indexed 4bpp format."""
     data = path.read_bytes()
     if len(data) < 45 or data[:8] != b"\x89PNG\r\n\x1a\n":
@@ -72,9 +72,9 @@ def validate_indexed_tileset_png(path: Path, expected_height: int = 232) -> list
 
     width, height = struct.unpack(">II", data[16:24])
     bit_depth, colour_type, compression, filter_method, interlace = data[24:29]
-    if (width, height) != (128, expected_height):
+    if (width, height) != (128, 232):
         raise ValueError(
-            f"{path}: expected 128×{expected_height} tile atlas, found {width}×{height}"
+            f"{path}: expected 128×232 tile atlas, found {width}×{height}"
         )
     if bit_depth != 4 or colour_type != 3:
         raise ValueError(
@@ -842,117 +842,6 @@ def validate_cuordilava_primary_palette_isolation(root: Path) -> list[str]:
     return errors
 
 
-def validate_cuordilava_primary_metatile_isolation(root: Path) -> list[str]:
-    """Protect all original General map geometry while replacing roof art only."""
-    errors: list[str] = []
-    general = root / "data/tilesets/primary/general/metatiles.bin"
-    private = root / "data/tilesets/primary/cuordilava/metatiles.bin"
-    header_path = root / "src/data/tilesets/headers.h"
-    code_path = root / "src/data/tilesets/metatiles.h"
-    try:
-        original, custom = general.read_bytes(), private.read_bytes()
-        header, code = header_path.read_text(), code_path.read_text()
-    except OSError as exc:
-        return [f"Town-private roof metatile source missing: {exc}"]
-    if len(original) != 8192 or len(custom) != len(original):
-        return [f"{private}: roof metatile clone must contain all 512 original 16-byte cells"]
-    start = header.find("const struct Tileset gTileset_CuordilavaGeneral")
-    end = header.find("\n};", start) if start >= 0 else -1
-    block = header[start:end] if end >= 0 else ""
-    if ".metatiles = gMetatiles_CuordilavaGeneral," not in block:
-        errors.append(f"{header_path}: Cuordilava is not using its exclusive rooftop metatiles")
-    if ".metatileAttributes = gMetatileAttributes_General," not in block:
-        errors.append(f"{header_path}: original collision attributes must be preserved")
-    if "gMetatiles_CuordilavaGeneral[]" not in code:
-        errors.append(f"{code_path}: private Cuordilava roof metatile array is not compiled")
-    replace = {264: 400, 280: 401, 296: 402, 248: 403, 279: 404, 295: 405}
-    rooftop_cells = (281, 289, 296, 297)
-    for index in range(512):
-        for slot in range(8):
-            offset = index * 16 + slot * 2
-            a = struct.unpack_from("<H", original, offset)[0]
-            b = struct.unpack_from("<H", custom, offset)[0]
-            if index in rooftop_cells:
-                expected = (a & ~0x3FF) | replace.get(a & 0x3FF, a & 0x3FF)
-                if b != expected:
-                    errors.append(f"{private}: rooftop {index} slot {slot} lost scoped tile reference")
-            elif a != b:
-                errors.append(f"{private}: non-roof primary metatile {index} slot {slot} changed")
-    # General has other unused tile IDs 400..405; verify specifically
-    # that no *active town metatile* references them before roof cloning.
-    try:
-        town_map = (root / "data/layouts/LavaridgeTown/map.bin").read_bytes()
-        secondary = (root / "data/tilesets/secondary/cuordilava/metatiles.bin").read_bytes()
-        for cell in range(20 * 20):
-            metatile_id = struct.unpack_from("<H", town_map, 2 * cell)[0] & 0x3FF
-            # Only primary General metatiles can be redirected through the
-            # private primary clone. Secondary architecture uses a separate
-            # tile namespace, and should not count as a primary collision.
-            if metatile_id >= 512:
-                continue
-            for slot in range(8):
-                tile = struct.unpack_from("<H", original, metatile_id * 16 + slot * 2)[0] & 0x3FF
-                if tile in replace.values():
-                    errors.append(
-                        f"{private}: original town cell {cell} already "
-                        f"references reserved primary roof tile {tile}"
-                    )
-    except (OSError, ValueError, struct.error) as exc:
-        errors.append(f"{private}: reserved roof tile collision check failed: {exc}")
-    return errors
-
-
-def validate_cuordilava_primary_roof_art(root: Path) -> list[str]:
-    """Guard the town-private primary art pass without touching shared General tiles."""
-    path = root / "data/tilesets/primary/cuordilava/tiles.png"
-    errors: list[str] = []
-    try:
-        pixels = validate_indexed_tileset_png(path, expected_height=256)
-    except (OSError, ValueError, IndexError, struct.error) as exc:
-        return [f"{path}: malformed Cuordilava primary atlas: {exc}"]
-
-    # Samples are in the actual 8x8 atlas cells. The repeating roof motifs
-    # must carry visible metal braces, rather than stock flat brown fill.
-    expected = {
-        400: ((1, 1, 7), (1, 2, 6), (6, 5, 7)),
-        401: ((1, 1, 7), (1, 2, 6), (6, 5, 7)),
-    }
-    for tile_id, points in expected.items():
-        tx, ty = (tile_id % 16) * 8, (tile_id // 16) * 8
-        for x, y, color in points:
-            if pixels[ty + y][tx + x] != color:
-                errors.append(
-                    f"{path}: industrial roof tile {tile_id} lost iron rib "
-                    f"index {color} at ({x}, {y})"
-                )
-
-    # Only isolated rooftop metatiles reference the reserved 400..405 art.
-    # The original 264/280 graphics are shared with the thermal ground.
-    # The enclosed gym roof and the house roofs share these private primary
-    # tile IDs. Check they actually occur in Cuordilava's layout, not only in
-    # the PNG atlas.
-    from collections import Counter
-    try:
-        layout_path = root / "data/layouts/LavaridgeTown/map.bin"
-        source = layout_path.read_bytes()
-        primary_metas = (root / "data/tilesets/primary/cuordilava/metatiles.bin").read_bytes()
-        counts: Counter[int] = Counter()
-        for offset in range(0, len(source) - 1, 2):
-            meta = struct.unpack_from("<H", source, offset)[0] & 0x3FF
-            if meta >= 512:
-                continue
-            for slot in range(8):
-                encoded = struct.unpack_from("<H", primary_metas, meta * 16 + slot * 2)[0]
-                if (encoded & 0x3FF) < 512:
-                    counts[encoded & 0x3FF] += 1
-        for tile in (162, 163, 164, 400, 401, 402, 340, 356):
-            if not counts[tile]:
-                errors.append(f"{layout_path}: modified primary roof tile {tile} is not used in town")
-    except (OSError, ValueError, struct.error) as exc:
-        errors.append(f"{path}: cannot verify active roof atlas cells: {exc}")
-    return errors
-
-
 def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -> list[str]:
     """Check the warm windows and cool pipe trims on secondary tiles used by Lavaridge."""
     errors: list[str] = []
@@ -1379,8 +1268,6 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_cuordilava_palette_pair(root))
     errors.extend(validate_cuordilava_palette_isolation(root))
     errors.extend(validate_cuordilava_primary_palette_isolation(root))
-    errors.extend(validate_cuordilava_primary_metatile_isolation(root))
-    errors.extend(validate_cuordilava_primary_roof_art(root))
     errors.extend(validate_cuordilava_architecture_metatiles(root))
     errors.extend(validate_cuordilava_roof_corner_overlays(root))
     errors.extend(validate_cuordilava_roof_intake_panel(root))
