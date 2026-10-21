@@ -62,7 +62,7 @@ def parse_palette_mask(path: Path) -> list[int]:
     return values
 
 
-def validate_indexed_tileset_png(path: Path) -> list[list[int]]:
+def validate_indexed_tileset_png(path: Path, expected_height: int = 232) -> list[list[int]]:
     """Validate PNG chunks, CRCs, data stream and the expected indexed 4bpp format."""
     data = path.read_bytes()
     if len(data) < 45 or data[:8] != b"\x89PNG\r\n\x1a\n":
@@ -72,9 +72,9 @@ def validate_indexed_tileset_png(path: Path) -> list[list[int]]:
 
     width, height = struct.unpack(">II", data[16:24])
     bit_depth, colour_type, compression, filter_method, interlace = data[24:29]
-    if (width, height) != (128, 232):
+    if (width, height) != (128, expected_height):
         raise ValueError(
-            f"{path}: expected 128×232 tile atlas, found {width}×{height}"
+            f"{path}: expected 128×{expected_height} tile atlas, found {width}×{height}"
         )
     if bit_depth != 4 or colour_type != 3:
         raise ValueError(
@@ -842,6 +842,55 @@ def validate_cuordilava_primary_palette_isolation(root: Path) -> list[str]:
     return errors
 
 
+def validate_cuordilava_primary_roof_art(root: Path) -> list[str]:
+    """Guard the town-private primary art pass without touching shared General tiles."""
+    path = root / "data/tilesets/primary/cuordilava/tiles.png"
+    errors: list[str] = []
+    try:
+        pixels = validate_indexed_tileset_png(path, expected_height=256)
+    except (OSError, ValueError, IndexError, struct.error) as exc:
+        return [f"{path}: malformed Cuordilava primary atlas: {exc}"]
+
+    # Samples are in the actual 8x8 atlas cells. The repeating roof motifs
+    # must carry visible metal braces, rather than stock flat brown fill.
+    expected = {
+        264: ((1, 1, 7), (1, 2, 6), (6, 5, 7)),
+        280: ((1, 1, 7), (1, 2, 6), (6, 5, 7)),
+    }
+    for tile_id, points in expected.items():
+        tx, ty = (tile_id % 16) * 8, (tile_id // 16) * 8
+        for x, y, color in points:
+            if pixels[ty + y][tx + x] != color:
+                errors.append(
+                    f"{path}: industrial roof tile {tile_id} lost iron rib "
+                    f"index {color} at ({x}, {y})"
+                )
+
+    # The enclosed gym roof and the house roofs share these private primary
+    # tile IDs. Check they actually occur in Cuordilava's layout, not only in
+    # the PNG atlas.
+    from collections import Counter
+    try:
+        layout_path = root / "data/layouts/LavaridgeTown/map.bin"
+        source = layout_path.read_bytes()
+        primary_metas = (root / "data/tilesets/primary/general/metatiles.bin").read_bytes()
+        counts: Counter[int] = Counter()
+        for offset in range(0, len(source) - 1, 2):
+            meta = struct.unpack_from("<H", source, offset)[0] & 0x3FF
+            if meta >= 512:
+                continue
+            for slot in range(8):
+                encoded = struct.unpack_from("<H", primary_metas, meta * 16 + slot * 2)[0]
+                if (encoded & 0x3FF) < 512:
+                    counts[encoded & 0x3FF] += 1
+        for tile in (162, 163, 164, 264, 280, 296, 340, 356):
+            if not counts[tile]:
+                errors.append(f"{layout_path}: modified primary roof tile {tile} is not used in town")
+    except (OSError, ValueError, struct.error) as exc:
+        errors.append(f"{path}: cannot verify active roof atlas cells: {exc}")
+    return errors
+
+
 def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -> list[str]:
     """Check the warm windows and cool pipe trims on secondary tiles used by Lavaridge."""
     errors: list[str] = []
@@ -1268,6 +1317,7 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_cuordilava_palette_pair(root))
     errors.extend(validate_cuordilava_palette_isolation(root))
     errors.extend(validate_cuordilava_primary_palette_isolation(root))
+    errors.extend(validate_cuordilava_primary_roof_art(root))
     errors.extend(validate_cuordilava_architecture_metatiles(root))
     errors.extend(validate_cuordilava_roof_corner_overlays(root))
     errors.extend(validate_cuordilava_roof_intake_panel(root))
