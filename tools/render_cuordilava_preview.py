@@ -218,7 +218,8 @@ def render(mode: str, output: Path, layout: dict, root: Path) -> None:
         secondary_dir / "anim/steam/2.png",
         292,
     )
-    primary_metatiles = (primary_dir / "metatiles.bin").read_bytes()
+    # Only Cuordilava uses the cloned roof metatiles; shared General remains pristine.
+    primary_metatiles = (primary_palette_dir.parent / "metatiles.bin").read_bytes()
     secondary_metatiles = (secondary_dir / "metatiles.bin").read_bytes()
     layout_dir = root / "data/layouts" / layout["name"].removesuffix("_Layout")
     map_data = (layout_dir / "map.bin").read_bytes()

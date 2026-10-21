@@ -50,7 +50,7 @@ const struct Tileset gTileset_CuordilavaGeneral =
     .swapPalettes = SWAP_PAL(1) | SWAP_PAL(2) | SWAP_PAL(3) | SWAP_PAL(4) | SWAP_PAL(5),
     .tiles = gTilesetTiles_CuordilavaGeneral,
     .palettes = gTilesetPalettes_CuordilavaGeneral,
-    .metatiles = gMetatiles_General,
+    .metatiles = gMetatiles_CuordilavaGeneral,
     .metatileAttributes = gMetatileAttributes_General,
     .callback = InitTilesetAnim_General,
 };

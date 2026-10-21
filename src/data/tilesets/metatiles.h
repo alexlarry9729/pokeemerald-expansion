@@ -7,6 +7,8 @@ const u16 gMetatileAttributes_SecretBaseSecondary[] = INCBIN_U16("data/tilesets/
 #if !IS_FRLG
 
 const u16 gMetatiles_General[] = INCBIN_U16("data/tilesets/primary/general/metatiles.bin");
+// The new industrial rooftop references only exist inside Cuordilava.
+const u16 gMetatiles_CuordilavaGeneral[] = INCBIN_U16("data/tilesets/primary/cuordilava/metatiles.bin");
 const u16 gMetatileAttributes_General[] = INCBIN_U16("data/tilesets/primary/general/metatile_attributes.bin");
 
 const u16 gMetatiles_Petalburg[] = INCBIN_U16("data/tilesets/secondary/petalburg/metatiles.bin");
