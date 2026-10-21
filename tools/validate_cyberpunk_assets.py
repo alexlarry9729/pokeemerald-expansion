@@ -883,12 +883,15 @@ def validate_cuordilava_primary_metatile_isolation(root: Path) -> list[str]:
     try:
         town_map = (root / "data/layouts/LavaridgeTown/map.bin").read_bytes()
         secondary = (root / "data/tilesets/secondary/cuordilava/metatiles.bin").read_bytes()
-        for cell in range(len(town_map) // 2):
+        for cell in range(20 * 20):
             metatile_id = struct.unpack_from("<H", town_map, 2 * cell)[0] & 0x3FF
-            source = original if metatile_id < 512 else secondary
-            source_id = metatile_id if metatile_id < 512 else metatile_id - 512
+            # Only primary General metatiles can be redirected through the
+            # private primary clone. Secondary architecture uses a separate
+            # tile namespace, and should not count as a primary collision.
+            if metatile_id >= 512:
+                continue
             for slot in range(8):
-                tile = struct.unpack_from("<H", source, source_id * 16 + slot * 2)[0] & 0x3FF
+                tile = struct.unpack_from("<H", original, metatile_id * 16 + slot * 2)[0] & 0x3FF
                 if tile in replace.values():
                     errors.append(
                         f"{private}: original town cell {cell} already "
