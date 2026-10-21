@@ -526,6 +526,13 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
                     f"{palette_dir / '15.pal'}: night-time structural colour "
                     f"{index} must be darker than sunlit steel"
                 )
+        # Minimal diffuse blue-grey lunar light on town-private industrial steel.
+        for index, floor in ((1, 55), (2, 62), (8, 43)):
+            if luminance(night[index]) < floor:
+                errors.append(
+                    f"{palette_dir / '15.pal'}: moonlight steel index {index} "
+                    f"below visibility floor {floor}"
+                )
         for index, floor in ((1, 48), (8, 39)):
             if luminance(night[index]) < floor:
                 errors.append(
@@ -793,10 +800,13 @@ def validate_cuordilava_primary_palette_isolation(root: Path) -> list[str]:
     for day_index, night_index in ((1, 10), (2, 11), (3, 12), (4, 13), (5, 14)):
         day_palette, night_palette = palettes[day_index], palettes[night_index]
         for colour_index in range(1, 8):
-            if luminance(day_palette[colour_index]) <= luminance(night_palette[colour_index]) + 12:
+            # The original 12-point gap made accessible moonlight impossible
+            # in dark basalt/roof highlights. Retain a positive separation
+            # while preserving readable night streets.
+            if luminance(day_palette[colour_index]) <= luminance(night_palette[colour_index]) + 4:
                 errors.append(
                     f"{palette_dir / f'{night_index:02d}.pal'}: structural colour "
-                    f"{colour_index} must be visibly darker than day bank {day_index}"
+                    f"{colour_index} must remain darker than day bank {day_index}"
                 )
         if day_index in (3, 4):
             # Only actual fire/light banks are emissive.
@@ -854,6 +864,23 @@ def validate_cuordilava_primary_palette_isolation(root: Path) -> list[str]:
                 errors.append(
                     f"{palette_dir / f'{bank:02d}.pal'}: night navigation index "
                     f"{colour_index} below readable floor {floor}"
+                )
+    # Second night-pass regression checks: dark, non-emissive surfaces must
+    # be walkable in moonlight. Fire/neon indices 9..15 are intentionally
+    # excluded from the illumination floor.
+    moonlight_floors = {
+        10: {7: 60, 8: 57},
+        11: {5: 70, 6: 74, 7: 83, 8: 49},
+        12: {4: 52, 8: 50},
+        13: {5: 73, 6: 67, 8: 63},
+        14: {7: 60, 8: 57},
+    }
+    for bank, index_floors in moonlight_floors.items():
+        for colour_index, floor in index_floors.items():
+            if luminance(palettes[bank][colour_index]) < floor:
+                errors.append(
+                    f"{palette_dir / f'{bank:02d}.pal'}: moonlight index "
+                    f"{colour_index} below visibility floor {floor}"
                 )
     for night_index in (10, 11, 12, 14):
         for colour_index in (9, 10, 11, 12):
