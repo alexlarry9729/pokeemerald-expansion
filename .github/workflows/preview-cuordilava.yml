@@ -1,0 +1,55 @@
+name: Cuordilava quick visual previews
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/daytime-cyberpunk-lights
+    paths:
+      - '.github/workflows/preview-cuordilava.yml'
+      - 'tools/render_cuordilava_preview.py'
+      - 'tools/validate_cyberpunk_assets.py'
+      - 'data/tilesets/**'
+      - 'data/layouts/**'
+      - 'data/maps/LavaridgeTown/map.json'
+      - 'graphics/object_events/**'
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    name: Validate and render Cuordilava day/night
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+
+      - name: Validate original indexed GBA graphics and map accesses
+        run: python3 tools/validate_cyberpunk_assets.py
+
+      - name: Render the real Lavaridge Town map in day and night modes
+        run: python3 tools/render_cuordilava_preview.py --output-dir build-preview
+
+      - name: Check diagnostic PNG dimensions and nonempty outputs
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          for mode in ('day', 'night'):
+              png = Path(f'build-preview/cuordilava-{mode}.png').read_bytes()
+              assert png[:8] == b'\x89PNG\r\n\x1a\n', f'{mode} preview invalid PNG'
+              width, height = struct.unpack_from('>II', png, 16)
+              assert (width, height) == (960, 960), (mode, width, height)
+              assert len(png) > 1000, f'{mode} preview is suspiciously small'
+          PY
+
+      - name: Upload both diagnostic map previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: cuordilava-visual-previews-${{ github.sha }}
+          path: |
+            build-preview/cuordilava-day.png
+            build-preview/cuordilava-night.png
+          if-no-files-found: error
+          retention-days: 30
