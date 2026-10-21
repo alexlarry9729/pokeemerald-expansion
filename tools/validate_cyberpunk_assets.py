@@ -526,6 +526,12 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
                     f"{palette_dir / '15.pal'}: night-time structural colour "
                     f"{index} must be darker than sunlit steel"
                 )
+        for index, floor in ((1, 48), (8, 39)):
+            if luminance(night[index]) < floor:
+                errors.append(
+                    f"{palette_dir / '15.pal'}: unlit steel index {index} "
+                    f"below readable floor {floor}"
+                )
         for index in range(9, 16):
             if luminance(night[index]) <= luminance(day[index]):
                 errors.append(f"{palette_dir / '15.pal'}: local neon colour {index} must be brighter at night")
@@ -831,6 +837,24 @@ def validate_cuordilava_primary_palette_isolation(root: Path) -> list[str]:
                 f"{palette_dir / '14.pal'}: nonemissive roof colour "
                 f"{index} cannot vanish in darkness"
             )
+    # Readable navigation floor, second pass: the first night revision still
+    # left basalt paths and building outlines hard to distinguish in emulator.
+    # The limits apply only to private Cuordilava NIGHT source palettes.  They
+    # must not lift magma/neon indices or spill into other maps.
+    navigation_floors = {
+        10: {7: 50, 8: 48},        # path and iron outlines
+        11: {5: 64, 6: 66, 7: 74, 8: 43},  # basalt/pavement
+        12: {5: 58, 8: 44},        # warm masonry
+        13: {5: 64, 8: 55},        # technical wall outlines
+        14: {7: 50, 8: 48},        # rooftops
+    }
+    for bank, floors in navigation_floors.items():
+        for colour_index, floor in floors.items():
+            if luminance(palettes[bank][colour_index]) < floor:
+                errors.append(
+                    f"{palette_dir / f'{bank:02d}.pal'}: night navigation index "
+                    f"{colour_index} below readable floor {floor}"
+                )
     for night_index in (10, 11, 12, 14):
         for colour_index in (9, 10, 11, 12):
             colour = palettes[night_index][colour_index]
