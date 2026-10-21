@@ -792,7 +792,8 @@ def validate_cuordilava_primary_palette_isolation(root: Path) -> list[str]:
                     f"{palette_dir / f'{night_index:02d}.pal'}: structural colour "
                     f"{colour_index} must be visibly darker than day bank {day_index}"
                 )
-        if day_index != 2:
+        if day_index in (3, 4):
+            # Only actual fire/light banks are emissive.
             for colour_index in range(9, 15):
                 if luminance(night_palette[colour_index]) <= luminance(day_palette[colour_index]):
                     errors.append(
@@ -800,9 +801,14 @@ def validate_cuordilava_primary_palette_isolation(root: Path) -> list[str]:
                         f"{colour_index} must outshine day bank {day_index}"
                     )
         else:
-            # Brown ground pigments cannot glow like signage.
-            if any(luminance(night_palette[i]) >= luminance(day_palette[i]) for i in range(9, 13)):
-                errors.append(f"{palette_dir / '11.pal'}: ground rust is too luminous at night")
+            # The broad path, roof and ground banks 01, 02 and 05 are NOT
+            # light sources. Keeping these dark prevents red streets at night.
+            for colour_index in range(9, 15):
+                if luminance(night_palette[colour_index]) >= luminance(day_palette[colour_index]):
+                    errors.append(
+                        f"{palette_dir / f'{night_index:02d}.pal'}: nonemissive oxide "
+                        f"colour {colour_index} must darken at night"
+                    )
     for night_index in (10, 11, 12, 14):
         for colour_index in (9, 10, 11, 12):
             colour = palettes[night_index][colour_index]
