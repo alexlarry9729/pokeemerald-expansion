@@ -1686,7 +1686,7 @@ void CB1_Overworld(void)
 // Global outdoor moonlight, not a near-black screen-wide tint.
 // In TimeMixPalettes an isTint=TRUE colour MULTIPLIES each channel: the old
 // night coefficients (0.22/0.16/0.42) almost erased unlit roads everywhere.
-// A soft 4/16 blend towards cool grey-blue instead raises the shadow floor
+// A softer 3/16 blend towards cool grey-blue raises the shadow floor
 // without changing raw tiles, map collisions, or palette banks. Indoors and
 // caves are excluded by MapHasNaturalLight; blend-immune lights remain vivid.
 #define MOONLIGHT_COLOR RGB(20, 22, 27)
@@ -1697,7 +1697,7 @@ const struct BlendSettings gTimeOfDayBlend[] =
     [TIME_MORNING] = {.coeff = 4, .blendColor = 0xA8B0E0,        .isTint = TRUE},
     [TIME_DAY]     = {.coeff = 0, .blendColor = 0,               .isTint = FALSE},
     [TIME_EVENING] = {.coeff = 2, .blendColor = DUSK_AMBIENT_COLOR, .isTint = FALSE},
-    [TIME_NIGHT]   = {.coeff = 4, .blendColor = MOONLIGHT_COLOR, .isTint = FALSE},
+    [TIME_NIGHT]   = {.coeff = 3, .blendColor = MOONLIGHT_COLOR, .isTint = FALSE},
 };
 
 #define DEFAULT_WEIGHT 256

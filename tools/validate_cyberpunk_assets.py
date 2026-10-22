@@ -1329,7 +1329,7 @@ def validate_global_outdoor_moonlight(root: Path) -> list[str]:
 
     night = (
         "#define MOONLIGHT_COLOR RGB(20, 22, 27)",
-        "[TIME_NIGHT]   = {.coeff = 4, .blendColor = MOONLIGHT_COLOR, .isTint = FALSE}",
+        "[TIME_NIGHT]   = {.coeff = 3, .blendColor = MOONLIGHT_COLOR, .isTint = FALSE}",
     )
     dusk = (
         "#define DUSK_AMBIENT_COLOR RGB(23, 20, 21)",
@@ -1366,15 +1366,15 @@ def validate_global_outdoor_moonlight(root: Path) -> list[str]:
         errors.append(f"{palette_source}: moonlight regression model requires the existing 4/16 blending semantics")
 
     # Verify actual 5-bit GBA palette arithmetic on representative samples.
-    # For blend coeff 4 the runtime does: channel + ((target-channel)*8 >> 5).
+    # For blend coeff 3 the runtime does: channel + ((target-channel)*6 >> 5).
     def moonlight(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
         return tuple(
-            c + (((target - c) * 8) >> 5)
+            c + (((target - c) * 6) >> 5)
             for c, target in zip(rgb, (20, 22, 27))
         )
 
     pavement = moonlight((5, 6, 7))
-    if any(pavement[i] < (8, 10, 12)[i] for i in range(3)):
+    if any(pavement[i] < (7, 9, 10)[i] for i in range(3)):
         errors.append(f"{source}: moonlight still leaves dark paths unreadable: {pavement}")
     hot_red = moonlight((31, 7, 4))
     if hot_red[0] < 27 or hot_red[0] <= hot_red[1]:
