@@ -1683,15 +1683,21 @@ void CB1_Overworld(void)
         DoCB1_Overworld(gMain.newKeys, gMain.heldKeys);
 }
 
-// Deep indigo night tint; neon light palettes are blend-immune and stay vivid.
-#define TINT_NIGHT Q_8_8(0.22) | Q_8_8(0.16) << 8 | Q_8_8(0.42) << 16
+// Global outdoor moonlight, not a near-black screen-wide tint.
+// In TimeMixPalettes an isTint=TRUE colour MULTIPLIES each channel: the old
+// night coefficients (0.22/0.16/0.42) almost erased unlit roads everywhere.
+// A soft 4/16 blend towards cool grey-blue instead raises the shadow floor
+// without changing raw tiles, map collisions, or palette banks. Indoors and
+// caves are excluded by MapHasNaturalLight; blend-immune lights remain vivid.
+#define MOONLIGHT_COLOR RGB(20, 22, 27)
+#define DUSK_AMBIENT_COLOR RGB(23, 20, 21)
 
 const struct BlendSettings gTimeOfDayBlend[] =
 {
-    [TIME_MORNING] = {.coeff = 4,  .blendColor = 0xA8B0E0,   .isTint = TRUE},
-    [TIME_DAY]     = {.coeff = 0,  .blendColor = 0,          .isTint = FALSE},
-    [TIME_EVENING] = {.coeff = 5,  .blendColor = 0xCA78D7,   .isTint = TRUE},
-    [TIME_NIGHT]   = {.coeff = 10, .blendColor = TINT_NIGHT, .isTint = TRUE},
+    [TIME_MORNING] = {.coeff = 4, .blendColor = 0xA8B0E0,        .isTint = TRUE},
+    [TIME_DAY]     = {.coeff = 0, .blendColor = 0,               .isTint = FALSE},
+    [TIME_EVENING] = {.coeff = 2, .blendColor = DUSK_AMBIENT_COLOR, .isTint = FALSE},
+    [TIME_NIGHT]   = {.coeff = 4, .blendColor = MOONLIGHT_COLOR, .isTint = FALSE},
 };
 
 #define DEFAULT_WEIGHT 256

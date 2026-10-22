@@ -1311,6 +1311,77 @@ def validate_cuordilava_preview_palette_routing(root: Path) -> list[str]:
     return errors
 
 
+def validate_global_outdoor_moonlight(root: Path) -> list[str]:
+    """Check the *runtime* cause of over-dark nights across Hoenn.
+
+    Previous local night palette boosts were undone by a world-wide tint that
+    retained just 16% of green in TimeMixPalettes. A blend, not a tint, is needed
+    to lift unlit pavement while respecting map type and immunity masks.
+    """
+    errors: list[str] = []
+    source = root / "src/overworld.c"
+    palette_source = root / "src/palette.c"
+    try:
+        code = source.read_text(encoding="utf-8")
+        palette_code = palette_source.read_text(encoding="utf-8")
+    except OSError as exc:
+        return [f"Outdoor moonlight sources unavailable: {exc}"]
+
+    night = (
+        "#define MOONLIGHT_COLOR RGB(20, 22, 27)",
+        "[TIME_NIGHT]   = {.coeff = 4, .blendColor = MOONLIGHT_COLOR, .isTint = FALSE}",
+    )
+    dusk = (
+        "#define DUSK_AMBIENT_COLOR RGB(23, 20, 21)",
+        "[TIME_EVENING] = {.coeff = 2, .blendColor = DUSK_AMBIENT_COLOR, .isTint = FALSE}",
+    )
+    for required in (*night, *dusk):
+        if required not in code:
+            errors.append(f"{source}: missing global readable moonlight setting {required!r}")
+
+    # Outdoor scope, never indoor/cave dark-room effects.
+    try:
+        start = code.index("bool32 MapHasNaturalLight(")
+        end = code.index("\\n}", start) + 2
+        map_test = code[start:end]
+        for required in (
+            "mapType == MAP_TYPE_TOWN",
+            "mapType == MAP_TYPE_CITY",
+            "mapType == MAP_TYPE_ROUTE",
+            "mapType == MAP_TYPE_OCEAN_ROUTE",
+        ):
+            if required not in map_test:
+                errors.append(f"{source}: moonlight must include {required}")
+        for excluded in ("MAP_TYPE_INDOOR", "MAP_TYPE_UNDERGROUND"):
+            if excluded in map_test:
+                errors.append(f"{source}: moonlight must not illuminate {excluded}")
+    except ValueError:
+        errors.append(f"{source}: missing MapHasNaturalLight outdoor guard")
+
+    if "if (!MapHasNaturalLight(gMapHeader.mapType))" not in code:
+        errors.append(f"{source}: outdoor restriction missing from time-of-day palette update")
+    if "IS_BLEND_IMMUNE_TAG" not in code:
+        errors.append(f"{source}: sprite neon blend immunity missing")
+    if "TimeMixPalettes(" not in palette_code or "coeff0 = tint0 ? 16 : blend0->coeff * 2" not in palette_code:
+        errors.append(f"{palette_source}: moonlight regression model requires the existing 4/16 blending semantics")
+
+    # Verify actual 5-bit GBA palette arithmetic on representative samples.
+    # For blend coeff 4 the runtime does: channel + ((target-channel)*8 >> 5).
+    def moonlight(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
+        return tuple(
+            c + (((target - c) * 8) >> 5)
+            for c, target in zip(rgb, (20, 22, 27))
+        )
+
+    pavement = moonlight((5, 6, 7))
+    if any(pavement[i] < (8, 10, 12)[i] for i in range(3)):
+        errors.append(f"{source}: moonlight still leaves dark paths unreadable: {pavement}")
+    hot_red = moonlight((31, 7, 4))
+    if hot_red[0] < 27 or hot_red[0] <= hot_red[1]:
+        errors.append(f"{source}: moonlight destroys saturated warm red accents: {hot_red}")
+    return errors
+
+
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     errors.extend(validate_lavaridge_light_events(root))
@@ -1325,6 +1396,7 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_cuordilava_roof_vent_metatiles(root))
     errors.extend(validate_facade_light_wiring(root))
     errors.extend(validate_cuordilava_preview_palette_routing(root))
+    errors.extend(validate_global_outdoor_moonlight(root))
     palette_dir = root / "data/tilesets/secondary/cuordilava/palettes"
     object_palette_dir = root / "graphics/object_events/palettes"
     tiles_png = root / "data/tilesets/secondary/cuordilava/tiles.png"
