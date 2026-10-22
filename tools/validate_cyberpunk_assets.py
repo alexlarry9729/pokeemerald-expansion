@@ -1342,7 +1342,7 @@ def validate_global_outdoor_moonlight(root: Path) -> list[str]:
     # Outdoor scope, never indoor/cave dark-room effects.
     try:
         start = code.index("bool32 MapHasNaturalLight(")
-        end = code.index("\\n}", start) + 2
+        end = code.index("\n}", start) + 2
         map_test = code[start:end]
         for required in (
             "mapType == MAP_TYPE_TOWN",
