@@ -1328,8 +1328,8 @@ def validate_global_outdoor_moonlight(root: Path) -> list[str]:
         return [f"Outdoor moonlight sources unavailable: {exc}"]
 
     night = (
-        "#define MOONLIGHT_COLOR RGB(20, 22, 27)",
-        "[TIME_NIGHT]   = {.coeff = 3, .blendColor = MOONLIGHT_COLOR, .isTint = FALSE}",
+        "#define MOONLIGHT_COLOR RGB(6, 8, 12)",
+        "[TIME_NIGHT]   = {.coeff = 8, .blendColor = MOONLIGHT_COLOR, .isTint = FALSE}",
     )
     dusk = (
         "#define DUSK_AMBIENT_COLOR RGB(23, 20, 21)",
@@ -1366,19 +1366,26 @@ def validate_global_outdoor_moonlight(root: Path) -> list[str]:
         errors.append(f"{palette_source}: moonlight regression model requires the existing 4/16 blending semantics")
 
     # Verify actual 5-bit GBA palette arithmetic on representative samples.
-    # For blend coeff 3 the runtime does: channel + ((target-channel)*6 >> 5).
+    # 8/16 = 50% blend to a DARK blue-grey, not bright moonlight. Test
+    # BOTH sides of the contrast: darkness of middling pavement and a floor
+    # for deep shadow so paths aren't black.
     def moonlight(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
         return tuple(
-            c + (((target - c) * 6) >> 5)
-            for c, target in zip(rgb, (20, 22, 27))
+            c + (((target - c) * 16) >> 5)
+            for c, target in zip(rgb, (6, 8, 12))
         )
 
     pavement = moonlight((5, 6, 7))
-    if any(pavement[i] < (7, 9, 10)[i] for i in range(3)):
-        errors.append(f"{source}: moonlight still leaves dark paths unreadable: {pavement}")
+    if any(pavement[i] < (5, 7, 9)[i] for i in range(3)):
+        errors.append(f"{source}: dark paths lose their minimum visibility: {pavement}")
+    stone = moonlight((20, 20, 20))
+    if not all(10 <= channel <= 17 for channel in stone):
+        errors.append(f"{source}: middle-tone buildings do not look sufficiently nocturnal: {stone}")
     hot_red = moonlight((31, 7, 4))
-    if hot_red[0] < 27 or hot_red[0] <= hot_red[1]:
-        errors.append(f"{source}: moonlight destroys saturated warm red accents: {hot_red}")
+    if hot_red[0] < 18 or hot_red[0] - max(hot_red[1:]) < 9:
+        errors.append(f"{source}: magma red loses its dominant hue: {hot_red}")
+    if any(c >= 20 for c in stone):
+        errors.append(f"{source}: global night background appears daytime-bright: {stone}")
     return errors
 
 

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Render a layout-only Cuordilava day/night preview from the real 4bpp tilesets.
 
-Palette RGB values are rendered as authored; no global colour grading is applied,
-so the preview cannot make unrelated tiles look cyberpunk by recolouring them.
-This is a diagnostic renderer, not an emulator screenshot: animation frame zero is
-composited for water, lava, steam and flowers, and the Pokémon Center, Poké Mart and
-facade light sprites use their real day/night palettes. NPCs, weather, shadows and
+Palette RGB values are rendered as authored for the daytime endpoint. The
+nighttime preview now approximates the engine's GLOBAL 5-bit background
+moonlight mix, before blend-immune light sprites are composited. It is a
+diagnostic renderer, NOT an emulator screenshot: animated water, lava, steam
+and flowers use their first frame; Pokémon Center, Poké Mart and facade light
+sprites use their real palettes. NPCs, weather, shadows, alt blend flags and
 engine scanline effects are intentionally omitted.
 """
 from __future__ import annotations
@@ -118,6 +119,20 @@ def overlay_animation_tiles(
             atlas_pixels[destination_y + row][destination_x:destination_x + 8] = (
                 frame_pixels[source_y + row][source_x:source_x + 8]
             )
+
+
+# Approximate the runtime 5-bit outdoor night colour mix on BACKGROUND
+# palettes only. Light sprites are layered afterwards so their blend-immune
+# neon remains vivid. Do not mistake this for an emulator screenshot.
+MOONLIGHT_RGB5 = (6, 8, 12)
+MOONLIGHT_COEFF = 8
+
+
+def moonlight_bg_rgb(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
+    src = (rgb[0] >> 3, rgb[1] >> 3, rgb[2] >> 3)
+    mixed = tuple(max(0, min(31, c + (((t - c) * (MOONLIGHT_COEFF * 2)) >> 5)))
+                  for c, t in zip(src, MOONLIGHT_RGB5))
+    return tuple((c * 255 + 15) // 31 for c in mixed)
 
 
 def read_palette(path: Path) -> list[tuple[int, int, int]]:
@@ -267,6 +282,10 @@ def render(mode: str, output: Path, layout: dict, root: Path) -> None:
                     if overlay and colour_index == 0:
                         continue
                     colour = palette[colour_index]
+                    # Outdoor global TimeMixPalettes affects BG banks 0..12,
+                    # not time-of-day-immune banks 13..15 or light sprites.
+                    if mode == "night" and palette_index <= 12:
+                        colour = moonlight_bg_rgb(colour)
                     offset = ((origin_y + py) * out_w + origin_x + px) * 3
                     canvas[offset:offset + 3] = bytes(colour)
 
