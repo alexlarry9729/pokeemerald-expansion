@@ -9,6 +9,7 @@ on:
       - '.github/workflows/preview-cuordilava.yml'
       - 'tools/render_cuordilava_preview.py'
       - 'tools/validate_cyberpunk_assets.py'
+      - 'tools/apply_cuordilava_industrial_art.py'
       - 'data/tilesets/**'
       - 'data/layouts/**'
       - 'data/maps/LavaridgeTown/map.json'
@@ -24,6 +25,9 @@ jobs:
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
+
+      - name: Apply town-private industrial architecture redraw
+        run: python3 tools/apply_cuordilava_industrial_art.py
 
       - name: Validate original indexed GBA graphics and map accesses
         run: python3 tools/validate_cyberpunk_assets.py

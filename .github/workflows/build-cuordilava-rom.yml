@@ -23,6 +23,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends binutils-arm-none-eabi gcc-arm-none-eabi libnewlib-arm-none-eabi libpng-dev python3
 
+      - name: Apply town-private industrial architecture redraw
+        run: python3 tools/apply_cuordilava_industrial_art.py
+
       - name: Validate cyberpunk assets
         run: python3 tools/validate_cyberpunk_assets.py
 

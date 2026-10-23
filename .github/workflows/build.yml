@@ -47,6 +47,9 @@ jobs:
             tools/wav2agb/wav2agb
           key: tools-${{ runner.os }}-${{ hashFiles('tools/*/Makefile', 'tools/**/*.c', 'tools/**/*.cpp', 'tools/**/*.h') }}
 
+      - name: Apply Cuordilava art for Emerald
+        run: python3 tools/apply_cuordilava_industrial_art.py
+
       - name: ROM (Emerald)
         env:
           GAME_VERSION: EMERALD
@@ -192,6 +195,9 @@ jobs:
             tools/patchelf/patchelf
             tools/mgba-rom-test-hydra/mgba-rom-test-hydra
           key: tools-check-${{ runner.os }}-${{ hashFiles('tools/*/Makefile', 'tools/**/*.c', 'tools/**/*.cpp', 'tools/**/*.h') }}
+
+      - name: Apply Cuordilava art for Emerald tests
+        run: python3 tools/apply_cuordilava_industrial_art.py
 
       - name: Test
         env:

@@ -134,3 +134,13 @@ La prova in emulatore del commit `02785a3` ha mostrato una notte ancora troppo s
 Il nuovo target è un **blu-grigio scuro** `RGB(6,8,12)` con **8/16 (50%)** di miscelazione, limitata alle mappe esterne già selezionate da `MapHasNaturalLight`. La combinazione abbassa i mezzitoni e gli edifici chiari mentre mantiene un livello di leggibilità sui sentieri più scuri. Il coefficiente numericamente maggiore non indica più luce: il target è notevolmente più scuro. Dusk, luce diurna, meteo, mappe interne, eventi, NPC, metatile e collisioni sono invariati. I neon blend-immune restano separati.
 
 L'anteprima diagnostica `tools/render_cuordilava_preview.py` include ora un'approssimazione del **post-processing notturno globale** in RGB 5-bit sulle palette BG 0–12 (prima mostrava soltanto le palette alternative di Cuordilava), applicata **prima** dei neon degli oggetti. La preview non simula però NPC, meteo, blending speciale o tutte le condizioni runtime: la prova in emulatore resta necessaria. Il validatore verifica che i mezzitoni siano notturni, le ombre abbiano un pavimento leggibile e il rosso magma resti riconoscibile.
+
+## Cuordilava — primo passaggio architettonico industriale (23 ottobre 2026)
+
+Riferimento principale: la prima immagine originale dell'utente, con architettura metallica scura, finestre rosso magma, tubazioni, neon ciano/magenta e terrazze termali. La resa è ispirata alla direzione artistica, non una copia pixel per pixel del concept, perché restano vincoli 8×8 e geometria Emerald invariata.
+
+Il generatore `tools/apply_cuordilava_industrial_art.py` ridisegna prima della build gli atlanti esclusivi di Cuordilava. Interviene su 24 tile primari e 61 secondari (416 + 1248 pixel indicizzati), aggiungendo nervature metalliche, griglie, pannelli rivettati, persiane incandescenti, dettagli tecnici e punti ciano/arancio. Le palette originali, i metatile, le collisioni, le posizioni porte, i warp, NPC, acqua e animazioni sono invariati. La luce notturna globale approvata del commit `67eb8a8` non cambia.
+
+La conversione controlla gli hash Git degli atlanti sorgenti e il conteggio esatto dei pixel; preserva PNG indicizzato 4bpp/16 colori. I workflow di validazione, anteprima e build applicano il generatore prima di compilare. Per compilare a mano da un checkout pulito eseguire prima `python3 tools/apply_cuordilava_industrial_art.py`. Evitare doppia applicazione: lo script la rifiuta esplicitamente.
+
+Questo è un primo passaggio reale sulle texture architettoniche, non la riproduzione completa del concept: le grosse tubature, nuovi tetti e ponticelli richiederanno lavoro successivo sui metatile, da validare contro le collisioni.

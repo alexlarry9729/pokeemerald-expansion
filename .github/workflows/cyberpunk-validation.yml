@@ -31,6 +31,7 @@ on:
       - 'src/data/field_effects/field_effect_objects.h'
       - 'src/data/object_events/object_event_graphics.h'
       - 'tools/validate_cyberpunk_assets.py'
+      - 'tools/apply_cuordilava_industrial_art.py'
       - '.github/workflows/cyberpunk-validation.yml'
   workflow_dispatch:
 
@@ -48,6 +49,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Apply town-private industrial architecture redraw
+        run: python3 tools/apply_cuordilava_industrial_art.py
       - name: Validate palettes and day/night glow
         run: python3 tools/validate_cyberpunk_assets.py
 
@@ -62,6 +65,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends binutils-arm-none-eabi gcc-arm-none-eabi libnewlib-arm-none-eabi libpng-dev python3
+      - name: Apply town-private industrial architecture redraw
+        run: python3 tools/apply_cuordilava_industrial_art.py
       - name: Build Emerald
         env:
           GAME_VERSION: EMERALD
