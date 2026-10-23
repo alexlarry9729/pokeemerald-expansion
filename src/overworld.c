@@ -1683,15 +1683,21 @@ void CB1_Overworld(void)
         DoCB1_Overworld(gMain.newKeys, gMain.heldKeys);
 }
 
-// Deep indigo night tint; neon light palettes are blend-immune and stay vivid.
-#define TINT_NIGHT Q_8_8(0.22) | Q_8_8(0.16) << 8 | Q_8_8(0.42) << 16
+// Global outdoor moonlight with a visibly darker night than daytime.
+// In TimeMixPalettes the old multiplicative tint removed nearly all shadow
+// detail, whereas blending towards bright grey-blue (20,22,27) made night
+// resemble day. Blend half-way towards a dark blue-grey (6,8,12): bright
+// surfaces darken, dark pathways keep a faint ambient floor. Only outdoor
+// map types receive the effect; time-blend-immune neon sprites are protected.
+#define MOONLIGHT_COLOR RGB(6, 8, 12)
+#define DUSK_AMBIENT_COLOR RGB(23, 20, 21)
 
 const struct BlendSettings gTimeOfDayBlend[] =
 {
-    [TIME_MORNING] = {.coeff = 4,  .blendColor = 0xA8B0E0,   .isTint = TRUE},
-    [TIME_DAY]     = {.coeff = 0,  .blendColor = 0,          .isTint = FALSE},
-    [TIME_EVENING] = {.coeff = 5,  .blendColor = 0xCA78D7,   .isTint = TRUE},
-    [TIME_NIGHT]   = {.coeff = 10, .blendColor = TINT_NIGHT, .isTint = TRUE},
+    [TIME_MORNING] = {.coeff = 4, .blendColor = 0xA8B0E0,        .isTint = TRUE},
+    [TIME_DAY]     = {.coeff = 0, .blendColor = 0,               .isTint = FALSE},
+    [TIME_EVENING] = {.coeff = 2, .blendColor = DUSK_AMBIENT_COLOR, .isTint = FALSE},
+    [TIME_NIGHT]   = {.coeff = 8, .blendColor = MOONLIGHT_COLOR, .isTint = FALSE},
 };
 
 #define DEFAULT_WEIGHT 256
@@ -1802,6 +1808,9 @@ void UpdateAltBgPalettes(u16 palettes)
         return;
     palettes &= ~((1 << GetNumPalsInPrimary(gMapHeader.mapLayout)) - 1) | primary->swapPalettes;
     palettes &= ((1 << GetNumPalsInPrimary(gMapHeader.mapLayout)) - 1) | (secondary->swapPalettes << GetNumPalsInPrimary(gMapHeader.mapLayout));
+    // Palette 12 is a private Cuordilava architecture ramp; do not swap it in other maps sharing this tileset.
+    if (gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN)
+        palettes |= (1 << 6);
     palettes &= PALETTES_MAP ^ (1 << 0); // don't blend palette 0, [13,15]
     palettes >>= 1; // start at palette 1
     if (!palettes)

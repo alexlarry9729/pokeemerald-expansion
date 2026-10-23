@@ -1,0 +1,230 @@
+# Cyberpunk Hoenn — Cuordilava (Lavaridge Town) visual direction
+
+## Italian naming and ROM identifiers
+
+- **Cuordilava** is the Italian name of the town; its internal map identifier stays `LavaridgeTown` and the English ROM may display `Lavaridge Town`.
+- **Fiammetta** is the Gym Leader associated with Cuordilava, not the name of the town.
+- Keep code paths, map IDs, event scripts and upstream identifiers unchanged unless a technical change explicitly requires it. Use the Italian names in Italian-facing documentation and communication.
+
+## Reference target
+
+Use the supplied cyberpunk town image as the mood and density reference, adapted to the existing top-down Pokémon Emerald tile scale rather than copying its isometric perspective.
+
+- **Architecture first:** rework complete building fronts, roof silhouettes, windows, vents, pipes, door surrounds and corner details. Neon signs alone are not a substitute for redesigned buildings.
+- **Volcanic base:** charcoal basalt, dark iron, warm stone edges, steam and hot-spring water. Keep walkable paving and water boundaries clearly readable.
+- **Light hierarchy:** lava-orange / furnace-red is the primary light family; cyan is the cool counterpoint; magenta is reserved for a smaller number of premium signs and trims.
+- **Day and night:** neon elements must remain visible during daylight, but use a lower-energy palette and normal sprite rendering. At night, use the vivid palette and blend mode. Avoid washing out the terrain or obscuring collision-relevant edges.
+- **Glow-mask invariant:** for every index listed in `data/tilesets/secondary/cuordilava/palettes/08.pla`, the paired night value in `01.pal` must be brighter than the daytime value in `08.pal`; the asset validator checks the full mask, not only selected colours.
+- **Living town:** retain the contrast of palms, dense planting, flowers, waterfalls and thermal pools against metal and stone. These are important parts of the reference, not filler to remove.
+
+## Implementation order
+
+1. Complete Cuordilava (internal map ID `LavaridgeTown`) as the pilot: building facades and roof/window tile art, industrial pipe details, palette assignment, then controlled placement in the town map.
+2. Preserve every existing warp, connection, sign, hidden item, trigger, NPC and collision/metatile attribute unless a deliberate and separately tested layout change is needed.
+3. Run `python3 tools/validate_cyberpunk_assets.py`, then the repository CI build. Inspect Lavaridge in an emulator during daytime and at night; the automated palette checks do not replace this visual test.
+4. Only after the pilot is visually and functionally approved, port the same art language to other Hoenn towns with local colour variations.
+
+## Cuordilava facade pass (2026-10-15)
+
+The architecture pass rebuilds the large four-metatile roof as a continuous iron roofline with left/right edge caps, two differently ribbed service panels, and a custom raised roof cap with twin exhausts. Four town-exclusive roof-corner/edge metatiles (72, 73, 74, 77) now carry matching dark-iron eave overlays with rivets, cyan maintenance lamps and furnace-red seams, tying the roof silhouette into the facade modules without repainting their underlying walkable or collision data. A low ventilation intake spans two adjacent instances of town-exclusive metatile 285 with ribbed steel slats and amber/cyan status lights; the source roof base and cell attributes remain unchanged. The separate rooftop metatile 162 now has an offset single-stack exhaust with its own glowing heat slots, so the adjacent roof silhouette no longer relies on the stock blank overlay. Other custom elements include paired illuminated windows, a service hatch, a louvered ventilation wall, a furnace awning, a hot-core machine facade, an industrial corner/conduit and a thermal exchanger service panel. All use reserved palette 6 for daytime structure and controlled orange/cyan accents; palette 15 is the brighter night companion. Cuordilava uses a layout-scoped background grade at palette-load time and reapplies that grade after the engine blends ordinary day/night palettes. It turns the source magenta toward furnace-wine, cyan toward dark teal, and neutral surfaces toward charcoal without modifying shared palette files or any other map. Reserved palette 6 is exempt so the custom architecture remains readable; palette 15 is its stronger nighttime companion. The eleven architectural metatiles (75, 76, 78, 79, 165, 170, 173, 174, 179, 181, 187) and rooftop metatiles 162 and 163 are validated as Cuordilava-specific. The two rooftop variants use secondary-only indexed tiles and palette 6; both existing metatile definitions retain their original attribute bytes. Only overlay slots 4–7 of metatile 162 are replaced; slots 0–3, the layout's cell placements, and the collision attribute byte are retained. Shared metatile 50 remains unchanged because validation found it is also used by Mt. Chimney. Shared palette files 07/08 and all other town map objects remain unchanged. Legacy palette-6 entries used by original Lavaridge metatiles are remapped to palette 13, a byte-for-byte copy of original palette 06, so other maps retain their original colours. Only the custom architectural slots listed by the validator use the private palette 6 daytime ramp and palette 15 night companion. Original palettes 05 and 12 are restored to their master values. The original LavaridgeTown layout binary is retained so cell placement, collision semantics, warps and walkable routes do not change; the art pass modifies only tiles and visual entries in verified town-specific metatiles.
+
+## Current scope and caveat
+
+The redesign now changes real architectural tile art and the active town metatiles rather than recolouring shared palette files. A local day/night palette pair is reserved for the custom building pieces. Global Lavaridge palettes 07 and 08 have been restored to master values, and unrelated city map-event JSON files have been restored so sign-light additions remain specific to Cuordilava.
+
+The work preserves map geometry, collision/metatile-attribute bytes, warps, object events, signs and triggers. The custom architecture remains modular: existing building footprints are retained while roof edges, windows, vents, hatches, furnace panels and conduits acquire a consistent iron/charcoal, furnace-orange and cyan visual language.
+
+Do not mark the town visually complete solely on successful compilation. The final candidate must pass the full validator and ROM build, then be reviewed in the target emulator for both daytime and nighttime; any remaining tile seams or map-specific overlap should be corrected before release.
+
+
+
+The ROM artifact workflow also renders two layout-only PNGs from the current map, primary/secondary tile atlases and JASC palettes. These previews reproduce the custom BG colour-grade and private day/night palette, but intentionally omit NPC/event sprites, shadows, weather and emulator effects; they are a fast map-layout review, not a substitute for in-emulator verification.
+
+
+## Reference-driven palette pass — 2026-10-19
+
+- **Secondary tileset isolation:** `LAYOUT_LAVARIDGE_TOWN` now uses a dedicated copy at `data/tilesets/secondary/cuordilava/` for Cuordilava's industrial metatiles, tiles and day/night palette. The shared `data/tilesets/secondary/lavaridge/` files used by Route 112, Mt. Chimney, Jagged Pass, Fiery Path and Magma Hideout remain at the upstream baseline and are guarded by the asset validator.
+
+The supplied city reference is a mood and density target, adapted to the existing GBA top-down tiles rather than copied literally. The visual hierarchy is deliberately constrained:
+
+- **Primary:** charcoal/iron structure with furnace red and incandescent orange on windows, seams and vents.
+- **Secondary:** low-energy teal service LEDs; cyan must not dominate the ground or the building faces.
+- **Night:** brighten the accent ramp while keeping structural indices 1–8 dark; the night palette is still blended only for the Cuordilava layout.
+- **Scope:** Cuordilava's layout uses a private primary/general palette set under `data/tilesets/primary/cuordilava`, while reusing the existing primary tiles, metatiles and collision attributes. Only the town layout selects the new palette set. The private secondary palette 6 / night companion 15 remains reserved for custom architecture; shared Lavaridge palettes and global RGB grading remain untouched. Companion banks 10–14 provide a brighter night pass for the primary stone, path and facade colours.
+- **Regression guard:** the asset validator now checks that palette 6/15 warm accents stay red/orange-led and that the teal accent ramp remains restrained.
+
+## Pixel-art fixture pass (2026-10-19)
+
+The facade-light object now uses a dedicated 16×16 indexed pixel-art fixture: dark iron mounting, a vertical incandescent red/orange core, and a single restrained teal status light. The existing day/night object palettes still control its luminosity, so the sprite art is shared while the daytime ramp stays subdued and the nighttime ramp becomes vivid. The preview renderer composites these actual light-object sprites at their authored town coordinates and chooses the corresponding object palette for each preview; it still intentionally omits NPCs, weather, shadows, and engine effects. This improves visual review without changing town coordinates, warps, collision attributes, or the event anchor placements.
+
+## Rifinitura della gerarchia cromatica diurna (2026-10-19)
+
+Le due rampe primarie locali che controllano i dettagli caldi sono state ulteriormente attenuate di giorno: i toni rosso-arancio rimangono riconoscibili, ma la loro luminanza è più contenuta sulle superfici estese. Le companion notturne restano più brillanti, così l'effetto di fornace si concentra maggiormente su finestre, bordi e condotti al calare della luce. La modifica riguarda solo `data/tilesets/primary/cuordilava/palettes/03.pal` e `05.pal`; non modifica palette condivise, coordinate della mappa o attributi dei metatiles.
+
+## Refinement pass: magma furnace windows and industrial roofs (2026-10-21)
+
+This pass uses the supplied Lavaridge/Cuordilava volcanic cyberpunk reference as an *art-direction target*, not an importable GBA map. It changes indexed pixel artwork in `data/tilesets/secondary/cuordilava/tiles.png`, while retaining its original dimensions (128×232), palette-indexed 4bpp format, transparency index and existing metatile placement.
+
+- Reinforce red furnace glints in the four repeated building-face modules, thermal panels, window banks and roof bulkheads.
+- Replace selected high-energy cyan control-panel highlights with hot red/orange, keeping the teal LEDs as a restrained secondary signal.
+- Introduce tiny incandescent accents in rooftop corners, ventilation-intake grilles and service conduits without redrawing their silhouettes or transparency edges.
+- Preserve the window mullions, cooling-pipe status LEDs and palette-6 industrial metatile references protected by `tools/validate_cyberpunk_assets.py`.
+- The town map's `map.bin`, collision data, warp points, NPC positions, primary tileset and all globally shared tilesets are unchanged.
+
+**Review gate:** re-run the dedicated asset validator and Pokémon Emerald build, then inspect both day/night previews and test walkability, signs, warm/cool contrast and tile layering in an emulator before calling the city finished. CI build success is necessary but not a complete in-game visual review.
+
+## Correzione delle anteprime delle terme (2026-10-21)
+
+Le palette GBA della mappa non vanno selezionate in base all'origine grafica della tile: gli slot 0–5 sono caricati dal tileset primario, mentre gli slot 6–15 provengono dal secondario. Alcuni metatile delle terme usano grafica primaria con palette secondaria 8; la vecchia scelta per origine della tile li mostrava falsamente neri. `tools/render_cuordilava_preview.py` ora sceglie lo slot effettivamente caricato dal motore e il validatore verifica l'instradamento delle palette sia di giorno sia di notte. È una correzione alle anteprime diagnostiche; le risorse grafiche, la mappa e la ROM rimangono inalterate da questo specifico intervento.
+
+## Separazione reale tra giorno e notte (2026-10-21)
+
+Le precedenti anteprime mostravano un falso night pass per i banchi primari: la palette alternativa era renderizzata, ma `gTileset_CuordilavaGeneral` non aveva i `swapPalettes` abilitati in-game. La città ora attiva i banchi primari 1–5 nel proprio tileset isolato, usando le companion 10–14 a seconda del blend temporale del motore. Di giorno metallo, basalto e strade hanno toni più leggibili; di notte la parte strutturale si oscura, mentre soltanto gli indici emissivi delle finestre, delle tubazioni e delle insegne raggiungono il massimo. La coppia privata secondaria 06/15 segue la stessa regola di contrasto. Il validatore controlla i flag runtime e la gerarchia giorno/notte, anziché imporre (erroneamente) che ogni colore notturno fosse più chiaro. Nessuna modifica a `map.bin`, collisioni, warps, personaggi, mappe esterne o tileset condivisi. La preview rappresenta due condizioni estreme: la transizione oraria effettiva va ancora testata in emulatore.
+
+### Controllo di contaminazione luminosa: strade e tetti
+
+La prima preview del nuovo pass aveva acceso intere strade e superfici dei tetti perché i banchi condivisi di materiali (01/10 e 05/14) usavano la stessa rampa fluorescente delle finestre. L'ispezione delle anteprime ha rivelato il difetto; i banchi 10 e 14 restano ora scuri anche sugli indici 9–14. Il bagliore notturno forte rimane riservato alle palette 03/12, 04/13 e alla coppia industriale secondaria 06/15. Il validatore controlla entrambe le categorie, impedendo che le rampe dei materiali non emissivi diventino neon per errore.
+
+### Intervento sui metatile architettonici (2026-10-21)
+
+Il tileset industriale secondario privato ora incorpora una forma di fiamma incandescente nel pannello-fornace 170/181, una cucitura termica a segmenti nei pannelli metallici 441–444 e piccole spie calore nelle prese di ventilazione 262/263/278/279. L'intervento ridisegna 36 pixel indicizzati nei tile attivamente utilizzati dalla città. È un intervento sulla grafica degli edifici, non una regolazione cromatica. Metatile, dimensioni dei tetti, trasparenze esterne, collisioni, mappa, eventi e porte rimangono invariati; sono da ispezionare entrambe le anteprime e l'emulatore.
+
+## Night accessibility: ambient volcanic visibility (2026-10-21)
+
+The latest in-emulator feedback confirmed that unlit routes and façades disappear into black even though the ROM plays correctly. This pass raises only town-private ambient material colours, separating luminance from actual glowing sources: primary banks 10/11/12/13/14 now preserve a readable mid-dark floor for unlit roofs, stone, pathways and building outlines, and bank 15 recovers depth on dark steel. Daytime material banks 01/02/05 are strengthened where necessary to keep time-of-day contrast, without adding luminous stripes to streets. The bright furnace, lava and neon ramp indices remain allocated to dedicated emissive materials, so night still reads as night. The validator now guards the darkest navigational indices to prevent a regression to near-black values. All warps, map cells, collision attributes, object events and shared non-Cuordilava palettes remain unchanged. A hardware/emulator playtest remains required to tune the practical threshold.
+
+## Industrial roof/facade texture pass (2026-10-21)
+
+The previous city still showed broad flat tiles on the main building roof and standard residential roofing. This pass edits the real, town-private primary indexed atlas `data/tilesets/primary/cuordilava/tiles.png` (128×256, GBA 4bpp palette indices) to add iron ribs, recessed rivets, edge bracing and geometric service struts to roof IDs 248/264/279/280/295/296, to six terraced house roof IDs 162–164/178–180, and to the primary facade trim 340/341/356/357. All changed IDs are used by the current town map; no tile was inserted or removed, and the primary metatile layout and collision attributes remain unchanged. A dedicated validator now checks atlas format, selected roof-rib pixel indices and live town references. This texture pass is still only one stage of the more substantial building-shape redesign needed to match the detailed reference.
+
+## Isolation fix: gym roofs versus hot springs (2026-10-21)
+
+Visual review detected an overlap: the roof pattern applied directly to original General tile IDs 264/280 was visible across hot-spring sand and walkable terrain. The fix reserves **primary tile IDs 400..405** for industrial roof graphics in `data/tilesets/primary/cuordilava/tiles.png`. Their artwork is copied from the modified roofs; the original IDs 248/264/279/280/295/296 are restored byte-for-byte to their previous art. Only a Cuordilava-private copy of the 512-cell General metatile array redirects four existing roof metatiles (281/289/296/297) to the reserved art. The game's tileset header uses the town-private metatile pointer, but still uses **the original General metatile attributes** and original layout map. The diagnostic renderer now reads these cloned primary metatiles, matching the actual ROM. Added a validator to ensure every non-roof metatile remains byte-for-byte identical to General, that only the intended tile slots differ, and that source tile IDs 400..405 do not conflict with original definitions. Shared metatiles and hot-spring terrain are preserved.
+
+## Correzione conflitto tetti primari (2026-10-21)
+
+Il tentativo sperimentale di allocare i nuovi tile 400–405 ai tetti del tileset primario non superava la validazione: gli indici 403 e 404 sono già raggiungibili attraverso metatile attivi. Questo passaggio specifico è stato ritirato, tornando alla grafica e ai riferimenti primari precedenti. Restano attive la correzione della leggibilità notturna nei banchi palette locali, le architetture industriali del tileset secondario e la relativa validazione. Non considerare il passaggio ai tetti primari implementato: prima di riprenderlo occorre riservare slot davvero liberi per entrambi i namespace primario/secondario e verificarne ogni utilizzo nella mappa.
+
+## Seconda revisione della leggibilità notturna (21 ottobre 2026)
+
+A seguito del test della ROM, la prima correzione notturna risultava ancora insufficiente sulle strade e sui contorni non illuminati. Questo passaggio applica il piano A concordato al commit `b5ddc25`: 71 colori ritoccati esclusivamente nelle palette notturne primarie `10.pal`–`14.pal` e nella palette secondaria privata `15.pal`, mantenendo invariati indici 0, palette diurne, emissivi dei banchi 12/13 (9–14) e neon/magma della secondaria (9–15). Il livello base dei materiali non emissivi viene innalzato con passi di +2 fino a +12 RGB, preservando le differenze tra le superfici e la notte. Un ulteriore guard sul pavimento, sulle sagome architettoniche e sull'acciaio impedisce regressioni verso il nero illeggibile; rimangono i controlli che mantengono la notte meno luminosa del giorno e isolano tutte le modifiche dalla altre mappe. Le anteprime sono diagnostiche, non un test in emulatore: solo compilazione, controllo in gioco e feedback sulla navigazione notturna permetteranno di considerarla definitiva.
+
+## Passaggio luce lunare diffusa (21 ottobre 2026)
+
+Il feedback dell'ultima prova ROM richiedeva una notte ulteriormente leggibile, più vicina al mockup "chiaro di luna". Questo passaggio modifica esclusivamente gli indici **1–8** delle palette notturne `10–14` primarie e `15` secondaria (48 colori), aggiungendo una luce d'ambiente **blu-grigio appena percepibile** sui materiali passivi. Strade, bordi, rocce, tetti e facciate vengono schiariti senza un filtro sull'intero schermo, che altererebbe magma, NPC o altre mappe. Gli indici **9–15** (incluse finestre calde e neon) e tutti i banchi diurni rimangono invariati; non viene aggiunto uno sprite della luna perché la top-down map non mostra il cielo.
+
+Il validatore ora misura un livello minimo della luminanza notturna per passaggi e profili metallici e mantiene il vincolo che gli indici strutturali più significativi (1–7) siano **più scuri del giorno di almeno quattro punti**. Le companion palette `10–14` sono già collegate al blend temporale dal tileset privato; `15` secondaria rappresenta la companion del banco 6. Metatile, warps, collisioni, eventi, accessi e tileset condivisi restano invariati. In gioco è necessario ancora verificare leggibilità di sera al tempo locale e le transizioni in emulatore: il renderer verifica solo gli endpoint delle palette.
+
+## Illuminazione lunare globale delle mappe esterne (22 ottobre 2026)
+
+**Causa radice identificata nel motore:** `src/overworld.c` definiva la notte come `TINT_NIGHT` con moltiplicatori RGB **0,22 / 0,16 / 0,42**: `TimeMixPalettes` in `src/palette.c` applica questo tint *moltiplicando* i singoli canali, cancellando quasi del tutto le informazioni del terreno, ovunque ci fosse giorno/notte. Le correzioni locali di Cuordilava non erano in grado di compensare questo filtro successivo.
+
+La soluzione non è una luna visibile sopra la mappa (inquadratura top-down senza cielo), ma **illuminazione ambientale lunare** fornita dal motore per tutti i tipi di mappa già classificati da `MapHasNaturalLight`: `MAP_TYPE_TOWN`, `MAP_TYPE_CITY`, `MAP_TYPE_ROUTE`, `MAP_TYPE_OCEAN_ROUTE`. La notte viene ora calcolata come un mix 4/16 (25%) con un colore grigio-blu GBA 5-bit `RGB(20,22,27)` usando `.isTint=FALSE`, che innalza i valori dei pixel scuri, anziché moltiplicarli per coefficienti quasi zero. Per il crepuscolo è applicato un mix più tenue 2/16 (12,5%) con `RGB(23,20,21)`. `TimeMixPalettes` mantiene la normale interpolazione con l'orologio ed esclude le palette luci/sprite marcate blend-immune. **Mappe al chiuso, sotterranee e grotte non ricevono la luce lunare.**
+
+Non sono stati modificati metatile, palette dei tile originali, collisioni, warp o NPC; il colore è aggiunto nella fase di visualizzazione. Il validatore controlla sorgenti, mappe coinvolte, modalità non-tint e un modello numerico in RGB 5-bit per strade scure e luce rossa. **Verifica necessaria:** giocare di notte fuori dalla casa iniziale, nei percorsi e città; controllare transizioni crepuscolo-notte, meteo, grotte, interni e insegne neon. Il renderer PNG delle palette di Cuordilava non applica completamente la post-elaborazione runtime, quindi una sua anteprima non prova questo nuovo effetto globale. Serve un test in emulatore.
+
+## Bilanciamento moonlight globale meno intenso (22 ottobre 2026)
+
+Dopo il test reale della ROM `0edd38c`, la luce lunare globale 4/16 sulle mappe esterne è risultata eccessivamente intensa. Il fattore di illuminazione notturna in `src/overworld.c` viene ridotto da **4/16 (25%) a 3/16 (18,75%)** mantenendo `MOONLIGHT_COLOR = RGB(20,22,27)` e `isTint=FALSE`. È una riduzione del **25% della sola componente aggiunta** dalla luna, non uno scurimento del 25% dell'immagine totale. Il crepuscolo resta a 2/16 per conservare una transizione graduale verso la notte; giorno, mattina, neon e magma non vengono modificati. MapHasNaturalLight limita l'effetto a città/paesi/percorsi/ocean routes; interni, grotte e mappe sotterranee restano esclusi. Il validatore controlla il nuovo coefficiente e la conservazione della leggibilità di una strada molto scura. La resa finale in emulatore deve ancora essere verificata, soprattutto durante uscita di casa e transizioni orarie.
+
+## Illuminazione notturna globale a contrasto migliorato (22 ottobre 2026)
+
+La prova in emulatore del commit `02785a3` ha mostrato una notte ancora troppo simile al giorno. La causa non era più il coefficiente di miscelazione (già ridotto a 3/16), ma il **colore di destinazione troppo chiaro**, `RGB(20,22,27)` in 5 bit. Il motore spostava i pixel scuri verso un blu chiarissimo, rendendo la scena in generale luminosa.
+
+Il nuovo target è un **blu-grigio scuro** `RGB(6,8,12)` con **8/16 (50%)** di miscelazione, limitata alle mappe esterne già selezionate da `MapHasNaturalLight`. La combinazione abbassa i mezzitoni e gli edifici chiari mentre mantiene un livello di leggibilità sui sentieri più scuri. Il coefficiente numericamente maggiore non indica più luce: il target è notevolmente più scuro. Dusk, luce diurna, meteo, mappe interne, eventi, NPC, metatile e collisioni sono invariati. I neon blend-immune restano separati.
+
+L'anteprima diagnostica `tools/render_cuordilava_preview.py` include ora un'approssimazione del **post-processing notturno globale** in RGB 5-bit sulle palette BG 0–12 (prima mostrava soltanto le palette alternative di Cuordilava), applicata **prima** dei neon degli oggetti. La preview non simula però NPC, meteo, blending speciale o tutte le condizioni runtime: la prova in emulatore resta necessaria. Il validatore verifica che i mezzitoni siano notturni, le ombre abbiano un pavimento leggibile e il rosso magma resti riconoscibile.
+
+## Cuordilava — primo passaggio architettonico industriale (23 ottobre 2026)
+
+Riferimento principale: la prima immagine originale dell'utente, con architettura metallica scura, finestre rosso magma, tubazioni, neon ciano/magenta e terrazze termali. La resa è ispirata alla direzione artistica, non una copia pixel per pixel del concept, perché restano vincoli 8×8 e geometria Emerald invariata.
+
+Il generatore `tools/apply_cuordilava_industrial_art.py` ridisegna prima della build gli atlanti esclusivi di Cuordilava. Interviene su 24 tile primari e 61 secondari (362 + 1248 pixel indicizzati), aggiungendo nervature metalliche, griglie, pannelli rivettati, persiane incandescenti, dettagli tecnici e punti ciano/arancio. Le palette originali, i metatile, le collisioni, le posizioni porte, i warp, NPC, acqua e animazioni sono invariati. La luce notturna globale approvata del commit `67eb8a8` non cambia.
+
+La conversione controlla gli hash Git degli atlanti sorgenti e il conteggio esatto dei pixel; preserva PNG indicizzato 4bpp/16 colori. I workflow di validazione, anteprima e build applicano il generatore prima di compilare. Per compilare a mano da un checkout pulito eseguire prima `python3 tools/apply_cuordilava_industrial_art.py`. Evitare doppia applicazione: lo script la rifiuta esplicitamente.
+
+Questo è un primo passaggio reale sulle texture architettoniche, non la riproduzione completa del concept: le grosse tubature, nuovi tetti e ponticelli richiederanno lavoro successivo sui metatile, da validare contro le collisioni.
+
+Correzione preview: i tile primari `264` e `280` si riutilizzavano sul terreno e attorno alle terme. Sono esclusi dalla texture rivettata per evitare ripetizione sul percorso; gli altri dettagli edilizi rimangono invariati.
+
+## Nuova architettura monumentale — 23 ottobre 2026
+
+Questa fase NON è una passata sulle superfici dei tetti precedenti. Il generatore `tools/sculpt_cuordilava_city.py` costruisce **48 metatile strutturali nuovi** con grafica GBA indicizzata 4bpp: reattore sopra il Centro Pokémon, insegna tecnologica del Mart, tetto e fronte della Palestra di Fiammetta, piazza con sigillo vulcanico, parapetto termale e quartiere delle abitazioni con finestre incandescenti.
+
+Il tileset secondario privato viene esteso da 128×232 a **128×256** (512 tile); i metatile da 441 a 488 vengono creati in build mantenendo i 441 originali. Per ogni cella, il generatore conserva la metà superiore del dato mappa, i quattro tile di base e gli stessi due byte di attributi collisione/comportamento. Rimangono invariati i sei warp, posizioni NPC, eventi, confini 20×20 e l'illuminazione notturna approvata. La palette 6 resta isolata negli overlay previsti.
+
+Pipeline: `tools/apply_cuordilava_industrial_art.py` → `tools/validate_cyberpunk_assets.py` → `tools/render_cuordilava_preview.py` → compilazione Emerald. Restano distanti dal riferimento le grandi cascate, una piazza molto più vasta, edifici di più piani e vegetazione fitta: non devono essere dichiarati completati. **Non distribuire ROM intermedie finché l'insieme non è sufficientemente vicino all'immagine dell'utente.**
+
+### Regola di progetto: NON ingrandire la mappa di Cuordilava (23 ottobre 2026)
+
+La reference illustrata è un obiettivo **di stile e densità**, non un layout da copiare né un'autorizzazione ad ampliare la città. `LAYOUT_LAVARIDGE_TOWN` deve rimanere **20×20 metatile, 400 celle, 800 byte**. Conservare tutti e sei i warp/porte, il collegamento Route 112, gli eventi/NPC e la giocabilità esistente. Il tileset grafico secondario `tiles.png` eventualmente esteso a 128×256 pixel è solo **spazio per disegnare altri piccoli tile**, NON un'estensione della mappa.
+
+Adattamento funzionale del concept alle posizioni originali: Palestra in basso a sinistra → tempio-fornace principale; Centro Pokémon in alto al centro → facciata tecnologica riconoscibile; Mart in alto a destra → insegna ciano e architettura industriale; zona termale in alto a sinistra → tubature/vapore/acqua e parapetti; piazza centrale → pavimentazione lavica con emblema; casa ed erboristeria a sud → dettagli metallici/finestre calde. Per cascate e ponti del concept, usare **solo** i piccoli spazi decorativi e le acque esistenti, senza alterare la dimensione, rendere impraticabili i percorsi o spostare gli ingressi. Preservare il ciclo notturno già approvato.
+
+Prima di ogni build: test automatici di footprint invariato, coordinate dei warp, collegamento a Route 112 e attributi/collisioni dei metatile sostituiti. Non consegnare una ROM come finale finché il risultato visivo globale non sia davvero vicino alla reference.
+
+## Fase ambientale: terme vulcaniche e insegne magenta (23 ottobre 2026)
+
+L'anteprima comparata con la fotografia-concept ha evidenziato un difetto strutturale: la prima passata industriale aveva disegnato lamelle metalliche anche sui tile condivisi con le pozze termali. Il generatore ora individua i tile usati nella regione delle sorgenti (celle x0–7, y0–10) e li **esclude** dall'aggiunta di strutture. Restano libere da quell'effetto indesiderato l'acqua azzurra, le pietre e i bordi; ciò è controllato dalla validazione grafica.
+
+Il vecchio cortile di sabbia gialla è reinterpretato come **terrazza vulcanica in basalto e rame**, usando solo nove metatile SECONDARI privati già esistenti (680,664,672,697,698,650,652,657,658), palette 09 (precedentemente inutilizzata nella mappa) e **quattro tile 8×8 nuovi** per pietra, piccole screpolature arancioni e ciuffi vegetali. I quattro tile sono scritti su ID grafici non utilizzati e vengono esclusi dal successivo allocatore di 48 murales architettonici. Gli attributi collisione dei nove metatile rimangono byte-per-byte identici, la mappa resta 20×20, gli eventi e i sei warp restano invariati. Le pozze e le animazioni dell'acqua continuano a usare la palette 08 originale, preservata dal validatore.
+
+Sulle facciate già composte con 48 metatile nuovi, le insegne industriali ora includono **sottili cornici viola-magenta** (palette locale 06 e companion notturna 15, solo indice 15). Il rosso/arancione magma domina comunque la gerarchia visiva. La luminosità notturna globale approvata non è stata toccata. I tileset e le palette comuni di Hoenn non vengono modificati. La roadmap rimane il completamento di un insieme molto più denso e fedele al concept: terme architettoniche, vegetazione, camini, coperture, passaggi e dettagli urbani. **Nessuna ROM va presentata come consegna intermedia.**
+
+## Scenery supplement — 23 ottobre 2026
+
+Un nuovo generatore ripetibile `tools/dress_cuordilava_scenery.py`, eseguito **dopo** i 48 metatile civici, impiega gli ultimi 23 metatile privati (489–511) della città senza ampliare la griglia 20×20. Gli 8 disegni? In realtà sono 4 motivi 16×16 riutilizzabili: **8 palme tropicali** (solo palette locale 9), **6 camini-fucina sui tetti** e **5 piccoli lampioni al magma** (palette 6), e **4 segmenti di cascata turchese** sul bordo roccioso a sinistra delle terme (palette 8 dell'acqua). Tutte le nuove celle sono preesistenti e impassabili; prima e dopo la sostituzione il generatore verifica bit di collisione/elevazione immutati, conserva i quattro tile di fondo e copia esattamente i due byte attributi. Proibite posizioni di eventi, script, NPC, cartelli e warp. Non sono modificate palette globali, timer o giorno/notte già approvato.
+
+L'atlante grafico secondario è ancora 128×256 (512 tile 8×8), senza espansione. I 16 tile effettivamente nuovi vengono allocati sugli ID grafici che la mappa 20×20 non usa, evitando le gamme riservate alle animazioni. Le altre mappe non utilizzano questo tileset secondario; nessuna risorsa condivisa viene modificata. Il validatore controlla 512 metatile, presenza sulla mappa e palette dei 23 dettagli; l'anteprima non sostituisce un controllo in emulatore. La somiglianza al riferimento complessivo resta ancora da giudicare: non consegnare una ROM intermedia.
+
+## Monumental facade separation — 23 ottobre 2026
+
+La città deve restare 20×20, ma gli edifici devono assomigliare a vere strutture volumetriche. Il generatore `tools/polish_cuordilava_monuments.py` ora ritocca TUTTI i sette gruppi di metatile monumentali esistenti, senza usare nuovi tile o mappe: cornici aggettanti, tetti graduati, scossaline in rame, condotte e vetrate industriali incassate, segnaletica magenta secondaria, centro termico con pannello croce e Mart con insegna ciano. La Palestra presenta finalmente **un solo emblema vulcanico sul tetto**; la facciata inferiore, prima interpretata per errore come un'altra copertura per un controllo ambiguo della stringa 'GYM', mostra ora quattro aperture da fornace. La piazza ha inciso un motivo a pietre, non solo un quadrato uniforme. La terrazza termale lascia trasparire l'acqua sotto il parapetto. I nuovi dettagli usano soltanto i 16 indici della palette cittadina 06, compagna notturna 15; l'illuminazione approvata rimane fissa e i sei ingressi/collisioni e la mappa 20×20 non cambiano. Il validatore controlla che la facciata della Palestra non torni un doppione e che i quattro sportelli roventi esistano.
+
+Non è una ROM finale: il riferimento rimane molto più dettagliato e va valutato nel complesso. Nessuna ROM intermedia deve essere condivisa.
+
+## Più vegetazione e fornaci nella mappa originale — 23 ottobre 2026
+
+`tools/polish_cuordilava_scenery.py` migliora la qualità dei motivi 16×16 già usati sui 23 metatile decorativi: le palme hanno foglie sovrapposte verde giada e fiori color rame; i camini mostrano lamine metalliche ed emissioni calde; i lampioni hanno vetro incandescente, aloni e basamenti rivettati. Gli stessi 16 tile grafici sono riutilizzati sulle stesse celle impassabili; non esiste alcun cambiamento alla mappa 20×20, all'illuminazione notturna, alle collisioni o agli ingressi. La validazione controlla la densità minima del foliage e dei dettagli d'illuminazione. La ROM non sarà distribuita come versione intermedia.
+
+## Mineral spring realism — 23 ottobre 2026
+
+La comparazione con l'immagine obiettivo ha evidenziato che la grande superficie blu chiaro in alto a sinistra rimaneva visivamente piatta. `tools/refine_cuordilava_water.py` interviene **solo sui tile di riempimento acqua 320,321,336**, controllando con i dati metatile della griglia 20×20 che tali tile compaiano esclusivamente nella zona termale (x2–7, y2–6). Riproduce piccole increspature non periodiche usando soltanto indici già presenti (acqua chiara 9, acqua profonda 10, schiuma 1 ai bordi). La palette 08 secondaria **privata di Cuordilava** passa da azzurro pastello a turchese minerale: indici 9 = (79,181,195) e 10 = (48,156,173). Resta invariata la roccia, il vapore animato, la cascata scenica e ogni tile esterno alle pozze. Il filtro giorno/notte globale già approvato, le collisioni, sei porte, 400 celle della città, palestre/eventi/NPC non sono toccati. Questa correzione si applica dopo il cortile e prima degli strati architettonici; un controllo di regressione rende impossibile che coinvolga altri edifici o percorsi. Non condividere ROM intermedie.
+
+## Reference architecture relief — 2026-10-23
+
+The phase-III generator `tools/relief_cuordilava_landmarks.py` now gives the existing seven mural groups a clearer silhouette inspired by the attached volcanic cyberpunk reference: a layered reactor-hall upper roof and heat risers on the Center; one wide restrained-cyan shopping canopy plus service columns on the Mart; paired high exhaust spires and a single contiguous copper blast-furnace crown on the Gym; four visibly distinct steep basalt gables on the residences; copper-set cobblestone details at the central civic seal; and an open thermal-basin guardrail. The Gym ground-floor four-window furnace facade remains separate from the flame medallion roof. These are new large architectural forms drawn across existing multi-metatile murals, not merely isolated glowing pixels. The existing monument validator now checks characteristic continuous architectural elements. The original town footprint **remains 20x20**: no new map cells, door or event positions, collision flags, night-light coefficients, shared tilesets or route connections are changed. Visual acceptance still requires in-emulator day/night comparison with the reference.
+
+## Natural thermal springs and lush edges — 2026-10-23
+
+A final, strictly scoped pass `tools/soften_cuordilava_springs.py` replaces four metal-grate-looking cells within the existing hot spring with original compatible mineral-water metatiles (48–51 to 56–59 at y=4), guarded by equal metatile attributes, impassable collision, and preserved elevation bits. Three individually used rim metatiles (75/76/79, x=2..4 y=3) now copy basalt, boulders, and flowering-palm graphics from already-allocated town-private art instead of the old industrial mesh. The fourth scenery motif, the waterfall, adds turquoise current texture and white mineral foam on existing transparent 16x16 graphics. No new graphics/metatile budget, palettes, town dimensions, object events, doors, scripts, route connection or day/night parameters are introduced. Asset validation checks the final reassembled rim and surface. Validate in a live emulator before marking the visuals final; preview images remain diagnostic approximations.
+
+### Correzione di sicurezza della passata terme
+
+La passata proposta per sostituire metatiles del tetto con l'acqua è stata **scartata** dopo l'audit della mappa compilata: gli identificativi dei tetti industriali non appartenevano alle coordinate presunte e il controllo automatico ha correttamente bloccato la costruzione. I metatiles 75/76/79 restano invariati; nessuna cella della mappa viene più sostituita. La versione sicura conserva il medesimo modulo `soften_cuordilava_springs.py` ma interviene **esclusivamente** su poche trame dei tre tile d'acqua (320/321/336), già comprovati esclusivi della sorgente termale: schiuma e sfumature turchesi. Il disegno della cascata diventa più naturale, sempre negli stessi quattro metatiles di scena. La rimozione complessiva della struttura industriale intorno alla vasca richiede una revisione artistica dedicata con mappatura verificata, non una sostituzione automatica ad hoc.
+
+### Spring-only deindustrialization: verified map-cell audit
+
+The second landscape pass `tools/deindustrialize_cuordilava_spa.py` uses *actual audited source metatile IDs* rather than guessed map locations. Secondary metatiles 163, 187, 188 and 285 occur exclusively on the spring's interior; their now-replaced graphics are four variants of existing private turquoise wave tiles (320/321/336), with zero new 8x8 graphics and transparent upper layers. Metatile 165, exclusively at the eastern rim (7,3 and 7,4), now reuses existing palette-8 basalt boulders from the original lower pool border (metatile 180). The map's original 20x20 binary and every metatile behavior/collision attribute are kept **byte-for-byte unchanged**. Strict position audits prevent these substitutions from leaking into unrelated buildings; the prior roof-specific expectations for exactly those now-water/rock cells have been replaced by art/color-boundary checks. This addresses the obvious factory-grid elements covering the actual water while retaining the industrial architectural palette across the rest of the town. Check in-emulator suitability of thermal bath NPCs, walkable surfaces and water animation before release.
+
+## Dense reference-led architecture and natural palms — 2026-10-23
+
+This phase adds `tools/engrave_cuordilava_details.py` to draw large connected high-contrast furnace galleries, recurrent illuminated 6–9px windows, end buttresses, full-width copper cornices, and inlaid basalt civic ornaments across the *existing* 48 allocated town-only landmark metatiles. The Gym flame medallion, Center cross, Mart cyan signage, and separated front facades remain recognizable. The changes are intentionally much larger and more legible than earlier isolated metallic specks, while keeping warp/collision/placement unchanged. The volcanic garden palette is now rooted in moss green and flowering palms rather than dark desaturated cyan; courtyard cobblestone remains basalt grey with moss joints and copper flecks. A new regression check insists that each major building contains a minimum total area of warm furnace window glass. Compare the generated day/night map against the supplied reference and inspect real emulator graphics before acceptance.
+
+## Continuous industrial residential ground floor — 2026-10-23
+
+The new `tools/construct_cuordilava_lower_facade.py` paints a single **112×16px** unified row across the seven existing ground-floor housing cells (x=11..17, y=14). It adds seven structural bays of recessed furnace-orange windows, continuous copper cornices, charcoal steel ribs, and selective turquoise/magenta service indicators. This addresses the prior lower-right residential section remaining mostly flat, blank and gray even after rooftop detailing. Exactly **seven otherwise inactive private secondary metatiles (430–436)** and **28 unreferenced secondary 8×8 graphics** are reused; allocation remains 512 secondary metatiles and 512 8×8 tiles. Every old cell's primary base graphic, behavior attribute and collision/elevation bits are preserved. No event, NPC, sign, entrance, day/night coefficient, shared tileset, original world map dimension or route connection is changed. The renderer and build workflow include an auditable generated `map.bin`; a new art-validator checks the entire frontage and counts bright warm glass pixels. Compare day/night output in-emulator to verify roof-to-wall alignment.
+
+### Waterfront safeguard after the residential face pass
+
+The original spring-protection hash was applied indiscriminately to 34 legacy graphical tile slots, including 22 indices that became provably unreferenced by any metatile after the already approved thermal-basin deindustrialization. The new residential facade checks that all 28 reused indices were absent from every input metatile before painting. The asset validator now hashes the 12 remaining historically protected spring source tiles with a newly established SHA-256 baseline from the previously passing Emerald ROM: 7b6a7c3a6b89a04465b039614e6deac3aee2312db95649d60f8cad8a9b1b6975. The seven new Cuordilava-only metatiles 430–436 are also explicitly whitelisted for palette-6 overlay slots only. This maintains safety checks without unintentionally forbidding safe reuse of art memory.
+
+### Ground-floor volcanic Gym frontage
+
+The private pass `tools/dress_cuordilava_gym_ground_floor.py` adds five connected orange-lit lower-level bays below the existing independent Flannery Gym roof and heat-forge motif. It uses already-allocated pixel-art from the private housing-glass atlas, but permutes bay ordering to distinguish the furnace from the residential street. The entrance warp remains at (5,15), below the row of glazing (y=14). Metatiles 425..429 were previously unused; each copies its exact prior base and behavior attribute, and the map elevation/collision flags are preserved. No new palette, graphics or metatile budget allocation is needed, and additional CI assertions ensure all five cells remain fixed to the original Gym perimeter.
+
+### Civic plaza — inset volcanic promenade vents
+
+To give the broad plaza more deliberate industrial structure without making the center unsafe to navigate, `tools/stamp_cuordilava_civic_vents.py` stamps four flush decorative 16×16 copper/lava grilles on the previously empty, fully walkable ground at (8,8), (17,8), (8,11), and (17,11). Each reuses the precise original floor underlay, collision/behavior attribute and existing elevation bits. Its **four new 8×8 graphics** are allocated from verified unused private atlas indices 506–509 and only one unused secondary metatile 424 is instantiated at all four cells. The civic crest, game events, and route remain untouched. This retains the 512 metatile/graphic GBA limit and avoids decorative obstacles that would misrepresent real walkable edges. Review in-emulator at both day and night for readability.
+
+The final audit also verifies the original town elevational encoding: the walkable outdoor pavement carries 0x3000 height flags, which must not be mistaken for an impassable-cell collision bit. The plaza generator now preserves these elevation flags while separately asserting collision bits 10–11 remain zero; its east-side vent is placed at x=17, since x=16 was occupied by the original technical stair metatile.
