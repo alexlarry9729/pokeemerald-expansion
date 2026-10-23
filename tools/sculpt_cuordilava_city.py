@@ -23,8 +23,10 @@ LANDMARKS = (
     ("FLANNERY_GYM_MOLTEN_FORGE", 3, 11, 4, 2),
     ("CENTRAL_VOLCANIC_PLAZA_CREST", 10, 9, 4, 2),
     ("THERMAL_BASIN_BRIDGE_RAIL", 3, 10, 4, 1),
+    ("HOUSING_MAGMA_TERRACES", 11, 12, 4, 2),
+    ("GYM_FORGE_FACADE", 3, 13, 4, 1),
 )
-assert sum(w*h for _,_,_,w,h in LANDMARKS)==36
+assert sum(w*h for _,_,_,w,h in LANDMARKS)==48
 
 def rgb_readable(rows):
     return all(0 <= p <= 15 for row in rows for p in row)
@@ -127,6 +129,33 @@ def draw(name,w,h):
             for y in (3,8,13):a.line(xx-3,y,xx+3,y,12)
         a.line(0,27,63,27,12)
         a.line(4,29,59,29,14)
+    elif "HOUSING" in name:
+        roof_base(a,"housing")
+        # Multiple town-house modules share a single industrial eave.
+        a.rect(4,4,59,27,8)
+        a.rect(4,4,59,27,5,False)
+        for center in (12,25,39,52):
+            a.rect(center-5,10,center+5,23,6)
+            a.rect(center-4,11,center+4,21,8)
+            a.rect(center-3,12,center+3,19,13)
+            a.rect(center-2,13,center+2,18,12)
+            a.line(center,12,center,20,6)
+            a.line(center-4,20,center+4,20,10)
+            for yy in (6,24):a.line(center-6,yy,center+6,yy,14)
+        a.line(2,28,61,28,12);a.line(4,30,59,30,14)
+        for x in (3,60):
+            a.tube(x,4,x,28)
+    elif "GYM_FORGE_FACADE" in name:
+        a.rect(0,0,63,15,8)
+        a.rect(1,1,62,14,5,False)
+        for center in (11,26,40,55):
+            a.rect(center-5,3,center+5,12,6)
+            a.rect(center-4,4,center+4,11,8)
+            a.rect(center-3,5,center+3,9,12)
+            a.line(center-2,6,center+2,6,14)
+            a.line(center,4,center,11,5)
+            for x in (center-5,center+5):a.line(x,2,x,13,11)
+        a.line(2,14,61,14,14)
     elif "PLAZA" in name:
         # Dark paved court with embossed, copper-traced volcanic seal.
         a.rect(0,0,63,31,0)
@@ -177,7 +206,7 @@ def audit_layout(map_bytes,attributes):
                 if xy in covered or xy in reserved:
                     raise ValueError(f"Repeated or reserved landmark tile {label}: {xy}")
                 covered.add(xy)
-    assert len(covered)==36
+    assert len(covered)==48
 
 def run(root: Path):
     from collections import Counter
@@ -205,10 +234,12 @@ def run(root: Path):
     for offset in range(0,len(sec),2):
         t=struct.unpack_from("<H",sec,offset)[0]&1023
         if t>=512:used.add(t-512)
-    # Avoid the 160..319 animation area completely.
-    spare=[t for t in list(range(0,160))+list(range(320,512)) if t not in used]
-    if len(spare)<36*4:raise ValueError(f"Not enough 4bpp tiles: {len(spare)}")
-    spare=spare[:36*4]
+    # Avoid the active animated tile bands (lava 160..171, steam 288..295).
+    # These other IDs are unused by every existing metatile in the town tileset.
+    safe_bands=list(range(0,160))+list(range(172,288))+list(range(296,512))
+    spare=[t for t in safe_bands if t not in used]
+    if len(spare)<48*4:raise ValueError(f"Not enough 4bpp tiles: {len(spare)}")
+    spare=spare[:48*4]
     assert max(spare)<512 and min(spare)>=0
     pix.extend([[0]*128 for _ in range(256-height)])
     count=0
@@ -246,8 +277,8 @@ def run(root: Path):
                 struct.pack_into("<H",m,i*2,(raw&~1023)|(512+newidx))
                 changed[(x,y)]=(oldmeta,512+newidx,name)
                 count+=1
-    assert count==36 and len(sec)==(441+36)*16
-    assert len(secattr)==(441+36)*2
+    assert count==48 and len(sec)==(441+48)*16
+    assert len(secattr)==(441+48)*2
     assert len(m)==len(previous)*2
     for idx,before in enumerate(previous):
         after=struct.unpack_from("<H",m,idx*2)[0]

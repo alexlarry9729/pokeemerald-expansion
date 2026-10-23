@@ -146,3 +146,11 @@ La conversione controlla gli hash Git degli atlanti sorgenti e il conteggio esat
 Questo è un primo passaggio reale sulle texture architettoniche, non la riproduzione completa del concept: le grosse tubature, nuovi tetti e ponticelli richiederanno lavoro successivo sui metatile, da validare contro le collisioni.
 
 Correzione preview: i tile primari `264` e `280` si riutilizzavano sul terreno e attorno alle terme. Sono esclusi dalla texture rivettata per evitare ripetizione sul percorso; gli altri dettagli edilizi rimangono invariati.
+
+## Nuova architettura monumentale — 23 ottobre 2026
+
+Questa fase NON è una passata sulle superfici dei tetti precedenti. Il generatore `tools/sculpt_cuordilava_city.py` costruisce **48 metatile strutturali nuovi** con grafica GBA indicizzata 4bpp: reattore sopra il Centro Pokémon, insegna tecnologica del Mart, tetto e fronte della Palestra di Fiammetta, piazza con sigillo vulcanico, parapetto termale e quartiere delle abitazioni con finestre incandescenti.
+
+Il tileset secondario privato viene esteso da 128×232 a **128×256** (512 tile); i metatile da 441 a 488 vengono creati in build mantenendo i 441 originali. Per ogni cella, il generatore conserva la metà superiore del dato mappa, i quattro tile di base e gli stessi due byte di attributi collisione/comportamento. Rimangono invariati i sei warp, posizioni NPC, eventi, confini 20×20 e l'illuminazione notturna approvata. La palette 6 resta isolata negli overlay previsti.
+
+Pipeline: `tools/apply_cuordilava_industrial_art.py` → `tools/validate_cyberpunk_assets.py` → `tools/render_cuordilava_preview.py` → compilazione Emerald. Restano distanti dal riferimento le grandi cascate, una piazza molto più vasta, edifici di più piani e vegetazione fitta: non devono essere dichiarati completati. **Non distribuire ROM intermedie finché l'insieme non è sufficientemente vicino all'immagine dell'utente.**
