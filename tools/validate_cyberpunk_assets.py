@@ -1533,6 +1533,8 @@ def validate_cuordilava_monument_identity(root: Path) -> list[str]:
         gym = draw("FLANNERY_GYM_MOLTEN_FORGE", 4, 2).pix
         facade = draw("GYM_FORGE_FACADE", 4, 1).pix
         center = draw("POKEMON_CENTER_INDUSTRIAL_REACTOR", 4, 2).pix
+        mart = draw("POKE_MART_TECHNICAL_FACADE", 4, 2).pix
+        housing = draw("HOUSING_MAGMA_TERRACES", 4, 2).pix
         if len(gym) != 32 or len(facade) != 16 or len(center) != 32:
             errors.append("Structural town murals must retain original cell counts")
         if facade == gym[:16]:
@@ -1543,6 +1545,18 @@ def validate_cuordilava_monument_identity(root: Path) -> list[str]:
                 errors.append(f"Gym furnace window at x={x} missing warm light")
         if not any(center[16][x] == 11 for x in range(24,40)):
             errors.append("Pokémon Center red-cross reactor graphic missing")
+        # Large, connected structural surfaces from the reference-led third pass:
+        # test roof massing rather than counting scattered bright pixels.
+        if any(gym[0][x] != 13 for x in range(1, 6)):
+            errors.append("Gym has lost its left-hand furnace chimney cap")
+        if any(gym[3][x] != 14 for x in range(19, 45)):
+            errors.append("Gym upper gallery must remain a continuous copper roofline")
+        if sum(c in (9, 10) for c in mart[27][16:48]) < 30:
+            errors.append("Poké Mart is missing its wide cyan tech canopy")
+        if any(housing[1][x] != 6 for x in (12, 25, 39, 52)):
+            errors.append("Four distinct basalt house roof peaks were lost")
+        if center[4][24] not in (11, 12, 14):
+            errors.append("Pokémon Center upper thermal roof vents were lost")
     except (ImportError,OSError,IndexError,TypeError,ValueError,AssertionError) as exc:
         errors.append(f"Town-specific architectural identity regression: {exc}")
     return errors
