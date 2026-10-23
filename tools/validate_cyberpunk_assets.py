@@ -1519,9 +1519,38 @@ def validate_cuordilava_scenery(root: Path) -> list[str]:
     return errors
 
 
+def validate_cuordilava_monument_identity(root: Path) -> list[str]:
+    """Regression guard: gym has ONE flame-roof and a DIFFERENT furnace front."""
+    errors: list[str] = []
+    try:
+        import sys
+        tools_dir = str(root / "tools")
+        if tools_dir not in sys.path:
+            sys.path.insert(0, tools_dir)
+        from sculpt_cuordilava_city import draw
+        from polish_cuordilava_monuments import polish_monument
+        gym = draw("FLANNERY_GYM_MOLTEN_FORGE", 4, 2).pix
+        facade = draw("GYM_FORGE_FACADE", 4, 1).pix
+        center = draw("POKEMON_CENTER_INDUSTRIAL_REACTOR", 4, 2).pix
+        if len(gym) != 32 or len(facade) != 16 or len(center) != 32:
+            errors.append("Structural town murals must retain original cell counts")
+        if facade == gym[:16]:
+            errors.append("Gym front mistakenly draws a duplicate furnace emblem roof")
+        for x in (10, 25, 40, 55):
+            if any(facade[y][x-2] != 12 or facade[y][x+2] != 12
+                   for y in (7, 9)):
+                errors.append(f"Gym furnace window at x={x} missing warm light")
+        if not any(center[16][x] == 11 for x in range(24,40)):
+            errors.append("Pokémon Center red-cross reactor graphic missing")
+    except (ImportError,OSError,IndexError,TypeError,ValueError,AssertionError) as exc:
+        errors.append(f"Town-specific architectural identity regression: {exc}")
+    return errors
+
+
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     errors.extend(validate_cuordilava_fixed_footprint(root))
+    errors.extend(validate_cuordilava_monument_identity(root))
     errors.extend(validate_cuordilava_scenery(root))
     errors.extend(validate_cuordilava_thermal_courtyard(root))
     errors.extend(validate_lavaridge_light_events(root))

@@ -96,6 +96,9 @@ def magenta_sign(a: Art, x: int, y: int, tall: int = 15) -> None:
         a.pixel(x+4,y+off,11)
 
 
+from polish_cuordilava_monuments import polish_monument
+
+
 def draw(name,w,h):
     a=Art(w*16,h*16)
     if "POKEMON_CENTER" in name:
@@ -121,7 +124,7 @@ def draw(name,w,h):
             a.tube(xx-2,3,xx-2,24)
             a.rect(xx-1,3,xx+1,11,13)
         for x in (17,47):a.line(x,7,x,26,14)
-    elif "GYM" in name:
+    elif "GYM" in name and "FACADE" not in name:
         roof_base(a,"gym")
         # Broad stepped blast-furnace mass + large flame crest.
         a.rect(14,4,49,27,8)
@@ -221,6 +224,7 @@ def draw(name,w,h):
         for x in (2,52):
             a.pixel(x,3,15)
             a.pixel(x+1,3,10)
+    polish_monument(a, name)
     assert rgb_readable(a.pix)
     return a
 
