@@ -15,7 +15,7 @@ import struct
 from render_cuordilava_preview import png_indexed
 from apply_cuordilava_industrial_art import write_png
 
-CELLS = ((8,8),(16,8),(8,11),(16,11))
+CELLS = ((8,8),(17,8),(8,11),(17,11))
 METATILE = 424
 FLOOR_METATILE = 1
 TILES = (506,507,508,509)
@@ -124,7 +124,7 @@ def run(root):
         raise ValueError('Selected town-only vent metatile is already occupied')
     for x,y in CELLS:
         old=u16(layout,(y*20+x)*2)
-        if (old&1023)!=FLOOR_METATILE or old>>10:
+        if (old&1023)!=FLOOR_METATILE or ((old>>10)&3)!=0:
             raise ValueError(f'Plaza cobbles moved at {x},{y}')
     used_tiles={(u16(meta,i)&1023)-512 for i in range(0,len(meta),2)
                 if (u16(meta,i)&1023)>=512}
