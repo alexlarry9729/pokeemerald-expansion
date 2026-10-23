@@ -170,6 +170,8 @@ def main() -> None:
     deindustrialize_spa(args.root)
     from construct_cuordilava_lower_facade import run as build_lower_facade
     build_lower_facade(args.root)
+    from dress_cuordilava_gym_ground_floor import run as build_gym_ground_floor
+    build_gym_ground_floor(args.root)
 
 if __name__ == "__main__":
     main()
