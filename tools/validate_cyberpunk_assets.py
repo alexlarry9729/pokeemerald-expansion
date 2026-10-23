@@ -1531,6 +1531,16 @@ def validate_cuordilava_scenery(root: Path) -> list[str]:
     return errors
 
 
+def validate_cuordilava_lower_facade(root: Path) -> list[str]:
+    """Guard the new uninterrupted house frontage and original walkability."""
+    try:
+        from construct_cuordilava_lower_facade import validate_built
+        validate_built(root)
+    except (ImportError, OSError, IndexError, TypeError, ValueError, struct.error) as exc:
+        return [f'Cuordilava new house facade regression: {exc}']
+    return []
+
+
 def validate_cuordilava_organic_springs(root: Path) -> list[str]:
     """Confirm restored spa cells retain water/stone graphics and collision."""
     try:
@@ -1671,6 +1681,7 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_cuordilava_lush_scenery(root))
     errors.extend(validate_mineral_spring_water(root))
     errors.extend(validate_cuordilava_organic_springs(root))
+    errors.extend(validate_cuordilava_lower_facade(root))
     errors.extend(validate_cuordilava_thermal_courtyard(root))
     errors.extend(validate_lavaridge_light_events(root))
     errors.extend(validate_sign_light_placements(root))

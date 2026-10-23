@@ -168,6 +168,8 @@ def main() -> None:
     soften_thermal_springs(args.root)
     from deindustrialize_cuordilava_spa import run as deindustrialize_spa
     deindustrialize_spa(args.root)
+    from construct_cuordilava_lower_facade import run as build_lower_facade
+    build_lower_facade(args.root)
 
 if __name__ == "__main__":
     main()
