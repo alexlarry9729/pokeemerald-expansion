@@ -125,6 +125,9 @@ def main() -> None:
     args = ap.parse_args()
     for kind in ("primary", "secondary"):
         transform(args.root, kind)
+    # Phase II overlays town-private industrial roof/facade features on validated first-pass art.
+    from generate_cuordilava_architecture import main as apply_architecture_phase2
+    apply_architecture_phase2(args.root)
 
 if __name__ == "__main__":
     main()
