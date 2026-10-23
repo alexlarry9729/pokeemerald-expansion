@@ -166,6 +166,8 @@ def main() -> None:
     # Last pass: mineral-water surface and organic bank reuse existing graphics.
     from soften_cuordilava_springs import run as soften_thermal_springs
     soften_thermal_springs(args.root)
+    from deindustrialize_cuordilava_spa import run as deindustrialize_spa
+    deindustrialize_spa(args.root)
 
 if __name__ == "__main__":
     main()

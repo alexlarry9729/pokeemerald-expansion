@@ -594,10 +594,10 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
     custom_slots = {
         72: (4, 5, 6, 7), 73: (4, 5, 6, 7), 74: (4, 5, 6, 7), 77: (4, 5, 6, 7),
         75: tuple(range(8)), 76: tuple(range(8)), 78: tuple(range(8)), 79: tuple(range(8)),
-        162: (4, 5, 6, 7), 163: tuple(range(8)),
-        165: tuple(range(8)), 170: tuple(range(8)), 173: tuple(range(8)), 174: tuple(range(8)),
-        179: tuple(range(8)), 181: tuple(range(8)), 187: tuple(range(8)),
-        285: (4, 5, 6, 7),
+        162: (4, 5, 6, 7),
+        170: tuple(range(8)), 173: tuple(range(8)), 174: tuple(range(8)),
+        179: tuple(range(8)), 181: tuple(range(8)),
+        # 285 is the pool's new transparent mineral-water panel (palette 8).
     }
     # Town-private civic art: 441..488 use industrial palette 6.
     custom_slots.update({tile: (4, 5, 6, 7) for tile in range(441, 489)})
@@ -1018,13 +1018,13 @@ def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
     metatiles_path = root / "data/tilesets/secondary/cuordilava/metatiles.bin"
     layouts_path = root / "data/layouts/layouts.json"
     expected_tiles = {
-        165: (396, 397, 412, 413, 398, 399, 414, 415),
+        # 165 now carries the verified private thermal-basin basalt edge.
         173: (348, 349, 360, 361, 350, 351, 362, 363),
         174: (164, 165, 180, 181, 166, 167, 182, 183),
         179: (376, 377, 392, 393, 378, 379, 394, 395),
         181: (168, 169, 184, 185, 170, 171, 186, 187),
         170: (200, 201, 216, 217, 202, 203, 218, 219),
-        187: (204, 205, 220, 221, 206, 207, 222, 223),
+        # 187 now carries the verified private thermal-basin water surface.
         78: (441, 442, 443, 444, 424, 425, 426, 427),
         75: (445, 446, 447, 448, 428, 429, 430, 431),
         76: (449, 450, 451, 452, 429, 428, 431, 430),
@@ -1228,7 +1228,7 @@ def validate_cuordilava_roof_vent_metatiles(root: Path) -> list[str]:
     layouts_path = root / "data/layouts/layouts.json"
     expected = {
         162: {"overlay": (234, 235, 250, 251), "base": None},
-        163: {"overlay": (230, 231, 246, 247), "base": (232, 233, 248, 249)},
+        # 163 is now water art, guarded by validate_cuordilava_organic_springs.
     }
     try:
         data = metatiles_path.read_bytes()
@@ -1525,6 +1525,8 @@ def validate_cuordilava_organic_springs(root: Path) -> list[str]:
     try:
         from soften_cuordilava_springs import validate_built
         validate_built(root)
+        from deindustrialize_cuordilava_spa import validate_built as validate_spa_landscape
+        validate_spa_landscape(root)
         from dress_cuordilava_scenery import illustration
         cascade = illustration('cascade')
         foam = sum(pixel == 1 for row in cascade for pixel in row)
@@ -1650,7 +1652,8 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_cuordilava_primary_palette_isolation(root))
     errors.extend(validate_cuordilava_architecture_metatiles(root))
     errors.extend(validate_cuordilava_roof_corner_overlays(root))
-    errors.extend(validate_cuordilava_roof_intake_panel(root))
+    # Metatile 285 no longer depicts the misplaced intake in the spring.
+    # Its new water graphics and usage are guarded by the organic spring validator.
     errors.extend(validate_cuordilava_roof_vent_metatiles(root))
     errors.extend(validate_facade_light_wiring(root))
     errors.extend(validate_cuordilava_preview_palette_routing(root))
