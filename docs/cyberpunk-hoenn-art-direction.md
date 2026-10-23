@@ -139,8 +139,10 @@ L'anteprima diagnostica `tools/render_cuordilava_preview.py` include ora un'appr
 
 Riferimento principale: la prima immagine originale dell'utente, con architettura metallica scura, finestre rosso magma, tubazioni, neon ciano/magenta e terrazze termali. La resa è ispirata alla direzione artistica, non una copia pixel per pixel del concept, perché restano vincoli 8×8 e geometria Emerald invariata.
 
-Il generatore `tools/apply_cuordilava_industrial_art.py` ridisegna prima della build gli atlanti esclusivi di Cuordilava. Interviene su 24 tile primari e 61 secondari (416 + 1248 pixel indicizzati), aggiungendo nervature metalliche, griglie, pannelli rivettati, persiane incandescenti, dettagli tecnici e punti ciano/arancio. Le palette originali, i metatile, le collisioni, le posizioni porte, i warp, NPC, acqua e animazioni sono invariati. La luce notturna globale approvata del commit `67eb8a8` non cambia.
+Il generatore `tools/apply_cuordilava_industrial_art.py` ridisegna prima della build gli atlanti esclusivi di Cuordilava. Interviene su 24 tile primari e 61 secondari (362 + 1248 pixel indicizzati), aggiungendo nervature metalliche, griglie, pannelli rivettati, persiane incandescenti, dettagli tecnici e punti ciano/arancio. Le palette originali, i metatile, le collisioni, le posizioni porte, i warp, NPC, acqua e animazioni sono invariati. La luce notturna globale approvata del commit `67eb8a8` non cambia.
 
 La conversione controlla gli hash Git degli atlanti sorgenti e il conteggio esatto dei pixel; preserva PNG indicizzato 4bpp/16 colori. I workflow di validazione, anteprima e build applicano il generatore prima di compilare. Per compilare a mano da un checkout pulito eseguire prima `python3 tools/apply_cuordilava_industrial_art.py`. Evitare doppia applicazione: lo script la rifiuta esplicitamente.
 
 Questo è un primo passaggio reale sulle texture architettoniche, non la riproduzione completa del concept: le grosse tubature, nuovi tetti e ponticelli richiederanno lavoro successivo sui metatile, da validare contro le collisioni.
+
+Correzione preview: i tile primari `264` e `280` si riutilizzavano sul terreno e attorno alle terme. Sono esclusi dalla texture rivettata per evitare ripetizione sul percorso; gli altri dettagli edilizi rimangono invariati.
