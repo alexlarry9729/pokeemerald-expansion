@@ -79,7 +79,8 @@ def illustration(kind):
         p(7,0,12);p(7,1,14);p(7,2,13)
         p(3,5,13);p(12,5,13);line(4,7,11,7,5)
         p(6,11,15);p(9,11,10)
-    return art
+    from polish_cuordilava_scenery import polish_scenery
+    return polish_scenery(art,kind)
 
 def run(root:Path):
     root=Path(root)

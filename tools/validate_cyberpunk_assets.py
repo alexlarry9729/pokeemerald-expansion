@@ -1547,11 +1547,40 @@ def validate_cuordilava_monument_identity(root: Path) -> list[str]:
     return errors
 
 
+def validate_cuordilava_lush_scenery(root: Path) -> list[str]:
+    """Check original 16x16 scenery icons have dense foliage and glass details."""
+    errors: list[str] = []
+    try:
+        import sys
+        tools_dir = str(root / "tools")
+        if tools_dir not in sys.path:
+            sys.path.insert(0, tools_dir)
+        from dress_cuordilava_scenery import illustration
+        palm=illustration("palm")
+        lamp=illustration("lamp")
+        chimney=illustration("chimney")
+        if any(len(motif)!=16 or any(len(row)!=16 for row in motif)
+               for motif in (palm,lamp,chimney)):
+            errors.append("One of Cuordilava's 16x16 motifs has wrong dimensions")
+        foliage=sum(1 for row in palm for c in row if c in (9,10,15))
+        flowers=sum(1 for row in palm for c in row if c==11)
+        if foliage<32 or flowers<8:
+            errors.append(f"Tropical palm remains too sparse: foliage={foliage}, flowers={flowers}")
+        if sum(1 for row in lamp for c in row if c in (11,12,13,14))<12:
+            errors.append("Industrial lamp has lost its orange glass detail")
+        if sum(1 for row in chimney for c in row if c in (11,12,13,14))<15:
+            errors.append("Furnace chimney has lost its copper-glow accent")
+    except (ImportError,TypeError,ValueError,IndexError) as exc:
+        errors.append(f"Scenery motif validation unavailable: {exc}")
+    return errors
+
+
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     errors.extend(validate_cuordilava_fixed_footprint(root))
     errors.extend(validate_cuordilava_monument_identity(root))
     errors.extend(validate_cuordilava_scenery(root))
+    errors.extend(validate_cuordilava_lush_scenery(root))
     errors.extend(validate_cuordilava_thermal_courtyard(root))
     errors.extend(validate_lavaridge_light_events(root))
     errors.extend(validate_sign_light_placements(root))
