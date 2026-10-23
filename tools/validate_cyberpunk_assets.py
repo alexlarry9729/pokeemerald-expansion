@@ -1432,6 +1432,26 @@ def validate_cuordilava_fixed_footprint(root: Path) -> list[str]:
     return errors
 
 
+def validate_unobstructed_hot_spring_art(pixels: list[list[int]]) -> list[str]:
+    """Never reintroduce iron-grid pixels into the animated water/bath edges.
+
+    The 34 selected 8x8 tile IDs occur around the original spring and were
+    wrongly modified by a previous generic 'industrial' pass. Hash their raw
+    original 4bpp indices; any future deliberate water redraw must explicitly
+    review/update this baseline rather than silently corrupting the pool.
+    """
+    ids=(168,169,180,181,184,185,200,201,202,203,204,205,206,207,
+         220,221,222,223,232,233,246,247,248,249,262,263,278,279,
+         392,393,396,397,412,413)
+    raw=bytes(value for tid in ids
+              for row in pixels[(tid//16)*8:(tid//16)*8+8]
+              for value in row[(tid%16)*8:(tid%16)*8+8])
+    expected="59bda39ffa5d0ca35e3540d119e50957cacf9b129290f29222f726d7855a747f"
+    if hashlib.sha256(raw).hexdigest()!=expected:
+        return ["Cuordilava hot spring reused art has changed; inspect water before accepting industrial pixel overlays"]
+    return []
+
+
 def validate_cuordilava_thermal_courtyard(root: Path) -> list[str]:
     """The private volcanic courtyard must stay dark without recolouring water."""
     errors: list[str] = []
@@ -1492,6 +1512,7 @@ def validate(root: Path) -> list[str]:
     try:
         decoded_pixels = validate_indexed_tileset_png(tiles_png)
         errors.extend(validate_facade_art_tiles(root, tiles_png, decoded_pixels))
+        errors.extend(validate_unobstructed_hot_spring_art(decoded_pixels))
     except (OSError, ValueError, struct.error, IndexError) as exc:
         errors.append(str(exc))
 
