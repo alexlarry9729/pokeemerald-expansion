@@ -10,16 +10,19 @@ from render_cuordilava_preview import png_indexed
 from apply_cuordilava_industrial_art import write_png
 
 PRIMARY = {
-    "steel civic roof": [162,163,164,178,179,180,194,195,196,210,211,212],
-    "civic shutters": [248,264,279,280,295,296,340,341,356,357,372],
+    # These primary building tiles are used ONLY on the bottom-right houses.
+    "home steel roofs": [162,163,164,178,179,180,194,195,196,210,211,212],
+    "home molten window seams": [226,227,228,229,230,231,242,243,244],
+    # These tiles are confined to the bottom-left civic roof.
+    "civic thermal shutters": [340,341,356,357,372],
 }
 SECONDARY = {
-    "thermal roof cassettes": [136,137,138,139,152,153,154,155],
-    "industrial furnace facades": [168,169,180,181,184,185,208,209,210,211],
-    "housing roof machines": [390,391,401,402,404,405,406,407,416,417,418,420,421,422,423],
-    "copper glowing facade": [392,393,396,397,412,413,428,429,430,431,440,441],
-    "residential heat shutters": [432,433,436,437,448,449,450,451,456,457,458,459],
-    "pipe + gauges": [384,385,388,389],
+    # Gym/upper-right factory has a dedicated 4bpp tile set.
+    "gym blast roof": [424,425,426,427],
+    "gym furnace marquee": [428,429,430,431,441,442,443,444,445,446,447],
+    "gym copper facades": [448,449,450,451,452,453,454,455,457],
+    # Custom overlay on the upper-center building only.
+    "upper-center roof conduits": [258,259,260,261],
 }
 
 def paint(rows, tiles, pattern):
@@ -106,14 +109,13 @@ def process(path,groups):
     assert len(palette)==48
     original=[line[:] for line in rows]
     ops={
-        "steel civic roof":alloy,
-        "civic shutters":glow,
-        "thermal roof cassettes":cassette,
-        "industrial furnace facades":furnace,
-        "housing roof machines":alloy,
-        "copper glowing facade":hotfacade,
-        "residential heat shutters":glow,
-        "pipe + gauges":pipes,
+        "home steel roofs":alloy,
+        "home molten window seams":glow,
+        "civic thermal shutters":cassette,
+        "gym blast roof":cassette,
+        "gym furnace marquee":furnace,
+        "gym copper facades":hotfacade,
+        "upper-center roof conduits":pipes,
     }
     total=0
     for role,ids in groups.items():
@@ -126,10 +128,51 @@ def process(path,groups):
     print(f"Cuordilava {path} phase II: {changed} changed 4bpp pixels")
     return changed
 
+def assert_building_only(root,groups,part):
+    """No active building tile may also color the town's paths or hot springs."""
+    import struct
+    m=(root/"data/layouts/LavaridgeTown/map.bin").read_bytes()
+    p=(root/"data/tilesets/primary/general/metatiles.bin").read_bytes()
+    s=(root/"data/tilesets/secondary/cuordilava/metatiles.bin").read_bytes()
+    assert len(m)==800 and len(p)%16==0 and len(s)%16==0
+    active={}
+    for y in range(20):
+        for x in range(20):
+            encoded=struct.unpack_from("<H",m,2*(y*20+x))[0]&1023
+            table=s if encoded>=512 else p
+            mi=encoded-512 if encoded>=512 else encoded
+            assert (mi+1)*16<=len(table),(mi,x,y)
+            for slot in range(8):
+                entry=struct.unpack_from("<H",table,mi*16+slot*2)[0]&1023
+                source="secondary" if entry>=512 else "primary"
+                tid=entry-512 if entry>=512 else entry
+                active.setdefault((source,tid),set()).add((x,y))
+    def allowed(role,x,y):
+        if role.startswith("home "):
+            return 11<=x<19 and 12<=y<16
+        if role.startswith("civic "):
+            return 2<=x<9 and 11<=y<16
+        if role.startswith("gym "):
+            return 14<=x<19 and 1<=y<7
+        if role.startswith("upper-center "):
+            return 8<=x<12 and 2<=y<8
+        return False
+    for role,ids in groups.items():
+        for tid in ids:
+            locations=active.get((part,tid),set())
+            if not locations:
+                raise ValueError(f"{part} tile {tid} for {role} unused by Cuordilava")
+            foreign=[(x,y) for x,y in locations if not allowed(role,x,y)]
+            if foreign:
+                raise ValueError(f"{part} tile {tid} for {role} contaminates paths/terme {foreign}")
+    print(f"{part}: all {sum(map(len,groups.values()))} tiles used exclusively on their buildings")
+
+
 def main(root=None):
     root=Path(root) if root is not None else Path(__file__).resolve().parents[1]
     out=[]
     for part,groups in (("primary",PRIMARY),("secondary",SECONDARY)):
+        assert_building_only(root,groups,part)
         p=root/f"data/tilesets/{part}/cuordilava/tiles.png"
         out.append((part,process(p,groups)))
     print("Cuordilava architecture phase II - indexed pixels changed:",out)
