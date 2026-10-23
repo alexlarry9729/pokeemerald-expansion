@@ -158,6 +158,8 @@ def main() -> None:
     dress_thermal_courtyard(args.root)
     from sculpt_cuordilava_city import run as sculpt_town_landmarks
     sculpt_town_landmarks(args.root)
+    from dress_cuordilava_scenery import run as dress_scenery
+    dress_scenery(args.root)
 
 if __name__ == "__main__":
     main()
