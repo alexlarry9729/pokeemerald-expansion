@@ -1392,8 +1392,42 @@ def validate_global_outdoor_moonlight(root: Path) -> list[str]:
     return errors
 
 
+def validate_cuordilava_fixed_footprint(root: Path) -> list[str]:
+    """No enlargement of Lavaridge Town or relocation of its existing entrances."""
+    errors: list[str]=[]
+    layouts_path=root/"data/layouts/layouts.json"
+    map_path=root/"data/maps/LavaridgeTown/map.json"
+    terrain_path=root/"data/layouts/LavaridgeTown/map.bin"
+    try:
+        layouts=json.loads(layouts_path.read_text(encoding="utf-8"))["layouts"]
+        layout=next(x for x in layouts if x.get("id")=="LAYOUT_LAVARIDGE_TOWN")
+        if (layout.get("width"),layout.get("height"))!=(20,20):
+            errors.append("LavaridgeTown must remain exactly 20x20 map blocks")
+        if len(terrain_path.read_bytes())!=800:
+            errors.append("LavaridgeTown map.bin must remain exactly 800 bytes")
+        events=json.loads(map_path.read_text(encoding="utf-8"))
+        warps={(w["x"],w["y"],w["dest_map"]) for w in events["warp_events"]}
+        expected={
+            (12,15,"MAP_LAVARIDGE_TOWN_HERB_SHOP"),
+            (5,15,"MAP_LAVARIDGE_TOWN_GYM_1F"),
+            (15,5,"MAP_LAVARIDGE_TOWN_MART"),
+            (9,6,"MAP_LAVARIDGE_TOWN_POKEMON_CENTER_1F"),
+            (16,15,"MAP_LAVARIDGE_TOWN_HOUSE"),
+            (9,2,"MAP_LAVARIDGE_TOWN_POKEMON_CENTER_1F"),
+        }
+        if warps!=expected or len(events["warp_events"])!=6:
+            errors.append("LavaridgeTown must keep original six door warps and positions")
+        if not any(c.get("map")=="MAP_ROUTE112" and c.get("direction")=="right"
+                   for c in events.get("connections",[])):
+            errors.append("LavaridgeTown must preserve its Route 112 connection")
+    except (OSError,ValueError,KeyError,StopIteration,TypeError) as exc:
+        errors.append(f"Cuordilava footprint check unavailable: {exc}")
+    return errors
+
+
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
+    errors.extend(validate_cuordilava_fixed_footprint(root))
     errors.extend(validate_lavaridge_light_events(root))
     errors.extend(validate_sign_light_placements(root))
     errors.extend(validate_lavaridge_map_access(root))

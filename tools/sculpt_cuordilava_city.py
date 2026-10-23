@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Cuordilava: structural city landmarks, not metal pixels on stock houses.
 
-Creates 36 new 16x16 graphical metatiles and uses them to construct connected
+Creates 48 new 16x16 graphical metatiles and uses them to construct connected
 multi-metatile architectural murals on roofs, a volcanic plaza crest and a
 thermae guardrail. The 20x20 town dimensions, warps, NPCs, special triggers,
 collision attributes and day/night engine are protected. Operates only on the
@@ -208,9 +208,36 @@ def audit_layout(map_bytes,attributes):
                 covered.add(xy)
     assert len(covered)==48
 
+def assert_fixed_town_footprint(root: Path) -> None:
+    """Protect the original 20x20 world map and all six entrance warps."""
+    import json
+    layouts=json.loads((root/"data/layouts/layouts.json").read_text(encoding="utf-8"))["layouts"]
+    layout=next((layout for layout in layouts if layout["id"]=="LAYOUT_LAVARIDGE_TOWN"),None)
+    if layout is None or (layout["width"],layout["height"])!=(20,20):
+        raise ValueError("Cuordilava must stay EXACTLY 20x20 map blocks")
+    events=json.loads((root/"data/maps/LavaridgeTown/map.json").read_text(encoding="utf-8"))
+    required={
+        (12,15,"MAP_LAVARIDGE_TOWN_HERB_SHOP"),
+        (5,15,"MAP_LAVARIDGE_TOWN_GYM_1F"),
+        (15,5,"MAP_LAVARIDGE_TOWN_MART"),
+        (9,6,"MAP_LAVARIDGE_TOWN_POKEMON_CENTER_1F"),
+        (16,15,"MAP_LAVARIDGE_TOWN_HOUSE"),
+        (9,2,"MAP_LAVARIDGE_TOWN_POKEMON_CENTER_1F"),
+    }
+    actual={(warp["x"],warp["y"],warp["dest_map"]) for warp in events["warp_events"]}
+    if actual!=required or len(events["warp_events"])!=len(required):
+        raise ValueError("Cuordilava entrances / connections are not the original six")
+    if not any(link.get("map")=="MAP_ROUTE112" and link.get("direction")=="right"
+               for link in events.get("connections",[])):
+        raise ValueError("The original Route 112 entrance must remain connected")
+    if len((root/"data/layouts/LavaridgeTown/map.bin").read_bytes())!=20*20*2:
+        raise ValueError("Cuordilava map data must stay exactly 800 bytes")
+    print("Footprint locked: original 20x20 map, six warps, Route 112 connection")
+
+
 def run(root: Path):
-    from collections import Counter
     root=Path(root)
+    assert_fixed_town_footprint(root)
     tiles=root/"data/tilesets/secondary/cuordilava/tiles.png"
     metas=root/"data/tilesets/secondary/cuordilava/metatiles.bin"
     attrs=root/"data/tilesets/secondary/cuordilava/metatile_attributes.bin"
