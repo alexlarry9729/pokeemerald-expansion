@@ -15,6 +15,7 @@ on:
       - 'tools/polish_cuordilava_monuments.py'
       - 'tools/dress_cuordilava_scenery.py'
       - 'tools/polish_cuordilava_scenery.py'
+      - 'tools/refine_cuordilava_water.py'
       - 'data/tilesets/**'
       - 'data/layouts/**'
       - 'data/maps/LavaridgeTown/map.json'

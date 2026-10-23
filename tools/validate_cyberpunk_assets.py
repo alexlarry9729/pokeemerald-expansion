@@ -1575,12 +1575,41 @@ def validate_cuordilava_lush_scenery(root: Path) -> list[str]:
     return errors
 
 
+def validate_mineral_spring_water(root: Path) -> list[str]:
+    """No more overbright flat blue pool or leaking edits onto buildings."""
+    errors=[]
+    try:
+        import sys
+        tools_dir=str(root/"tools")
+        if tools_dir not in sys.path:sys.path.insert(0,tools_dir)
+        from refine_cuordilava_water import assert_spa_tile_isolation, DAY_WATER
+        references=assert_spa_tile_isolation(root)
+        if any(not cells for cells in references.values()):
+            errors.append("An isolated hot-pool tile has disappeared")
+        palette=parse_palette(root/"data/tilesets/secondary/cuordilava/palettes/08.pal")
+        for index,expected in DAY_WATER.items():
+            if tuple(palette[index])!=expected:
+                errors.append(f"Town hot-pool palette index {index} is not mineral turquoise")
+        tile_png=root/"data/tilesets/secondary/cuordilava/tiles.png"
+        pixel_data=validate_indexed_tileset_png(tile_png)
+        for tid in (320,321,336):
+            x=(tid%16)*8
+            y=(tid//16)*8
+            colors=[pixel_data[y+dy][x+dx] for dy in range(8) for dx in range(8)]
+            if not any(c==9 for c in colors) or not any(c==10 for c in colors):
+                errors.append(f"Hot-spring tile {tid} must contain organic light/deep water pattern")
+    except (OSError,ValueError,IndexError,TypeError,ImportError) as exc:
+        errors.append(f"Water-specific validation unavailable: {exc}")
+    return errors
+
+
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     errors.extend(validate_cuordilava_fixed_footprint(root))
     errors.extend(validate_cuordilava_monument_identity(root))
     errors.extend(validate_cuordilava_scenery(root))
     errors.extend(validate_cuordilava_lush_scenery(root))
+    errors.extend(validate_mineral_spring_water(root))
     errors.extend(validate_cuordilava_thermal_courtyard(root))
     errors.extend(validate_lavaridge_light_events(root))
     errors.extend(validate_sign_light_placements(root))

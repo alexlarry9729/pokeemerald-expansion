@@ -156,6 +156,9 @@ def main() -> None:
     apply_architecture_phase2(args.root)
     from dress_cuordilava_courtyard import run as dress_thermal_courtyard
     dress_thermal_courtyard(args.root)
+    # Color/texture correction is restricted to pool-only secondary tiles 320/321/336.
+    from refine_cuordilava_water import run as refine_hot_spring_water
+    refine_hot_spring_water(args.root)
     from sculpt_cuordilava_city import run as sculpt_town_landmarks
     sculpt_town_landmarks(args.root)
     from dress_cuordilava_scenery import run as dress_scenery
