@@ -604,9 +604,6 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
     # foliage bank 9 and the four waterfall blocks the preexisting water
     # bank 8, so they must NOT be forced to use metal palette 6.
     custom_slots.update({tile: (4, 5, 6, 7) for tile in range(497, 508)})
-    # This lamp/chimney retains four ORIGINAL bank-6 base tiles as well as
-    # the new bank-6 overlay. Its collision/visual base was not recoloured.
-    custom_slots[501] = tuple(range(8))
     try:
         meta_bytes = (root / "data/tilesets/secondary/cuordilava/metatiles.bin").read_bytes()
     except OSError as exc:
