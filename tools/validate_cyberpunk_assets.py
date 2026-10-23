@@ -72,9 +72,9 @@ def validate_indexed_tileset_png(path: Path) -> list[list[int]]:
 
     width, height = struct.unpack(">II", data[16:24])
     bit_depth, colour_type, compression, filter_method, interlace = data[24:29]
-    if (width, height) != (128, 232):
+    if (width, height) != (128, 256):
         raise ValueError(
-            f"{path}: expected 128×232 tile atlas, found {width}×{height}"
+            f"{path}: expected 128×256 tile atlas with new structural landmark tiles, found {width}×{height}"
         )
     if bit_depth != 4 or colour_type != 3:
         raise ValueError(

@@ -11,6 +11,7 @@ on:
       - 'tools/validate_cyberpunk_assets.py'
       - 'tools/apply_cuordilava_industrial_art.py'
       - 'tools/generate_cuordilava_architecture.py'
+      - 'tools/sculpt_cuordilava_city.py'
       - 'data/tilesets/**'
       - 'data/layouts/**'
       - 'data/maps/LavaridgeTown/map.json'
