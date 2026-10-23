@@ -1026,9 +1026,9 @@ def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
         170: (200, 201, 216, 217, 202, 203, 218, 219),
         187: (204, 205, 220, 221, 206, 207, 222, 223),
         78: (441, 442, 443, 444, 424, 425, 426, 427),
-        # 75/76/79 are exclusive thermal-bank cells. The last, scoped spa
-        # pass deliberately replaces their industrial visuals with stone/palm,
-        # validated separately by validate_cuordilava_organic_springs().
+        75: (445, 446, 447, 448, 428, 429, 430, 431),
+        76: (449, 450, 451, 452, 429, 428, 431, 430),
+        79: (453, 454, 455, 457, 425, 424, 427, 426),
     }
     try:
         data = metatiles_path.read_bytes()

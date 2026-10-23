@@ -35,6 +35,14 @@ def polish_scenery(pix, kind):
         for x in (5,6,9,10):p(x,15,12)
         for x,y in ((7,5),(8,5),(9,5),(7,6),(8,6),(9,6)):
             p(x,y,15)
+        # Dense serrated fronds and scattered volcanic-orange blossoms.
+        for x,y in ((2,5),(3,6),(4,2),(5,3),(10,3),(11,2),
+                    (13,6),(12,7),(3,9),(4,10),(11,10),(12,9)):
+            p(x,y,15)
+            p(x+1,y,10)
+        for x,y in ((2,11),(13,11),(4,13),(11,14),(1,9),(14,9)):
+            p(x,y,11)
+            p(x+1,y,14)
     elif kind=='chimney':
         # Reddish steam exhaust and copper-lit industrial risers.
         for x,y in ((6,1),(7,0),(8,2),(11,0),(12,1),(5,3),(13,3)):
