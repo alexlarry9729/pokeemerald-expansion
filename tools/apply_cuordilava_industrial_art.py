@@ -25,7 +25,7 @@ PATCHES = {
         362,
         "eNoNyslu2mwUANDV/e7ifr6szSSxQbUbk9qpnUCA/m2A2qyxwUYJ78Qk0aaR8CSFQNad0iFt2tf6e9Zn8wyvn+HNMyxqMNdwoeFSw5UGaw1jDRMNUw0zDXINVZ2KOpV0KutU0amq00KnpU4rndY6xTolOqU6ZTrl/+ZzWXkO1edyc4TXR3hzhKohiwaUDFk2ZMWQVUPODVwYuDRwZcDawNjAxMDUwMyA3MByg+YNWjRo2aBVg9YNihuUNChtUNagvEHqsSwey9KxLB/LyjFUj+XmBV6/wJsXqJqyaELJlGVTVkxZNeXcxIWJSxNXJqxNjE1MTExNzEzITVQtKlpUsqhsUcWiqkVzixYWLS1aWbS2KLYosSi1KLMot0g9kcUTWTqR5RNZOYHqidy8xOuXePMSVVsWbSjZsmzLii2rtpzbuLBxaePKhrWNsY2JjamNmQ25japDRYdKDpUdqjhUdWju0MKhpUMrh9YOxQ4lDqUOZQ7lDqmnsngqS6eyfCorp1A9leoZbs5QbWKxKUtNWW7KSlNWm3LTxPdN+NAEtYWbFr5ryfcted2SH1rypiXVc9yc4482/WzTY5t+tel3m57a9KdNf9v0uqNcdJR+R3nbUd50+aLLvS73u/zYLTx1Cx979KlHn3v0pUdfe/TQo289+t6js77S7CvnfaXdVzp9pdtXXvWV1oDPB9wecGfAnweFh0Hho0ufXPrs0heXvrr04NI3l7679MOlny49uvTLpd8uPbn0x6W/Lp15SstTzj2l7SkdT+l6yitP+c9TXnvKG0+58JSep/Q9ZeApb/+1IbeH3BnymyFfDLk35P6QH4aFx2HhaVjYjjgecTLidMTZiPMR3454N+K7Ee9HfBhxzYe6D5oPDR+2PsS+SHxMfZH5Ivfh1oedL+583Pvi4ItaAPUAtAC2AcSBSAKRBpgFIg/gNoBdIO4CsQ/wEIjaGOpj0MYQjzkdcz7m3Zj3Yz6M+X7M8YTTCecT3k14P+HDhO8nXAuhHoIWwjaEOBRJiGkoslDkIdyGsAvFXYj7UBxCUYugHoEWwTaCOBJJJNIIs0jkEdxGsIvEXST2ER4iUZtCfQraFOIpp1POp7yb8n7KhynfTzm+FMklppciuxTbK4ivRHIlsiuRX0FtBvUZbGcczziZcTrjbMb5jP8HHr0WAg==",
     ),
-    "secondary": ("dbdbef86d49b78e7527d08f7a5292438ecfffd1d", 1248, ""),
+    "secondary": ("dbdbef86d49b78e7527d08f7a5292438ecfffd1d", 663, ""),
 }
 
 def chunk(kind: bytes, data: bytes) -> bytes:
@@ -45,10 +45,36 @@ def write_png(path: Path, width: int, height: int, pixels: list[list[int]], pale
         + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b"")
     )
 
-def redesign_secondary(rows: list[list[int]]) -> None:
+def protected_spring_secondary_tiles(root: Path) -> frozenset[int]:
+    """Protect water, cliff and thermal-sand art reused by the thermal basin.
+
+    Factory tile IDs also occur in the original spring water and basalt border.
+    Repainting them introduced red metal grids in the water. Audit the exact
+    Lavaridge layout instead of assuming every factory-looking tile is unique.
+    """
+    layout = (root / "data/layouts/LavaridgeTown/map.bin").read_bytes()
+    primary = (root / "data/tilesets/primary/general/metatiles.bin").read_bytes()
+    secondary = (root / "data/tilesets/secondary/cuordilava/metatiles.bin").read_bytes()
+    assert len(layout) == 800
+    forbidden: set[int] = set()
+    for y in range(11):
+        for x in range(8):
+            cell = struct.unpack_from("<H", layout, 2 * (20 * y + x))[0] & 1023
+            data, mid = (secondary, cell - 512) if cell >= 512 else (primary, cell)
+            assert 16 * (mid + 1) <= len(data)
+            for slot in range(8):
+                tile = struct.unpack_from("<H", data, 16 * mid + slot * 2)[0] & 1023
+                if tile >= 512:
+                    forbidden.add(tile - 512)
+    return frozenset(forbidden)
+
+
+def redesign_secondary(rows: list[list[int]], forbidden_tiles: frozenset[int]) -> None:
     """Town-only cyberpunk industry: four families of reusable facade details."""
     def paint(ids, kind):
         for tid in ids:
+            if tid in forbidden_tiles:
+                continue  # The same art appears in the pool or thermal paths.
             ox, oy = (tid % 16) * 8, (tid // 16) * 8
             def dot(x,y,c):
                 if 0 <= x < 8 and 0 <= y < 8 and rows[oy+y][ox+x]:
@@ -102,7 +128,7 @@ def transform(root: Path, kind: str) -> None:
     assert len(palette) == 48
     if kind == "secondary":
         previous = [row[:] for row in rows]
-        redesign_secondary(rows)
+        redesign_secondary(rows, protected_spring_secondary_tiles(root))
         count = sum(a != b for ra, rb in zip(previous, rows) for a, b in zip(ra, rb))
         assert count == total, (count, total)
     else:
@@ -128,6 +154,8 @@ def main() -> None:
     # Phase II overlays town-private industrial roof/facade features on validated first-pass art.
     from generate_cuordilava_architecture import main as apply_architecture_phase2
     apply_architecture_phase2(args.root)
+    from dress_cuordilava_courtyard import run as dress_thermal_courtyard
+    dress_thermal_courtyard(args.root)
     from sculpt_cuordilava_city import run as sculpt_town_landmarks
     sculpt_town_landmarks(args.root)
 

@@ -905,7 +905,14 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     pipe_tiles = (312, 328, 344)
     architecture_base_tiles = (164, 165, 180, 181, 168, 169, 184, 185, 200, 201, 216, 217, 204, 205, 220, 221, 232, 233, 248, 249, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454, 455, 457, 348, 349, 360, 361, 376, 377, 392, 393, 396, 397, 412, 413)
     architecture_overlay_tiles = (166, 167, 182, 183, 170, 171, 186, 187, 202, 203, 218, 219, 206, 207, 222, 223, 258, 259, 260, 261, 262, 263, 278, 279, 424, 425, 426, 427, 428, 429, 430, 431, 230, 231, 246, 247, 350, 351, 362, 363, 378, 379, 394, 395, 398, 399, 414, 415)
-    target_tiles = window_tiles + facade_panel_tiles + roof_seam_tiles + pipe_tiles + architecture_base_tiles + architecture_overlay_tiles
+    # The original spring uses some of the same private tile IDs as buildings.
+    # Never require neon paint on those: that produced red grids in water.
+    from apply_cuordilava_industrial_art import protected_spring_secondary_tiles
+    spring_shared = protected_spring_secondary_tiles(root)
+    target_tiles = tuple(tid for tid in (
+        window_tiles + facade_panel_tiles + roof_seam_tiles + pipe_tiles
+        + architecture_base_tiles + architecture_overlay_tiles
+    ) if tid not in spring_shared)
 
     # Ensure the art check covers tiles actually referenced by this map, not
     # unrelated atlas tiles that happen to contain neon-colored pixels.
@@ -1425,9 +1432,41 @@ def validate_cuordilava_fixed_footprint(root: Path) -> list[str]:
     return errors
 
 
+def validate_cuordilava_thermal_courtyard(root: Path) -> list[str]:
+    """The private volcanic courtyard must stay dark without recolouring water."""
+    errors: list[str] = []
+    p=root/"data/tilesets/secondary/cuordilava/palettes/09.pal"
+    meta=root/"data/tilesets/secondary/cuordilava/metatiles.bin"
+    try:
+        colors=parse_palette(p)
+        # Pale yellow sand became dark copper-stone, but animated turquoise
+        # water still uses the untouched shared palette 8.
+        if not (55 < luminance(colors[12]) < 125):
+            errors.append(f"{p}: basalt paving base index12 must be dark, not sand")
+        if colors[11][0] <= colors[11][2] or colors[14][0] <= colors[14][2]:
+            errors.append(f"{p}: terrace edges must be warm copper, not cyan")
+        data=meta.read_bytes()
+        for mid in (680,664,672,697,698,650,652,657,658):
+            off=(mid-512)*16
+            entries=[struct.unpack_from("<H",data,off+2*slot)[0] for slot in range(8)]
+            if not any((e>>12)==9 for e in entries):
+                errors.append(f"{meta}: courtyard metatile {mid} has lost town-private basalt palette 9")
+        # Only this city's independent palette-6 neon gets the magenta sign.
+        day=parse_palette(root/"data/tilesets/secondary/cuordilava/palettes/06.pal")
+        night=parse_palette(root/"data/tilesets/secondary/cuordilava/palettes/15.pal")
+        if day[15][0] <= day[15][1] or day[15][2] <= day[15][1]:
+            errors.append("Town-private cyberpunk signage must retain red-blue magenta accent")
+        if luminance(night[15]) <= luminance(day[15]):
+            errors.append("Magenta town-only neon must stay brighter at night")
+    except (OSError,ValueError,IndexError,struct.error) as exc:
+        errors.append(f"Cuordilava courtyard palette check unavailable: {exc}")
+    return errors
+
+
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     errors.extend(validate_cuordilava_fixed_footprint(root))
+    errors.extend(validate_cuordilava_thermal_courtyard(root))
     errors.extend(validate_lavaridge_light_events(root))
     errors.extend(validate_sign_light_placements(root))
     errors.extend(validate_lavaridge_map_access(root))

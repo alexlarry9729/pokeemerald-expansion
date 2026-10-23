@@ -85,6 +85,17 @@ def roof_base(a,mode):
     for x in (5,a.w-8):
         a.tube(x,3,x,a.h-6)
 
+def magenta_sign(a: Art, x: int, y: int, tall: int = 15) -> None:
+    """Purple thermal sign in an iron cage, visually secondary to magma."""
+    a.rect(x, y, x+7, y+tall, 8)
+    a.rect(x+1, y+1, x+6, y+tall-1, 15, False)
+    a.line(x+2, y+2, x+2, y+tall-2, 10)
+    a.line(x+5, y+2, x+5, y+tall-2, 15)
+    for off in range(4,tall-2,4):
+        a.line(x+3,y+off,x+4,y+off+1,15)
+        a.pixel(x+4,y+off,11)
+
+
 def draw(name,w,h):
     a=Art(w*16,h*16)
     if "POKEMON_CENTER" in name:
@@ -187,6 +198,29 @@ def draw(name,w,h):
             a.pixel(x,4,11);a.pixel(x+1,4,14)
         for x in range(6,61,9):
             a.pixel(x,11,10)
+    # Magenta is a selective secondary accent in the volcanic reference.
+    # Keep the dominant glowing orange-red furnace and warm windows intact.
+    if "POKEMON_CENTER" in name:
+        magenta_sign(a, 4, 11, 15)
+        magenta_sign(a, 52, 11, 15)
+    elif "MART" in name:
+        magenta_sign(a, 5, 12, 13)
+        a.line(18,8,46,8,15)
+        for x in range(22,44,5):a.pixel(x,7,10)
+    elif "GYM" in name and "FACADE" not in name:
+        magenta_sign(a, 9, 7, 19)
+        magenta_sign(a, 47, 7, 19)
+    elif "HOUSING" in name:
+        for x in (17,31,44):
+            a.line(x,12,x,22,15)
+            a.pixel(x,11,10)
+    elif "GYM_FORGE_FACADE" in name:
+        for x in (4,60):
+            a.line(x,2,x,12,15)
+    elif "THERMAL_BASIN" in name:
+        for x in (2,52):
+            a.pixel(x,3,15)
+            a.pixel(x+1,3,10)
     assert rgb_readable(a.pix)
     return a
 
