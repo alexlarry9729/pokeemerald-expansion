@@ -98,6 +98,7 @@ def magenta_sign(a: Art, x: int, y: int, tall: int = 15) -> None:
 
 from polish_cuordilava_monuments import polish_monument
 from relief_cuordilava_landmarks import add_reference_massing
+from engrave_cuordilava_details import add_dense_reference_details
 
 
 def draw(name,w,h):
@@ -227,6 +228,7 @@ def draw(name,w,h):
             a.pixel(x+1,3,10)
     polish_monument(a, name)
     add_reference_massing(a, name)
+    add_dense_reference_details(a, name)
     assert rgb_readable(a.pix)
     return a
 

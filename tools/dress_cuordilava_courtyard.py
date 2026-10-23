@@ -13,10 +13,12 @@ from render_cuordilava_preview import png_indexed
 from apply_cuordilava_industrial_art import write_png
 
 BASALT_COLORS = {
-    9: (33, 82, 94), 10: (59, 116, 116),
-    11: (179, 102, 68), 12: (91, 76, 77),
-    13: (124, 95, 89), 14: (150, 107, 83),
-    15: (88, 121, 76),
+    # Natural volcanic garden: mossy joints and properly green flowering
+    # palms instead of bluish, almost black crowns.
+    9: (30, 85, 55), 10: (51, 145, 83),
+    11: (193, 111, 63), 12: (91, 76, 77),
+    13: (124, 95, 89), 14: (166, 107, 76),
+    15: (105, 190, 88),
 }
 # IDs in Cuordilava's original thermal-sand court; never shared with other maps.
 SAND_METATILES = (680, 664, 672, 697, 698, 650, 652, 657, 658)

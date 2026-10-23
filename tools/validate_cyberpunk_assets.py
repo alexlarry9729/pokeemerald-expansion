@@ -1585,6 +1585,17 @@ def validate_cuordilava_monument_identity(root: Path) -> list[str]:
             errors.append("Four distinct basalt house roof peaks were lost")
         if center[4][24] not in (11, 12, 14):
             errors.append("Pokémon Center upper thermal roof vents were lost")
+        # Strong connected blocks of glowing facades, not a few isolated dots.
+        for label, art, y0, y1, min_count in (
+            ("Pokémon Center", center, 25, 31, 100),
+            ("Gym", gym, 24, 32, 65),
+            ("Mart", mart, 1, 25, 65),
+            ("Housing", housing, 12, 30, 85),
+        ):
+            warm = sum(c in (11, 12, 13, 14)
+                       for row in art[y0:y1] for c in row)
+            if warm < min_count:
+                errors.append(f"{label} lacks substantial furnace-lit glazing: {warm}")
     except (ImportError,OSError,IndexError,TypeError,ValueError,AssertionError) as exc:
         errors.append(f"Town-specific architectural identity regression: {exc}")
     return errors
@@ -1609,6 +1620,12 @@ def validate_cuordilava_lush_scenery(root: Path) -> list[str]:
         flowers=sum(1 for row in palm for c in row if c==11)
         if foliage<32 or flowers<8:
             errors.append(f"Tropical palm remains too sparse: foliage={foliage}, flowers={flowers}")
+        # Palette 9 is local volcanic garden stone: plant colours must be
+        # genuinely leafy green while basalt and copper remain subdued.
+        garden = parse_palette(root/"data/tilesets/secondary/cuordilava/palettes/09.pal")
+        if not (garden[15][1] > garden[15][0] * 1.35
+                and garden[10][1] > garden[10][0] * 1.7):
+            errors.append("Cuordilava flowering palms lost natural green tones")
         if sum(1 for row in lamp for c in row if c in (11,12,13,14))<12:
             errors.append("Industrial lamp has lost its orange glass detail")
         if sum(1 for row in chimney for c in row if c in (11,12,13,14))<15:
