@@ -599,6 +599,8 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
         179: tuple(range(8)), 181: tuple(range(8)),
         # 285 is the pool's new transparent mineral-water panel (palette 8).
     }
+    # Seven new Cuordilava-only steel/glass house frontage panels.
+    custom_slots.update({tile: (4, 5, 6, 7) for tile in range(430, 437)})
     # Town-private civic art: 441..488 use industrial palette 6.
     custom_slots.update({tile: (4, 5, 6, 7) for tile in range(441, 489)})
     # Rooftop furnaces and magma lanterns use bank 6. The eight palms use
@@ -1448,20 +1450,20 @@ def validate_cuordilava_fixed_footprint(root: Path) -> list[str]:
 
 
 def validate_unobstructed_hot_spring_art(pixels: list[list[int]]) -> list[str]:
-    """Never reintroduce iron-grid pixels into the animated water/bath edges.
+    """Hash the 12 STILL-IN-USE source rocks/bath tile graphics byte-for-byte.
 
-    The 34 selected 8x8 tile IDs occur around the original spring and were
-    wrongly modified by a previous generic 'industrial' pass. Hash their raw
-    original 4bpp indices; any future deliberate water redraw must explicitly
-    review/update this baseline rather than silently corrupting the pool.
+    The original 34-id no-industrialization safeguard included 22 graphics
+    made unreferenced by the vetted hot-spring deindustrialization pass.
+    Those 22 unused graphics are now exclusively assigned to the seven new
+    residential frontage panels; the facade generator proves each was entirely
+    unreferenced before repainting. The original shoreline tiles below must
+    remain exactly byte-for-byte identical to the last known good ROM.
     """
-    ids=(168,169,180,181,184,185,200,201,202,203,204,205,206,207,
-         220,221,222,223,232,233,246,247,248,249,262,263,278,279,
-         392,393,396,397,412,413)
+    ids=(168,169,180,181,184,185,200,201,202,203,392,393)
     raw=bytes(value for tid in ids
               for row in pixels[(tid//16)*8:(tid//16)*8+8]
               for value in row[(tid%16)*8:(tid%16)*8+8])
-    expected="59bda39ffa5d0ca35e3540d119e50957cacf9b129290f29222f726d7855a747f"
+    expected="7b6a7c3a6b89a04465b039614e6deac3aee2312db95649d60f8cad8a9b1b6975"
     if hashlib.sha256(raw).hexdigest()!=expected:
         return ["Cuordilava hot spring reused art has changed; inspect water before accepting industrial pixel overlays"]
     return []
