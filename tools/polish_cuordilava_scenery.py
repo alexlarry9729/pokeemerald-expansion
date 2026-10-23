@@ -63,4 +63,22 @@ def polish_scenery(pix, kind):
             p(x,y,13)
         for x in range(5,11):p(x,14,5)
         for x in (5,10):p(x,15,8)
+    elif kind=='cascade':
+        # Narrow turquoise waterfall: alternating white mineral foam, shadowed
+        # central current and irregular rock splashes. Side pixels stay clear.
+        for y in range(1,15):
+            for x in range(4,12):
+                phase=(x*7+y*11)%13
+                if phase in (1,4):
+                    p(x,y,1)
+                elif phase in (0,3,6,9):
+                    p(x,y,10)
+                else:
+                    p(x,y,9)
+            if y in (3,8,13):
+                for x in (5,7,10):
+                    p(x,y,1)
+        for y in (1,6,11,14):
+            p(3,y,6)
+            p(12,y,6)
     return pix

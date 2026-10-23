@@ -1026,9 +1026,9 @@ def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
         170: (200, 201, 216, 217, 202, 203, 218, 219),
         187: (204, 205, 220, 221, 206, 207, 222, 223),
         78: (441, 442, 443, 444, 424, 425, 426, 427),
-        75: (445, 446, 447, 448, 428, 429, 430, 431),
-        76: (449, 450, 451, 452, 429, 428, 431, 430),
-        79: (453, 454, 455, 457, 425, 424, 427, 426),
+        # 75/76/79 are exclusive thermal-bank cells. The last, scoped spa
+        # pass deliberately replaces their industrial visuals with stone/palm,
+        # validated separately by validate_cuordilava_organic_springs().
     }
     try:
         data = metatiles_path.read_bytes()
@@ -1520,6 +1520,21 @@ def validate_cuordilava_scenery(root: Path) -> list[str]:
     return errors
 
 
+def validate_cuordilava_organic_springs(root: Path) -> list[str]:
+    """Confirm restored spa cells retain water/stone graphics and collision."""
+    try:
+        from soften_cuordilava_springs import validate_built
+        validate_built(root)
+        from dress_cuordilava_scenery import illustration
+        cascade = illustration('cascade')
+        foam = sum(pixel == 1 for row in cascade for pixel in row)
+        if foam < 20 or any(cascade[y][0] for y in range(16)):
+            return ['Thermal cascade lost its mineral foam or transparent edge']
+    except (OSError, ImportError, IndexError, AssertionError, TypeError, ValueError) as exc:
+        return [f'Organic thermal spring regression: {exc}']
+    return []
+
+
 def validate_cuordilava_monument_identity(root: Path) -> list[str]:
     """Regression guard: gym has ONE flame-roof and a DIFFERENT furnace front."""
     errors: list[str] = []
@@ -1625,6 +1640,7 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_cuordilava_scenery(root))
     errors.extend(validate_cuordilava_lush_scenery(root))
     errors.extend(validate_mineral_spring_water(root))
+    errors.extend(validate_cuordilava_organic_springs(root))
     errors.extend(validate_cuordilava_thermal_courtyard(root))
     errors.extend(validate_lavaridge_light_events(root))
     errors.extend(validate_sign_light_placements(root))

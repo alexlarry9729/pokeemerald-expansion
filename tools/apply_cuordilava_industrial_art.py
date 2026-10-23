@@ -163,6 +163,9 @@ def main() -> None:
     sculpt_town_landmarks(args.root)
     from dress_cuordilava_scenery import run as dress_scenery
     dress_scenery(args.root)
+    # Last pass: mineral-water surface and organic bank reuse existing graphics.
+    from soften_cuordilava_springs import run as soften_thermal_springs
+    soften_thermal_springs(args.root)
 
 if __name__ == "__main__":
     main()
