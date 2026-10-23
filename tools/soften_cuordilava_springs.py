@@ -57,7 +57,7 @@ def run(root):
     for (x, y), index, kind in RIM:
         cell = y * 20 + x
         if all_ids.count(512 + index) != 1 or all_ids[cell] != 512 + index:
-            raise ValueError('Spring-only metatile moved or reused: ' + str(index))
+            raise ValueError('Spring-only metatile moved/reused: ' + str(index) + ' count=' + str(all_ids.count(512 + index)) + ' actual=' + str(all_ids[cell]) + ' positions=' + str([(n % 20, n // 20) for n, v in enumerate(all_ids) if v == 512 + index]))
         if (u16(layout, 2 * cell) >> 10) & 3 != 1:
             raise ValueError('Spring rocks lost collision')
         if u16(secondary_attrs, 2 * index) != 0x000C:
