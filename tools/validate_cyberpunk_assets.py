@@ -963,8 +963,19 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
             if tile_id >= 512:
                 active_secondary_tiles.add(tile_id - 512)
 
+    # These 28 former factory-panel graphics were used solely by the now
+    # water/basalt spring metatiles 163/165/187/285. The GBA atlas still
+    # contains them, but unused art need not remain placed on the town map.
+    retired_spring_panels = {
+        204, 205, 206, 207, 220, 221, 222, 223,
+        230, 231, 232, 233, 246, 247, 248, 249,
+        262, 263, 278, 279, 396, 397, 398, 399,
+        412, 413, 414, 415,
+    }
     for tile_id in target_tiles:
         if tile_id not in active_secondary_tiles:
+            if tile_id in retired_spring_panels:
+                continue  # Intentionally removed from spa-only factory panels.
             errors.append(
                 f"{path}: facade tile {tile_id} is not referenced by LavaridgeTown; check the art target"
             )
