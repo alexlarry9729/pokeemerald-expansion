@@ -31,7 +31,6 @@ on:
       - 'src/data/field_effects/field_effect_objects.h'
       - 'src/data/object_events/object_event_graphics.h'
       - 'tools/validate_cyberpunk_assets.py'
-      - 'tools/expand_cuordilava_district.py'
       - 'tools/apply_cuordilava_industrial_art.py'
       - 'tools/generate_cuordilava_architecture.py'
       - '.github/workflows/cyberpunk-validation.yml'
@@ -55,10 +54,6 @@ jobs:
         run: python3 tools/apply_cuordilava_industrial_art.py
       - name: Validate palettes and day/night glow
         run: python3 tools/validate_cyberpunk_assets.py
-      - name: Expand volcanic town after protected legacy validation
-        run: python3 tools/expand_cuordilava_district.py
-      - name: Verify playable enlarged district and preserved historic city
-        run: python3 tools/expand_cuordilava_district.py --verify
 
   build-emerald:
     name: Build Pokémon Emerald ROM
@@ -73,10 +68,6 @@ jobs:
           sudo apt-get install -y --no-install-recommends binutils-arm-none-eabi gcc-arm-none-eabi libnewlib-arm-none-eabi libpng-dev python3
       - name: Apply town-private industrial architecture redraw
         run: python3 tools/apply_cuordilava_industrial_art.py
-      - name: Expand and validate connected volcanic district
-        run: |
-          python3 tools/expand_cuordilava_district.py
-          python3 tools/expand_cuordilava_district.py --verify
       - name: Build Emerald
         env:
           GAME_VERSION: EMERALD

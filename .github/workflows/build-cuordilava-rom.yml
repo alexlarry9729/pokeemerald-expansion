@@ -29,12 +29,6 @@ jobs:
       - name: Validate cyberpunk assets
         run: python3 tools/validate_cyberpunk_assets.py
 
-      - name: Generate expanded volcanic eastern district (32x28)
-        run: python3 tools/expand_cuordilava_district.py
-
-      - name: Validate historical town preservation and traversable annex
-        run: python3 tools/expand_cuordilava_district.py --verify
-
       - name: Compile Pokémon Emerald
         env:
           GAME_VERSION: EMERALD
@@ -69,8 +63,6 @@ jobs:
             data/tilesets/secondary/cuordilava/metatiles.bin
             data/tilesets/secondary/cuordilava/metatile_attributes.bin
             data/layouts/LavaridgeTown/map.bin
-            data/layouts/layouts.json
-            cuordilava-expanded-layout-audit.json
             data/tilesets/primary/cuordilava/tiles.png
             data/tilesets/primary/general/tiles.png
             data/tilesets/primary/general/metatiles.bin

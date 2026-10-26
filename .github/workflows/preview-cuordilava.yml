@@ -16,7 +16,6 @@ on:
       - 'tools/dress_cuordilava_scenery.py'
       - 'tools/polish_cuordilava_scenery.py'
       - 'tools/refine_cuordilava_water.py'
-      - 'tools/expand_cuordilava_district.py'
       - 'data/tilesets/**'
       - 'data/layouts/**'
       - 'data/maps/LavaridgeTown/map.json'
@@ -39,12 +38,6 @@ jobs:
       - name: Validate original indexed GBA graphics and map accesses
         run: python3 tools/validate_cyberpunk_assets.py
 
-      - name: Expand Cuordilava to a connected volcanic district
-        run: python3 tools/expand_cuordilava_district.py
-
-      - name: Validate enlarged city and original warp reachability
-        run: python3 tools/expand_cuordilava_district.py --verify
-
       - name: Render the real Lavaridge Town map in day and night modes
         run: python3 tools/render_cuordilava_preview.py --output-dir build-preview
 
@@ -57,7 +50,7 @@ jobs:
               png = Path(f'build-preview/cuordilava-{mode}.png').read_bytes()
               assert png[:8] == b'\x89PNG\r\n\x1a\n', f'{mode} preview invalid PNG'
               width, height = struct.unpack_from('>II', png, 16)
-              assert (width, height) == (1536, 1344), (mode, width, height)
+              assert (width, height) == (960, 960), (mode, width, height)
               assert len(png) > 1000, f'{mode} preview is suspiciously small'
           PY
 
@@ -68,6 +61,5 @@ jobs:
           path: |
             build-preview/cuordilava-day.png
             build-preview/cuordilava-night.png
-            cuordilava-expanded-layout-audit.json
           if-no-files-found: error
           retention-days: 30
