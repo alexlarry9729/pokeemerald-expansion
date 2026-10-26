@@ -248,3 +248,5 @@ The sea atlas was additionally refined to reference exclusively the three alread
 ### Final isolated marine pixels
 
 Two truly unused private 8×8 tiles (510 and 511) now carry ocean-only versions of the already-authored water ripples. Their indexed pixels are remapped exclusively onto palette-7 indices 8, 9, 10 (navy, slate blue and cool blue). This eliminates the peach/copper flecks caused by reading the hot spring's mineral-foam colours through the marine palette, without changing one existing Cuordilava hot spring pixel. The coastal metatiles 421–423 use only these two isolated graphics and remain collision-blocked. The post-generation validator checks pixel indices and atlas bounds.
+
+A further preview review revealed visible long straight bands in the former water ripples. The two ocean-only 8×8 slots are now hand-drawn with staggered, short navy/blue wave arcs rather than copied pool-water strata. Original spa pixels and the gameplay map core remain untouched.

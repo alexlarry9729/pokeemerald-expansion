@@ -161,15 +161,24 @@ def install_ocean_metatiles(root: Path, original_map: bytes):
     palette=png[png.index(b'PLTE')+4:png.index(b'PLTE')+52]
     if len(palette)!=48:
         raise ValueError('Missing indexed 16-colour source palette')
-    for art_id,source_tile in zip(OCEAN_ART_TILES,(320,321)):
-        for row in range(8):
-            for col in range(8):
-                src=pixels[(source_tile//16)*8+row][(source_tile%16)*8+col]
-                # Only existing palette-7 navy / ocean-blue ramp (indices
-                # 8,9,10); remove peach-white mineral foaming and rocks.
-                converted=(10 if src in (1,10) else
-                           9 if src in (9,11,12) else 8)
-                pixels[(art_id//16)*8+row][(art_id%16)*8+col]=converted
+    # Hand-authored two-tile dark ocean ripple set. Old hot-spring art had
+    # horizontal mineral-water strata which repeated as artificial straight
+    # stripes; these two private motifs stagger their short wave arcs.
+    ripple_motifs = (
+        ('88888888','88899988','88991088','88888888',
+         '88888888','99888899','89988889','88888888'),
+        ('88888888','88888888','88899888','88910988',
+         '88888888','88988888','89999888','88888888'),
+    )
+    for art_id,motif in zip(OCEAN_ART_TILES,ripple_motifs):
+        for row,line in enumerate(motif):
+            if len(line)!=8 or any(ch not in '8910' for ch in line):
+                raise ValueError('Ocean ripple motif has invalid GBA indices')
+            # '10' denotes the light-blue tile index; write each row
+            # through an explicit compact 8-element colour grid instead.
+            coded={'8':8,'9':9,'1':10,'0':10}
+            for col,ch in enumerate(line):
+                pixels[(art_id//16)*8+row][(art_id%16)*8+col]=coded[ch]
     variants=((510,511,510,511),(511,510,511,510),
               (510,510,511,511))
     for mid,variant in zip(OCEAN_METATILES,variants):
