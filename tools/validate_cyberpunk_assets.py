@@ -1615,8 +1615,19 @@ def validate_cuordilava_monument_identity(root: Path) -> list[str]:
             errors.append("Poké Mart is missing its wide cyan tech canopy")
         if any(housing[1][x] != 6 for x in (12, 25, 39, 52)):
             errors.append("Four distinct basalt house roof peaks were lost")
-        if center[4][24] not in (11, 12, 14):
-            errors.append("Pokémon Center upper thermal roof vents were lost")
+        # Final silhouette pass: connected material structures, distinct
+        # rooflines and surviving original Pokémon building identifiers.
+        if center[1][31] not in (5,6,8):
+            errors.append("Pokémon Center no longer has its high basalt roof")
+        if center[18][31] not in (11,12,14):
+            errors.append("Pokémon Center has lost its red-cross glass")
+        if mart[20][32] not in (8,9,10):
+            errors.append("Market shopping display/technology panel missing")
+        if gym[19][32] not in (8,12,13,14):
+            errors.append("Gym's central forge emblem missing")
+        for x in (12,25,39,52):
+            if housing[1][x] != 6:
+                errors.append(f"Terraced home gable peak missing: {x}")
         # Strong connected blocks of glowing facades, not a few isolated dots.
         for label, art, y0, y1, min_count in (
             ("Pokémon Center", center, 25, 31, 100),
