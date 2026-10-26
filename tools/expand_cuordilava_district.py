@@ -136,18 +136,18 @@ def install_ocean_metatiles(root: Path, original_map: bytes):
               for y in range(OLD_H) for x in range(OLD_W)}
     if any(512+mid in occupied for mid in OCEAN_METATILES):
         raise ValueError('Deep sea metatile IDs conflict with original town')
-    # Existing water from the fully-rendered hot basin x=5, y=4.
+    # The three curated *water-only* 8x8 motifs 320/321/336 carry
+    # alternating ripple/shadow colours. The original shoreline's primary
+    # 264/280 tiles also include orange soil, which turns into unpleasant
+    # coral speckle under the deeper marine-blue palette.
     source_mid=(value(original_map,OLD_W,5,4)&1023)-512
     if not 0<=source_mid<512:
         raise ValueError('Missing private turquoise water donor')
-    src=list(struct.unpack_from('<8H',m,source_mid*16))
-    base=src[:4]
-    if not all(((item>>12)&15)==8 for item in base):
-        raise ValueError('Hot spring base art no longer references water palette 8')
-    variants=(base,(base[1],base[0],base[3],base[2]),
-              (base[2],base[3],base[0],base[1]))
+    lake=(320,321,336)
+    variants=((320,321,336,320),(321,336,320,321),
+              (336,320,321,336))
     for mid,variant in zip(OCEAN_METATILES,variants):
-        recolored=[(tile&0x0FFF)|(OCEAN_PALETTE<<12) for tile in variant]
+        recolored=[(OCEAN_PALETTE<<12)|(512+tile) for tile in variant]
         struct.pack_into('<8H',m,mid*16,*(recolored+[0]*4))
         # The new coastal sea is collision-blocked per map cell.
         attrs[mid*2:mid*2+2]=attrs[source_mid*2:source_mid*2+2]
