@@ -542,6 +542,21 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
         for index in range(9, 16):
             if luminance(night[index]) <= luminance(day[index]):
                 errors.append(f"{palette_dir / '15.pal'}: local neon colour {index} must be brighter at night")
+        # Reference-match regression: architectural glass should look like
+        # amber/copper furnace heat, not flat neon red-orange. Restrict only
+        # Cuordilava's PRIVATE palette 6/15 (not global day/night lighting).
+        for index in (12, 14):
+            if day[index][1] < 130 or night[index][1] < day[index][1] + 20:
+                errors.append(
+                    f"{palette_dir}: warm glass {index} lost copper/amber midtones"
+                )
+            if day[index][1] <= day[index][2] + 40:
+                errors.append(
+                    f"{palette_dir}: copper window {index} is becoming cool/grey"
+                )
+        if not all(day[i][0] > day[i][1] > day[i][2]
+                   for i in (11,12,13,14)):
+            errors.append(f"{palette_dir}: furnace four-colour ramp lost warm ordering")
         # Reference-driven hierarchy: furnace red/orange must lead and teal must stay secondary.
         warm_indices = (11, 12, 13, 14)
         if any(day[index][0] <= max(day[index][1], day[index][2]) for index in warm_indices):
