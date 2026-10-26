@@ -100,6 +100,7 @@ from polish_cuordilava_monuments import polish_monument
 from relief_cuordilava_landmarks import add_reference_massing
 from engrave_cuordilava_details import add_dense_reference_details
 from finish_cuordilava_existing_roofs import finish_existing_architecture
+from layer_cuordilava_reference_materials import layer_reference_materials
 
 
 def draw(name,w,h):
@@ -231,6 +232,7 @@ def draw(name,w,h):
     add_reference_massing(a, name)
     add_dense_reference_details(a, name)
     finish_existing_architecture(a, name)
+    layer_reference_materials(a, name)
     assert rgb_readable(a.pix)
     return a
 

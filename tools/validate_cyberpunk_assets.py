@@ -1625,6 +1625,12 @@ def validate_cuordilava_monument_identity(root: Path) -> list[str]:
             errors.append("Market shopping display/technology panel missing")
         if gym[19][32] not in (8,12,13,14):
             errors.append("Gym's central forge emblem missing")
+        # All three civic buildings gain separate layered slate-material roofs.
+        for label, art in (("Center", center), ("Market", mart), ("Gym", gym)):
+            if art[8][20] != 5:
+                errors.append(f"{label} basalt shingle roof detail missing")
+        if housing[8][13] != 5:
+            errors.append("Historic terraced home slate course missing")
         for x in (12,25,39,52):
             if housing[1][x] != 6:
                 errors.append(f"Terraced home gable peak missing: {x}")

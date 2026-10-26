@@ -236,3 +236,7 @@ User has specifically rejected any map enlargement or any additional buildings. 
 ### Distinctive seven-bay facade — 2026-10-26
 
 Replaced the earlier seven identical bright-orange ground-floor windows of existing south-east houses with an intentionally nonrepeating connected facade (square oriel, double thermal grille, warm service display, brass housing frames, long masonry piers, compact cyan diagnostics). `ART_TILES` 28 original allocated private graphics remain unchanged IDs; the same five selected panels are reused by the Gym lower frontage, now with varied details. All 20×20 map coordinates, original base metatiles and collision attributes, six warps, and palette banks remain unchanged. This is a texture/artwork modification of existing buildings only.
+
+## Slate and copper material pass — 2026-10-26
+
+The final art-only module `tools/layer_cuordilava_reference_materials.py` uses existing 48 fully allocated 16x16 town-private murals: offset basalt-slate courses, cast-iron roof joints, recessed copper cornices, masonry brackets and small orange-glass bays replace oversized flat grayscale rectangles. Center roof, Mart canopy, Gym temple and the original house terrace all gain separate material signatures. No added building, extra coordinate, metatile, graphics bank, light coefficient, event, warp or collision change. The original 20×20 source and six fixed building entrances remain untouched. Preview + emulator comparison to the attached reference remain necessary.
