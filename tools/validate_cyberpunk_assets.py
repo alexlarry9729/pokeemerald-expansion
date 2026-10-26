@@ -1631,6 +1631,17 @@ def validate_cuordilava_monument_identity(root: Path) -> list[str]:
                 errors.append(f"{label} basalt shingle roof detail missing")
         if housing[8][13] != 5:
             errors.append("Historic terraced home slate course missing")
+        # Four distinct hot-glass forge arches must retain their own shadowed
+        # brick crowns while every required glass pixel stays unobscured.
+        for cx in (10,25,40,55):
+            if facade[3][cx-5] != 6 or facade[12][cx-4] != 5:
+                errors.append(f"Forge arch or kiln sill disappeared at x={cx}")
+        if facade[14][32] != 5 or facade[15][32] != 13:
+            errors.append("Lower forge gallery no longer forms a continuous sill")
+        # Town-only side buttress/copper arcade remains tied to original
+        # Center and Market monuments; all symbols keep their prior checks.
+        if center[16][10] not in (5,6,8,11,12,13) or mart[16][9] not in (5,6,8,11,12,13):
+            errors.append("Civic building side arcades have lost their relief")
         for x in (12,25,39,52):
             if housing[1][x] != 6:
                 errors.append(f"Terraced home gable peak missing: {x}")
