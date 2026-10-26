@@ -63,7 +63,7 @@ def reprofile_existing_roofs(a, name):
             for x in range(left+3+staggering,right-3,slate_course):
                 line(x,min(x+slate_course-3,right-2),y,5)
                 line(x+1,min(x+slate_course-4,right-2),y+1,2)
-        line(left,eave-1,eave and right or right,eave-1,5)
+        line(left,right,eave-1,5)
         line(left+1,right-1,eave,hot_trim)
         # Under eaves, a black shadow reveals roof projection above walls.
         line(left+2,right-2,eave+1,1)
