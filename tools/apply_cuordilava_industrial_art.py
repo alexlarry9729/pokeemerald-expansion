@@ -174,6 +174,8 @@ def main() -> None:
     build_gym_ground_floor(args.root)
     from stamp_cuordilava_civic_vents import run as stamp_civic_vents
     stamp_civic_vents(args.root)
+    from finish_cuordilava_shop_clinic_walls import run as finish_lower_civic_facades
+    finish_lower_civic_facades(args.root)
 
 if __name__ == "__main__":
     main()

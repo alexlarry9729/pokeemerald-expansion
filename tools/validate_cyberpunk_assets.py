@@ -600,7 +600,7 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
         # 285 is the pool's new transparent mineral-water panel (palette 8).
     }
     # A flat civic plaza ornament plus five forge and seven house frontage cells.
-    custom_slots.update({tile: (4, 5, 6, 7) for tile in range(424, 437)})
+    custom_slots.update({tile: (4, 5, 6, 7) for tile in range(424, 441)})
     # Town-private civic art: 441..488 use industrial palette 6.
     custom_slots.update({tile: (4, 5, 6, 7) for tile in range(441, 489)})
     # Rooftop furnaces and magma lanterns use bank 6. The eight palms use
@@ -1553,6 +1553,16 @@ def validate_cuordilava_gym_lower_facade(root: Path) -> list[str]:
     return []
 
 
+def validate_cuordilava_civic_lower_facades(root: Path) -> list[str]:
+    """Ensure original Center and Mart gain 4 non-door wall bays only."""
+    try:
+        from finish_cuordilava_shop_clinic_walls import validate_built
+        validate_built(root)
+    except (ImportError,OSError,IndexError,TypeError,ValueError,struct.error) as exc:
+        return [f'Center/Market lower facade regression: {exc}']
+    return []
+
+
 def validate_cuordilava_lower_facade(root: Path) -> list[str]:
     """Guard the new uninterrupted house frontage and original walkability."""
     try:
@@ -1743,6 +1753,7 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_mineral_spring_water(root))
     errors.extend(validate_cuordilava_organic_springs(root))
     errors.extend(validate_cuordilava_lower_facade(root))
+    errors.extend(validate_cuordilava_civic_lower_facades(root))
     errors.extend(validate_cuordilava_gym_lower_facade(root))
     errors.extend(validate_cuordilava_civic_vents(root))
     errors.extend(validate_cuordilava_thermal_courtyard(root))
