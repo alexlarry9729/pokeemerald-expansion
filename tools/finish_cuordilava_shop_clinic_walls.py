@@ -19,9 +19,9 @@ WIDTH = HEIGHT = 20
 # (x,y, existing primary metatile, new private metatile, 7-bay atlas index)
 WALL_BAYS = (
     (8, 6, 96, 437, 0),  # Center: basalt-framed heated window
-    (11, 6, 99, 438, 2), # Center: divided copper thermal glazing
+    (10, 6, 98, 438, 2), # Center: divided copper thermal glazing
     (14, 5, 96, 439, 3), # Mart: cyan service-panel glass
-    (17, 5, 67, 440, 5), # Mart: purple/cyan narrow technical conduit
+    (16, 5, 66, 440, 5), # Mart: purple/cyan narrow technical conduit
 )
 DOORS = ((9, 6), (15, 5))
 
@@ -45,12 +45,22 @@ def word(b,offset):
 
 def event_guard(paths):
     events=json.loads(paths["events"].read_text(encoding="utf-8"))
-    occupied={(e["x"],e["y"]) for kind in
-              ("warp_events","coord_events","bg_events","object_events")
-              for e in events.get(kind,[]) if "x" in e and "y" in e}
+    # Only existing, non-interactive light-anchor sprites are allowed on the
+    # decorated wall tiles: the lit wall is their exact intended backdrop.
+    # Never overwrite a door, sign, NPC, coordinate event or real trigger.
+    occupied=set()
+    for kind in ("warp_events","coord_events","bg_events","object_events"):
+        for e in events.get(kind,[]):
+            if "x" not in e or "y" not in e:
+                continue
+            if (kind=="object_events"
+                    and e.get("graphics_id")=="OBJ_EVENT_GFX_LIGHT_SPRITE"
+                    and e.get("script")=="NULL"):
+                continue
+            occupied.add((e["x"],e["y"]))
     target={(x,y) for x,y,_,_,_ in WALL_BAYS}
     if occupied & target:
-        raise ValueError(f"Existing event overlaps an architectural wall: {occupied & target}")
+        raise ValueError(f"Existing interactive event overlaps an architectural wall: {occupied & target}")
     doors={(e["x"],e["y"]) for e in events["warp_events"]}
     if not set(DOORS).issubset(doors) or len(events["warp_events"])!=6:
         raise ValueError("Original Center/Mart doorway or other building warps moved")
