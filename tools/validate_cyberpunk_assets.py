@@ -1645,6 +1645,17 @@ def validate_cuordilava_monument_identity(root: Path) -> list[str]:
         for x in (12,25,39,52):
             if housing[1][x] != 6:
                 errors.append(f"Terraced home gable peak missing: {x}")
+        # Projecting eaves are continuous, not disconnected neon specks.
+        for label, art, x0, x1 in (
+            ("Center", center, 7, 56),
+            ("Market", mart, 11, 52),
+            ("Gym", gym, 12, 51),
+        ):
+            if any(art[11][x] != 5 for x in range(x0, x1+1)):
+                errors.append(f"{label} projected roof-to-wall fascia is broken")
+        for cx in (12,25,39,52):
+            if housing[12][cx] != 5:
+                errors.append(f"Original home {cx} lacks roof underside shadow")
         # Strong connected blocks of glowing facades, not a few isolated dots.
         for label, art, y0, y1, min_count in (
             ("Pokémon Center", center, 25, 31, 100),

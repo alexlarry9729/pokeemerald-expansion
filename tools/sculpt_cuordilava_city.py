@@ -102,6 +102,7 @@ from engrave_cuordilava_details import add_dense_reference_details
 from finish_cuordilava_existing_roofs import finish_existing_architecture
 from layer_cuordilava_reference_materials import layer_reference_materials
 from deepen_cuordilava_facades import deepen_existing_facades
+from join_cuordilava_roof_facades import connect_roofs_to_walls
 
 
 def draw(name,w,h):
@@ -235,6 +236,7 @@ def draw(name,w,h):
     finish_existing_architecture(a, name)
     layer_reference_materials(a, name)
     deepen_existing_facades(a, name)
+    connect_roofs_to_walls(a, name)
     assert rgb_readable(a.pix)
     return a
 

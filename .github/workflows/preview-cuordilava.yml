@@ -15,6 +15,7 @@ on:
       - 'tools/finish_cuordilava_existing_roofs.py'
       - 'tools/layer_cuordilava_reference_materials.py'
       - 'tools/deepen_cuordilava_facades.py'
+      - 'tools/join_cuordilava_roof_facades.py'
       - 'tools/engrave_cuordilava_details.py'
       - 'tools/relief_cuordilava_landmarks.py'
       - 'tools/construct_cuordilava_lower_facade.py'
