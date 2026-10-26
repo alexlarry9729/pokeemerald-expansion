@@ -123,8 +123,8 @@ def annex(old: bytes) -> bytes:
     # Donors are already rendered, graphically verified and collision-bearing.
     basalt = original(1,8)      # solid original cliff material, not a new metatile
     street = original(8,11)     # walkable old basalt-cobble promenade
-    worn_street = original(13,8)  # alternative old primary cobble
-    brick_street = original(12,7) # another legitimate old town sidewalk
+    worn_street = original(12,7)  # original walkable concrete cobble
+    brick_street = original(13,7) # second walkable core source pavement
     sea = original(5,4)         # mineral turquoise water already in town
     breakers = original(4,3)    # existing naturally textured shore water
     deeper_sea = original(6,4)  # second hand-authored hot-spring variant
@@ -178,8 +178,8 @@ def annex(old: bytes) -> bytes:
             for xx in range(x0,x1+1):
                 if 0<=xx<W and 0<=yy<H:
                     style=(xx*13+yy*7+xx*yy)%13
-                    rows[yy][xx]=(street if style<8 else
-                                  worn_street if style<11 else brick_street)
+                    rows[yy][xx]=(street if style<4 else
+                                  worn_street if style<9 else brick_street)
     pavement(20,7,31,9)
     pavement(20,7,21,23)
     pavement(21,10,30,22)
