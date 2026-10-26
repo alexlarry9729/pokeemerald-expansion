@@ -121,9 +121,15 @@ def annex(old: bytes) -> bytes:
     def original(x,y):
         return value(old,OLD_W,x,y)
     # Donors are already rendered, graphically verified and collision-bearing.
-    basalt = original(1,8)      # solid natural dark rock, original metatile 626
-    street = original(8,11)     # traversable old basalt-cobble promenade
-    sea = original(7,19)        # original south-front lava/water border
+    basalt = original(1,8)      # solid original cliff material, not a new metatile
+    street = original(8,11)     # walkable old basalt-cobble promenade
+    worn_street = original(13,8)  # alternative old primary cobble
+    brick_street = original(12,7) # another legitimate old town sidewalk
+    sea = original(5,4)         # mineral turquoise water already in town
+    breakers = original(4,3)    # existing naturally textured shore water
+    deeper_sea = original(6,4)  # second hand-authored hot-spring variant
+    ridge_stones = (original(0,0), original(4,0), original(5,0),
+                    original(0,1), original(1,0))
     lantern = original(18,5)    # copper street lamp
     palm = original(12,5)       # 16x16 tropical flowering palm
     stack = original(15,13)     # volcanic industrial exhaust stack
@@ -132,31 +138,48 @@ def annex(old: bytes) -> bytes:
     open_ground = ((street>>10)&3)==0
     if not blocked or not open_ground:
         raise ValueError('Reference donors no longer match solidity expectations')
-    rows = [[basalt for _ in range(W)] for _ in range(H)]
+    if any(((item>>10)&3)!=0 for item in (worn_street,brick_street)):
+        raise ValueError('Historic secondary paving donors stopped being walkable')
+    # Map cell bits 10-11 are the per-cell collision; force inaccessible
+    # cliffs/ocean to remain solid while preserving each donor's elevation.
+    def impassable(v):
+        return (v & ~(3<<10)) | (1<<10)
+    rows = [[impassable(ridge_stones[(x//3 + y//2 + x*y)%len(ridge_stones)])
+             for x in range(W)] for y in range(H)]
     # Preserve all 400 existing town cells, including collision, tile ID,
     # elevation and interactions, without translating one single coordinate.
     for y in range(OLD_H):
         for x in range(OLD_W):
             rows[y][x] = original(x,y)
 
-    # South-west volcanic shoreline: textured existing coastline and thermal
-    # sea fragments. It is not a new path to nowhere; access stays in the east.
+    # South-west: an uninterrupted strip of volcanic cliffs opens into a
+    # genuinely turquoise sea, unlike the earlier monotonous black staircase.
+    # Ocean retains its original water art but is collision-blocked at the
+    # outer map edge so it cannot act as an unintended town exit.
     for y in range(20,H):
         for x in range(20):
-            if x<3:
-                rows[y][x]=original(0,18) if (x+y)%3==0 else original(1,18)
-            elif x>=4:
-                rows[y][x]=sea if y%3 else original(12,19)
+            if y==20 or x in (0,1):
+                donor=original((3+x//4)%20,19) if (x+y)%4 else original(0,18)
+                rows[y][x]=impassable(donor)
+            elif y==21 or x in (2,19):
+                donor=original(2,3) if (x+y)%3 else original(6,6)
+                rows[y][x]=impassable(donor)
             else:
-                rows[y][x]=original(3,19)
+                donor=(sea,breakers,deeper_sea,sea)[(x*7+y*3)%4]
+                rows[y][x]=impassable(donor)
 
     # Giant upper eastern black basalt ridge, passable main spine/side streets.
     # The 2-block-wide arterial road now truly connects the old town to Route 112.
     def pavement(x0,y0,x1,y1):
+        # Vary the real floor artwork without adding new metatile allocations.
+        # Long uninterrupted repetition made the first preview look like a
+        # neon checkerboard rather than a lived-in town.
         for yy in range(y0,y1+1):
             for xx in range(x0,x1+1):
                 if 0<=xx<W and 0<=yy<H:
-                    rows[yy][xx]=street
+                    style=(xx*13+yy*7+xx*yy)%13
+                    rows[yy][xx]=(street if style<8 else
+                                  worn_street if style<11 else brick_street)
     pavement(20,7,31,9)
     pavement(20,7,21,23)
     pavement(21,10,30,22)
@@ -165,7 +188,7 @@ def annex(old: bytes) -> bytes:
     # Restrict actual cross-map access on Route 112 to its walkable street
     # throat, not the shoreline or an industrial wall.
     for y in range(H):
-        rows[y][31] = street if y in (7,8,9) else basalt
+        rows[y][31] = street if y in (7,8,9) else impassable(ridge_stones[y%len(ridge_stones)])
 
     # Kiln central: a unique volcanic industrial skyline with black
     # spires, large flame-roof hall, and an orange-lit connected foundation.
@@ -219,6 +242,10 @@ def annex(old: bytes) -> bytes:
     # Walkway down to coast remains reachable even with spa and decorations.
     pavement(20,20,21,23)
     pavement(22,21,22,23)
+    # Additional light pavers and moss seams between workshops and plaza,
+    # separated from the main street by two free passable walking tiles.
+    for x,y in ((23,10),(28,10),(23,14),(28,14),(23,20),(28,20)):
+        rows[y][x]=worn_street
 
     return b''.join(struct.pack('<H',cell) for row in rows for cell in row)
 
