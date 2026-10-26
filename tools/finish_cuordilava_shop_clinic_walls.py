@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Four original storefront/clinic wall bays, NOT new buildings.
+"""Two original storefront/clinic wall bays, NOT new buildings.
 
-Repaint just two existing non-door exterior wall cells below the Pokemon Center
-and two existing non-door wall cells below the Mart. Reuse seven already-painted
+Repaint one existing non-door facade-light wall beneath the Pokemon Center
+and one beneath the Mart. Other walls are interactive sign tiles, so remain intact. Reuse seven already-painted
 private 16x16 housing-glass facade panels: zero new 8x8 pixels, 4bpp graphics,
-palettes or atlas capacity. Exactly four previously unused, private secondary
-metatiles 437..440 copy their original primary graphics and terrain behavior.
+palettes or atlas capacity. Exactly two previously unused, private secondary
+metatiles 437 and 439 copy original graphics and terrain behavior.
 
 Doors at (9,6) and (15,5), all six town warps, NPCs, map size and collision/
-elevation flags are preserved. This is an explicit four-cell, fail-closed edit.
+elevation flags are preserved. This is an explicit two-cell, fail-closed edit.
 """
 from pathlib import Path
 import json
@@ -18,10 +18,8 @@ from construct_cuordilava_lower_facade import ART_TILES
 WIDTH = HEIGHT = 20
 # (x,y, existing primary metatile, new private metatile, 7-bay atlas index)
 WALL_BAYS = (
-    (8, 6, 96, 437, 0),  # Center: basalt-framed heated window
-    (10, 6, 98, 438, 2), # Center: divided copper thermal glazing
-    (14, 5, 96, 439, 3), # Mart: cyan service-panel glass
-    (16, 5, 66, 440, 5), # Mart: purple/cyan narrow technical conduit
+    (8, 6, 96, 437, 0),  # Center passive facade light (no sign event)
+    (14, 5, 96, 439, 3), # Mart passive facade light (no sign event)
 )
 DOORS = ((9, 6), (15, 5))
 
@@ -136,7 +134,7 @@ def run(root):
             (i%20,i//20) not in targets and before != after):
             raise ValueError("Unexpected 20x20 map/position/collision change")
     for mid in range(512):
-        if mid not in (437,438,439,440) and (
+        if mid not in (437,439) and (
             meta[mid*16:(mid+1)*16] != before_meta[mid*16:(mid+1)*16]
             or attr[mid*2:(mid+1)*2] != before_attrs[mid*2:(mid+1)*2]):
             raise ValueError("Wall edit leaked into an unrelated metatile/terrain attribute")
@@ -144,7 +142,7 @@ def run(root):
     p["secondary"].write_bytes(meta)
     p["secondary_attr"].write_bytes(attr)
     validate_built(root)
-    print("Cuordilava lower walls: four unique, door-safe, shadowed Center/Mart "
+    print("Cuordilava lower walls: two unique, sign-safe, shadowed Center/Mart "
           "window panels; no new buildings, pixels, warp/collision or size changes")
 
 

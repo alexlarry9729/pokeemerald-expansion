@@ -600,7 +600,8 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
         # 285 is the pool's new transparent mineral-water panel (palette 8).
     }
     # A flat civic plaza ornament plus five forge and seven house frontage cells.
-    custom_slots.update({tile: (4, 5, 6, 7) for tile in range(424, 441)})
+    custom_slots.update({tile: (4, 5, 6, 7) for tile in range(424, 437)})
+    custom_slots.update({tile: (4, 5, 6, 7) for tile in (437, 439)})
     # Town-private civic art: 441..488 use industrial palette 6.
     custom_slots.update({tile: (4, 5, 6, 7) for tile in range(441, 489)})
     # Rooftop furnaces and magma lanterns use bank 6. The eight palms use
