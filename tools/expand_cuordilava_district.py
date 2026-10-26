@@ -39,6 +39,7 @@ COAST_WALK = (22,22)
 MANIFEST = 'cuordilava-expanded-layout-audit.json'
 OCEAN_METATILES = (421,422,423)
 OCEAN_PALETTE = 7  # deep slate-blue outdoors, not turquoise hot spring palette 8
+OCEAN_ART_TILES = (510, 511)  # last two unreferenced private 8x8 GBA graphics
 
 def paths(root: Path):
     return {
@@ -143,14 +144,41 @@ def install_ocean_metatiles(root: Path, original_map: bytes):
     source_mid=(value(original_map,OLD_W,5,4)&1023)-512
     if not 0<=source_mid<512:
         raise ValueError('Missing private turquoise water donor')
-    lake=(320,321,336)
-    variants=((320,321,336,320),(321,336,320,321),
-              (336,320,321,336))
+    # Last two unused private 8x8 slots. Do not share pixel art with the
+    # springs: its white foam pixels turn peach under marine palette 7.
+    from render_cuordilava_preview import png_indexed
+    from apply_cuordilava_industrial_art import write_png
+    graphics={(struct.unpack_from('<H',m,off)[0]&1023)-512
+              for off in range(0,len(m),2)
+              if (struct.unpack_from('<H',m,off)[0]&1023)>=512}
+    if any(t in graphics for t in OCEAN_ART_TILES):
+        raise ValueError('Reserved marine 8x8 art IDs are already used')
+    image_path=root/'data/tilesets/secondary/cuordilava/tiles.png'
+    width,height,pixels=png_indexed(image_path)
+    if (width,height)!=(128,256):
+        raise ValueError('Original private 4bpp graphic capacity changed')
+    png=image_path.read_bytes()
+    palette=png[png.index(b'PLTE')+4:png.index(b'PLTE')+52]
+    if len(palette)!=48:
+        raise ValueError('Missing indexed 16-colour source palette')
+    for art_id,source_tile in zip(OCEAN_ART_TILES,(320,321)):
+        for row in range(8):
+            for col in range(8):
+                src=pixels[(source_tile//16)*8+row][(source_tile%16)*8+col]
+                # Only existing palette-7 navy / ocean-blue ramp (indices
+                # 8,9,10); remove peach-white mineral foaming and rocks.
+                converted=(10 if src in (1,10) else
+                           9 if src in (9,11,12) else 8)
+                pixels[(art_id//16)*8+row][(art_id%16)*8+col]=converted
+    variants=((510,511,510,511),(511,510,511,510),
+              (510,510,511,511))
     for mid,variant in zip(OCEAN_METATILES,variants):
         recolored=[(OCEAN_PALETTE<<12)|(512+tile) for tile in variant]
         struct.pack_into('<8H',m,mid*16,*(recolored+[0]*4))
         # The new coastal sea is collision-blocked per map cell.
         attrs[mid*2:mid*2+2]=attrs[source_mid*2:source_mid*2+2]
+    # Write all three assets after validating source exclusivity.
+    write_png(image_path,width,height,pixels,palette)
     meta_path.write_bytes(m)
     attrs_path.write_bytes(attrs)
 
@@ -160,10 +188,20 @@ def validate_ocean_metatiles(root: Path, terrain: bytes):
     meta=(root/'data/tilesets/secondary/cuordilava/metatiles.bin').read_bytes()
     for mid in OCEAN_METATILES:
         entries=struct.unpack_from('<8H',meta,mid*16)
-        if any((e&1023)<512 or (e>>12)!=OCEAN_PALETTE for e in entries[:4]):
-            raise ValueError('Deep-ocean ripple no longer uses local blue palette')
+        if any((e&1023) not in tuple(512+tile for tile in OCEAN_ART_TILES)
+               or (e>>12)!=OCEAN_PALETTE for e in entries[:4]):
+            raise ValueError('Deep-ocean ripple no longer uses isolated blue artwork')
         if any(entries[4:]):
             raise ValueError('Sea graphic overlay must be transparent')
+    from render_cuordilava_preview import png_indexed
+    width,height,pixels=png_indexed(root/'data/tilesets/secondary/cuordilava/tiles.png')
+    if (width,height)!=(128,256):
+        raise ValueError('Ocean graphics changed GBA tile budget')
+    for t in OCEAN_ART_TILES:
+        sample=[pixels[(t//16)*8+y][(t%16)*8+x]
+                for y in range(8) for x in range(8)]
+        if not set(sample).issubset({8,9,10}) or not {9,10}.issubset(sample):
+            raise ValueError('Marine blue water has lost pure non-peach tint')
     used={value(terrain,W,x,y)&1023 for y in range(OLD_H,H) for x in range(OLD_W)}
     if not {512+mid for mid in OCEAN_METATILES}.issubset(used):
         raise ValueError('New sea metatiles are missing from ocean district')
