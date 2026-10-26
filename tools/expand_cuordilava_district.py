@@ -37,6 +37,8 @@ EXIT = (31,8)
 ANNEX_SQUARE = (23,12)
 COAST_WALK = (22,22)
 MANIFEST = 'cuordilava-expanded-layout-audit.json'
+OCEAN_METATILES = (421,422,423)
+OCEAN_PALETTE = 7  # deep slate-blue outdoors, not turquoise hot spring palette 8
 
 def paths(root: Path):
     return {
@@ -115,6 +117,58 @@ def path_to(cells: bytes, root: Path, start, goal):
                 pending.append((nx,ny))
     return False
 
+def install_ocean_metatiles(root: Path, original_map: bytes):
+    """Reserve three otherwise-unused GBA metatiles for deeper coastal water.
+
+    The pool's existing 4bpp ripple pixels are reused; only the palette bank
+    changes from hot-spring turquoise index8 to darker sea-blue index7.
+    Distinct quadrant ordering gives the sea three repeating textures without
+    allocating one additional 8x8 tile or changing original town core data.
+    """
+    p=paths(root)
+    meta_path=root/'data/tilesets/secondary/cuordilava/metatiles.bin'
+    attrs_path=p['meta_secondary']
+    m=bytearray(meta_path.read_bytes())
+    attrs=bytearray(attrs_path.read_bytes())
+    if len(m)!=8192 or len(attrs)!=1024:
+        raise ValueError('Unexpected secondary map tileset capacity')
+    occupied={value(original_map,OLD_W,x,y)&1023
+              for y in range(OLD_H) for x in range(OLD_W)}
+    if any(512+mid in occupied for mid in OCEAN_METATILES):
+        raise ValueError('Deep sea metatile IDs conflict with original town')
+    # Existing water from the fully-rendered hot basin x=5, y=4.
+    source_mid=(value(original_map,OLD_W,5,4)&1023)-512
+    if not 0<=source_mid<512:
+        raise ValueError('Missing private turquoise water donor')
+    src=list(struct.unpack_from('<8H',m,source_mid*16))
+    base=src[:4]
+    if not all(((item>>12)&15)==8 for item in base):
+        raise ValueError('Hot spring base art no longer references water palette 8')
+    variants=(base,(base[1],base[0],base[3],base[2]),
+              (base[2],base[3],base[0],base[1]))
+    for mid,variant in zip(OCEAN_METATILES,variants):
+        recolored=[(tile&0x0FFF)|(OCEAN_PALETTE<<12) for tile in variant]
+        struct.pack_into('<8H',m,mid*16,*(recolored+[0]*4))
+        # The new coastal sea is collision-blocked per map cell.
+        attrs[mid*2:mid*2+2]=attrs[source_mid*2:source_mid*2+2]
+    meta_path.write_bytes(m)
+    attrs_path.write_bytes(attrs)
+
+
+def validate_ocean_metatiles(root: Path, terrain: bytes):
+    p=paths(root)
+    meta=(root/'data/tilesets/secondary/cuordilava/metatiles.bin').read_bytes()
+    for mid in OCEAN_METATILES:
+        entries=struct.unpack_from('<8H',meta,mid*16)
+        if any((e&1023)<512 or (e>>12)!=OCEAN_PALETTE for e in entries[:4]):
+            raise ValueError('Deep-ocean ripple no longer uses local blue palette')
+        if any(entries[4:]):
+            raise ValueError('Sea graphic overlay must be transparent')
+    used={value(terrain,W,x,y)&1023 for y in range(OLD_H,H) for x in range(OLD_W)}
+    if not {512+mid for mid in OCEAN_METATILES}.issubset(used):
+        raise ValueError('New sea metatiles are missing from ocean district')
+
+
 def annex(old: bytes) -> bytes:
     if len(old) != OLD_W*OLD_H*2:
         raise ValueError('Expected fully generated 20x20 Cuordilava source map')
@@ -152,21 +206,23 @@ def annex(old: bytes) -> bytes:
         for x in range(OLD_W):
             rows[y][x] = original(x,y)
 
-    # South-west: an uninterrupted strip of volcanic cliffs opens into a
-    # genuinely turquoise sea, unlike the earlier monotonous black staircase.
-    # Ocean retains its original water art but is collision-blocked at the
-    # outer map edge so it cannot act as an unintended town exit.
+    # Ragged volcanic coastline, calm deep-blue sea and turquoise foam along
+    # the irregular shore. The ocean tiles are explicitly impassable.
     for y in range(20,H):
         for x in range(20):
-            if y==20 or x in (0,1):
-                donor=original((3+x//4)%20,19) if (x+y)%4 else original(0,18)
+            shore_y=21 + (1 if x%7 in (1,2) else 0) + (1 if x%9==0 else 0)
+            if x<2 or y<shore_y:
+                donor=(original(0,18), original(4,0), original(5,0),
+                       original(0,0))[(x*3+y)%4]
                 rows[y][x]=impassable(donor)
-            elif y==21 or x in (2,19):
-                donor=original(2,3) if (x+y)%3 else original(6,6)
+            elif y==shore_y or x in (2,19):
+                donor=(breakers,deeper_sea,sea)[(x+y)%3]
                 rows[y][x]=impassable(donor)
             else:
-                donor=(sea,breakers,deeper_sea,sea)[(x*7+y*3)%4]
-                rows[y][x]=impassable(donor)
+                mid=OCEAN_METATILES[(x*3 + y + x//4)%3]
+                # Preserve the existing submerged cell height, but mark
+                # ocean as impassable using only collision bits 10-11.
+                rows[y][x]=impassable((sea&~0x3FF)|(512+mid))
 
     # Giant upper eastern black basalt ridge, passable main spine/side streets.
     # The 2-block-wide arterial road now truly connects the old town to Route 112.
@@ -264,6 +320,7 @@ def audit(root: Path):
         raise ValueError('Historic 20x20 Cuordilava center has changed')
     if manifest['width']!=W or manifest['height']!=H:
         raise ValueError('Incorrect generated layout metadata')
+    validate_ocean_metatiles(root,out)
     for destination in (EXIT,ANNEX_SQUARE,COAST_WALK):
         if not path_to(out,root,ENTRY,destination):
             raise ValueError(f'Annex is not walkably connected to the original town: {destination}')
@@ -292,6 +349,9 @@ def generate(root: Path):
         raise ValueError('Run source-time expansion only after the 20x20 base generator')
     original_events(p)
     raw=p['map'].read_bytes()
+    # Install only three new town-exclusive deep-water metatiles. None are
+    # used by the preserved 20x20 core or other maps.
+    install_ocean_metatiles(root,raw)
     new=annex(raw)
     # Validate *before writing* that all historic town cells are identical.
     for y in range(OLD_H):

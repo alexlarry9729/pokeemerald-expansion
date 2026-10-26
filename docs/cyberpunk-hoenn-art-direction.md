@@ -238,3 +238,7 @@ The final audit also verifies the original town elevational encoding: the walkab
 ### Annex terrain correction — 2026-10-26
 
 The first diagnostic expanded preview exposed an overly uniform glowing grid in the eastern district and a flat, black repeating southern strip. The second pass varies existing collision-safe basalt floor metatiles 1/3/4 within each pathway, replaces the blocky black shore with existing naturally turquoise hot-spring water graphics (impassable outside the old town), and alternates authentic volcanic rock donor tiles in the surrounding cliffs. No new assets are added, while route-access and historic-core SHA checks stay mandatory.
+
+### Dedicated deep-blue marine metatiles (experimental expansion)
+
+To visually separate the exterior volcanic sea from the bright turquoise bath, the expansion now claims three **previously unused secondary metatiles (421–423)**. These reuse only the actual hot-water 4bpp ripple graphic tiles but remap their *palette-bank reference* from turquoise secondary bank 8 to the existing slate-blue bank 7. No new 8x8 pixels, palettes or metatile capacity are consumed. The water occurs only beyond the historical town and its metatile cells are marked impassable, unlike the historic hot-spring trigger zone; a post-generation test inspects the three dedicated palette-7 metatiles and confirms they appear in the new coastal area. The south shoreline transitions irregularly from naturally dark volcanic rock to lighter foam and darker ocean.
