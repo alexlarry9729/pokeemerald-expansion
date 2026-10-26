@@ -53,48 +53,98 @@ class Facade:
 
 
 def illustration():
-    a=Facade()
-    # Multilevel cornice is drawn continuously across all seven metatiles.
-    a.box(0,0,111,15,8)  # private palette 6 near-black iron
-    for y,col in ((0,5),(1,6),(2,13),(3,8),(13,5),(14,11),(15,8)):
-        a.line(0,y,111,y,col)
-    for x in range(3,112,8):
-        a.p(x,1,3);a.p(x+1,2,14)
-    # Tall recesses create a clearly readable ground-floor windowscape,
-    # with orange-lit panes and shadowed steel mullions.
+    """One inhabited facade: seven DISTINCT glazed and service bays.
+
+    The previous pass stamped an identical orange shop-window 7 times,
+    which read as a flat wallpaper strip. Keep all 7 private metatiles and
+    existing underlays, but give each segment its own masonry, lintels,
+    frame spacing and real furnace-light glass instead.
+    """
+    a = Facade()
+    a.box(0,0,111,15,8)
+    # Heavy continuous flying cornice, dark base and copper gutter.
+    for y,c in ((0,5),(1,6),(2,13),(3,8),(13,5),(14,11),(15,8)):
+        a.line(0,y,111,y,c)
+    for x in range(6,111,11):
+        a.p(x,1,3)
+        a.p(x+1,2,14)
     for i in range(7):
         left=16*i
-        a.box(left+2,4,left+13,12,5)
-        a.box(left+3,5,left+12,11,8)
-        a.box(left+4,5,left+11,11,12)
-        for y in (6,8,10):
-            a.line(left+5,y,left+10,y,14)
-        a.line(left+8,5,left+8,11,5)
-        a.line(left+4,9,left+11,9,6)
-        a.line(left+3,12,left+12,12,11)
-        for x in (left+1,left+14):
-            a.line(x,3,x,13,5)
-            a.line(x+1,4,x+1,11,6)
-        a.p(left+2,3,13);a.p(left+13,3,14)
-        # Layered panel pilasters connect visually to the gabled roof above.
-        a.box(left,3,left,14,5)
-        a.line(left+15,3,left+15,14,5)
+        # Corner piers are architectural boundaries, not pasted repeat seams.
+        a.box(left,3,left+1,13,5)
+        a.line(left+1,4,left+1,12,6 if i%2 else 3)
+        a.line(left+14,4,left+14,12,5)
+        a.line(left+15,3,left+15,13,8)
         for y in (5,11):
-            a.p(left,y,13);a.p(left+15,y,14)
-    # Differentiate the storefront-style central service bay from housing:
-    # contained cool readout and a short violet vertical conduit.
-    a.box(47,4,49,12,8)
-    a.line(48,5,48,11,9)
-    a.p(48,6,10);a.p(48,10,15)
-    a.box(94,4,96,12,8)
-    a.line(95,5,95,11,15)
-    a.p(95,6,9);a.p(95,10,10)
-    # Additional warm copper vents make the building read as occupied.
-    for x in (7,23,39,55,71,87,103):
-        a.p(x,0,11);a.p(x+1,0,13)
-        a.p(x,14,14)
+            a.p(left,y,14)
+            a.p(left+15,y,13)
+        # Structural niche is deliberately wide enough to be warm in
+        # each 16px bay but is irregularly split, like occupied workshops.
+        x0=left+3
+        x1=left+12
+        a.box(x0-1,4,x1+1,12,5)
+        a.box(x0,5,x1,11,12)
+        for y in (6,7,9,10):
+            a.line(x0+1,y,x1-1,y,14 if (y+i)%3 else 11)
+        if i==0:
+            # Side window: tall vertical stained glass and thick lintel.
+            a.line(left+7,5,left+7,11,5)
+            a.line(left+8,5,left+8,11,6)
+            a.line(left+3,4,left+12,4,13)
+        elif i==1:
+            # Split double hot vents, with ironwork lattice.
+            for x in (left+6,left+10):
+                a.line(x,5,x,11,5)
+                a.p(x,8,11)
+            a.line(left+3,9,left+12,9,6)
+        elif i==2:
+            # A wider recessed square furnace bay (still an ordinary facade).
+            a.line(left+3,5,left+12,5,13)
+            a.line(left+8,5,left+8,11,6)
+            for x in (left+4,left+11):
+                a.line(x,6,x,10,11)
+        elif i==3:
+            # Shop service display: warm bulkhead plus restrained cold status.
+            a.line(left+4,5,left+4,11,5)
+            a.line(left+9,5,left+9,11,5)
+            a.box(left+10,6,left+11,9,9)
+            a.p(left+11,7,10)
+            a.line(left+3,12,left+12,12,13)
+        elif i==4:
+            # Brass asymmetrical oriel with a hanging shadow.
+            a.line(left+4,5,left+4,11,5)
+            a.line(left+5,5,left+5,11,6)
+            a.line(left+12,6,left+12,11,11)
+            a.line(left+6,8,left+11,8,5)
+        elif i==5:
+            # Tall connected copper steam/service riser in one corner.
+            a.line(left+4,5,left+4,11,5)
+            a.line(left+7,5,left+7,11,6)
+            a.line(left+12,5,left+12,11,13)
+            a.p(left+12,6,15)
+            a.p(left+12,9,10)
+        else:
+            # Final residential bay has narrow central mullion and dark edging.
+            a.line(left+8,5,left+8,11,5)
+            a.line(left+3,9,left+12,9,6)
+            for y in (6,8,10):
+                a.p(left+4,y,11)
+        a.line(left+2,12,left+13,12,6)
+        a.line(left+3,13,left+12,13,13 if i%2==0 else 5)
+        a.p(left+2,3,14)
+        a.p(left+13,3,11)
+    # Long cross-structure. The orange windows are larger than mechanical
+    # seams; small cyan/violet wires are selective rather than decorative noise.
+    for x in (17,49,80,97):
+        a.line(x,2,x,12,5)
+        a.line(x+1,4,x+1,10,13)
+        for y in (5,10):
+            a.p(x+1,y,14)
+    for x in (48,95):
+        a.line(x,5,x,11,9)
+        a.p(x,6,10)
+        a.p(x,10,15)
     return a.pix
-
 
 def project(root):
     root=Path(root)
