@@ -105,6 +105,7 @@ from deepen_cuordilava_facades import deepen_existing_facades
 from join_cuordilava_roof_facades import connect_roofs_to_walls
 from compose_cuordilava_existing_volumes import compose_existing_volumes
 from reprofile_cuordilava_original_roofs import reprofile_existing_roofs
+from finish_cuordilava_foundations import deepen_existing_foundations
 
 
 def draw(name,w,h):
@@ -241,6 +242,7 @@ def draw(name,w,h):
     connect_roofs_to_walls(a, name)
     compose_existing_volumes(a, name)
     reprofile_existing_roofs(a, name)
+    deepen_existing_foundations(a, name)
     assert rgb_readable(a.pix)
     return a
 

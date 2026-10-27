@@ -18,6 +18,7 @@ on:
       - 'tools/join_cuordilava_roof_facades.py'
       - 'tools/compose_cuordilava_existing_volumes.py'
       - 'tools/reprofile_cuordilava_original_roofs.py'
+      - 'tools/finish_cuordilava_foundations.py'
       - 'tools/engrave_cuordilava_details.py'
       - 'tools/relief_cuordilava_landmarks.py'
       - 'tools/construct_cuordilava_lower_facade.py'
