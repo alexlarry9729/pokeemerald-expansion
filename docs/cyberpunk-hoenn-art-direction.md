@@ -276,3 +276,7 @@ The art-only module `tools/finish_cuordilava_foundations.py` runs at the end of 
 ## Original footprint roof-massing refinement (2026-10-27)
 
 The module `tools/accent_cuordilava_roof_massing.py` adds architectural coherence to the existing 64×32 private clinic, shop, Gym and residential rooftop murals: stepped basalt attic recesses, continuous copper apron joints, narrow cool shop vents, red-hot forge conduits and four genuinely varied dormers. All changes operate strictly in already allocated pixel graphics, not layout geometry. Each drawing asserts a meaningful pixel change and verifies explicit locked emblem and gable pixels remain unchanged. The town remains 20×20, with the same buildings, six warps, NPCs, collision and global moonlight. Gameplay acceptance still requires emulator testing.
+
+### 2026-10-28 — Structural roof material hierarchy, fixed map
+
+The existing `accent_cuordilava_roof_massing.py` now adds contiguous basalt ridge caps, staggered slate-joint shadows and longer copper flashing to the four already-present architectural murals. The center's warm clinic wings, market's cooler facade, Gym's furnace bands and individual home roof courses use separately authored positions, not uniform neon dots. All writes use the already-tested protected-pixel guard and existing indexed palette; no building footprints, metatile allocation, collision/event data, original 20×20 layout or night-light coefficients change. The dedicated preview, art validation and ROM compilation remain release gates.

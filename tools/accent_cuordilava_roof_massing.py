@@ -89,6 +89,45 @@ def accent_existing_roof_geometry(a, name):
             post(cx-6,14,23)
             horiz(cx-5,cx+5,26,5)
             horiz(cx-4,cx+4,27,13 if i%2 else 6)
+    # Final material hierarchy: heavy basalt ridge, connected copper flashing
+    # and short vertical shadow ribs. All coordinates live INSIDE the four
+    # existing building murals and pass through the protected-pixel dot guard.
+    if "POKEMON_CENTER" in name:
+        for left,right in ((10,22),(42,54)):
+            horiz(left,right,4,5)
+            horiz(left+1,right-1,5,6)
+            for x in range(left+3,right-2,5):
+                dot(x,6,3);dot(x+1,7,2)
+        for x in (11,51):
+            horiz(x-3,x+3,23,5)
+            horiz(x-2,x+2,24,13)
+    elif "POKE_MART" in name:
+        for left,right in ((13,25),(39,51)):
+            horiz(left,right,4,5)
+            horiz(left+1,right-1,5,6)
+            for x in range(left+2,right-1,4):
+                dot(x,6,3)
+        for x in (9,53):
+            horiz(x-3,x+3,22,5)
+            horiz(x-2,x+2,23,10)
+    elif "FLANNERY_GYM" in name:
+        for left,right in ((11,17),(47,53)):
+            horiz(left,right,4,5)
+            horiz(left+1,right-1,5,13)
+            for x in range(left+1,right-1,3):
+                dot(x,6,3);dot(x,7,2)
+        for x in (10,52):
+            horiz(x-3,x+3,25,5)
+            horiz(x-2,x+2,26,13)
+    else:
+        for i,cx in enumerate((12,25,39,52)):
+            half=(5,4,6,4)[i]
+            horiz(cx-half,cx+half,4+i%2,5)
+            horiz(cx-half+1,cx+half-1,5+i%2,6)
+            for x in range(cx-half+2,cx+half-1,3):
+                dot(x,8,2 if i%2 else 3)
+            horiz(cx-half,cx+half,23,5)
+            horiz(cx-half+1,cx+half-1,24,13 if i%2 else 6)
     changed=sum(a.pix[y][x]!=old[y][x] for y in range(a.h) for x in range(a.w))
     if changed<45:
         raise ValueError(f"Roof massing changes too small: {name}: {changed}")
