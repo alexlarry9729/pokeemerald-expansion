@@ -109,6 +109,7 @@ from finish_cuordilava_foundations import deepen_existing_foundations
 from accent_cuordilava_roof_massing import accent_existing_roof_geometry
 from carve_cuordilava_copper_gables import carve_existing_copper_gables
 from zone_cuordilava_reference_roofs import zone_reference_roofs
+from register_cuordilava_civic_facades import register_civic_roof_facades
 from refine_cuordilava_existing_bridge import refine_existing_thermal_bridge
 
 
@@ -250,6 +251,7 @@ def draw(name,w,h):
     accent_existing_roof_geometry(a, name)
     carve_existing_copper_gables(a, name)
     zone_reference_roofs(a, name)
+    register_civic_roof_facades(a, name)
     refine_existing_thermal_bridge(a, name)
     if "CENTRAL_VOLCANIC_PLAZA_CREST" in name:
         # The reference's volcanic village square: a flat inset emblem framed
