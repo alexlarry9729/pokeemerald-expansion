@@ -125,7 +125,7 @@ def run(root:Path):
             for y in range(8):
                 for x in range(8):pixels[oy+y][ox+x]=art[dy+y][dx+x]
     for kind,cells in PLACEMENTS.items():
-        for x,y in cells:
+        for placement_index,(x,y) in enumerate(cells):
             index=y*20+x
             previous=struct.unpack_from("<H",m,index*2)[0]
             assert ((previous>>10)&3)==1,(kind,x,y,"must be impassable")
@@ -134,7 +134,18 @@ def run(root:Path):
             body=bytearray(bank[idx*16:idx*16+8])
             old_attribute=attributes[idx*2:idx*2+2]
             colour_bank=9 if kind=="palm" else 8 if kind=="cascade" else 6
-            for tid in images[kind]:body+=struct.pack("<H",(colour_bank<<12)|(512+tid))
+            # Mirror each alternate *whole* 16x16 palm crown, not each
+            # quadrant in place: swap left/right source quadrants and apply
+            # GBA H-flip to both. This supplies two distinct canopy shapes
+            # without spending a single extra 8x8 tile or metatile.
+            mirrored = kind=="palm" and placement_index%2==1
+            for quadrant in range(4):
+                source_quadrant = quadrant ^ 1 if mirrored else quadrant
+                tid = images[kind][source_quadrant]
+                entry = (colour_bank<<12) | (512+tid)
+                if mirrored:
+                    entry |= 0x0400
+                body += struct.pack("<H",entry)
             newid=len(meta)//16
             assert newid<512
             meta+=body;attr+=old_attribute
