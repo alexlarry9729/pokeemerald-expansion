@@ -180,6 +180,10 @@ def main() -> None:
     # town-private metatile for low flower gardens on existing walkable floors.
     from stamp_cuordilava_flower_mosaics import run as stamp_flower_mosaics
     stamp_flower_mosaics(args.root)
+    # Reuse the sculpted left-hand house roof across its unmodified original
+    # right half: register all eight roof cells without new tiles or buildings.
+    from stitch_cuordilava_south_housing_roof import run as stitch_south_roof
+    stitch_south_roof(args.root)
 
 if __name__ == "__main__":
     main()
