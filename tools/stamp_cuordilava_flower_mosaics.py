@@ -3,7 +3,7 @@
 
 The reference has many green/orange islands rather than an empty industrial
 forecourt. Reuse exactly two presently unreferenced GBA 8x8 tiles (510, 511)
-with vertical flips in one inactive town-private metatile (425). Map remains
+with vertical flips in one inactive town-private metatile (438). Map remains
 EXACTLY 20x20. This does not create trees, objects, buildings, blocked paths,
 warps, scripts, or a new palette. It runs LAST in the art generation chain.
 """
@@ -14,7 +14,7 @@ import struct
 from render_cuordilava_preview import png_indexed
 from apply_cuordilava_industrial_art import write_png
 
-METATILE = 425
+METATILE = 438
 GRAPHICS = (510, 511)
 ORIGINAL_FLOOR = 1
 # These are already WALKABLE original floor cells, away from doorways,
