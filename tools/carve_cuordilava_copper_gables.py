@@ -120,6 +120,81 @@ def carve_existing_copper_gables(art, name):
             dot(cx - 3, 24, 11)
             dot(cx + 3, 24, 14 if i % 2 == 0 else 10)
 
+    # Reference matching: broad hot windows and vertical violet signage,
+    # drawn on the ALREADY occupied wall/roof cells. This replaces isolated
+    # speckles with recognizable whole luminous surfaces, not new buildings.
+    def glass_bay(left, top, width, height, cold=False):
+        """Framed furnace glazing with real shadow, mullion and copper sill."""
+        for y in range(top - 1, top + height + 1):
+            for x in range(left - 1, left + width + 1):
+                border = x in (left - 1, left + width) or y in (top - 1, top + height)
+                if border:
+                    dot(x, y, 5 if y != top + height else 13)
+                elif x == left + width // 2 or y == top + 1:
+                    dot(x, y, 6)
+                else:
+                    dot(x, y, (9 if (x + y) % 3 else 10) if cold
+                        else (12 if (x + y) % 3 else 14))
+        horizontal(left, left + width - 1, top + height + 1, 6)
+
+    def suspended_neon(x, top, height, violet=True):
+        """A dark-backed vertical sign: bright core, glass border, foot bracket."""
+        for y in range(top, top + height):
+            for xx in range(x, x + 5):
+                edge = xx in (x, x + 4) or y in (top, top + height - 1)
+                dot(xx, y, 5 if edge else 8)
+        for y in range(top + 2, top + height - 2):
+            dot(x + 1, y, 13 if y % 4 == 0 else 15 if violet else 10)
+            dot(x + 2, y, 15 if violet else 9)
+            dot(x + 3, y, 15 if y % 3 else 11)
+        horizontal(x + 1, x + 3, top + 1, 14)
+        horizontal(x + 1, x + 3, top + height - 2, 13)
+
+    if "POKEMON_CENTER" in name:
+        for left in (10, 46):
+            glass_bay(left, 18, 7, 5)
+        suspended_neon(2, 14, 11)
+        suspended_neon(57, 14, 11)
+        for a0, b0 in ((9, 21), (43, 55)):
+            horizontal(a0, b0, 27, 5)
+            horizontal(a0 + 1, b0 - 1, 28, 13)
+    elif "POKE_MART" in name:
+        for left in (10, 47):
+            glass_bay(left, 17, 6, 5, cold=True)
+        suspended_neon(3, 13, 11)
+        suspended_neon(57, 13, 11, violet=False)
+        # Keep the intact 32px-wide cyan canopy and storefront symbol.
+        for a0, b0 in ((10, 18), (46, 54)):
+            horizontal(a0, b0, 24, 5)
+            horizontal(a0 + 1, b0 - 1, 25, 10)
+    elif "FLANNERY_GYM" in name:
+        for left in (9, 49):
+            glass_bay(left, 17, 6, 6)
+        suspended_neon(2, 14, 12)
+        suspended_neon(57, 14, 12)
+        # Orange forge pilot lights are mounted on continuous basalt plinths.
+        for a0, b0 in ((8, 18), (46, 56)):
+            horizontal(a0, b0, 28, 5)
+            horizontal(a0 + 1, b0 - 1, 29, 13)
+    else:
+        # Four different lived-in facades with clear dark gaps between units.
+        for i, cx in enumerate((12, 25, 39, 52)):
+            glass_bay(cx - 3, 17 + (i % 2), 6, 5, cold=(i == 1))
+            for y in range(15, 26):
+                dot(cx - 7, y, 5)
+                dot(cx + 6, y, 8)
+            horizontal(cx - 5, cx + 5, 27, 5)
+            horizontal(cx - 4, cx + 4, 28, 13 if i % 2 == 0 else 6)
+            # Low, legible magenta illuminated house number.
+            for y in range(17, 22):
+                dot(cx + 5, y, 15 if i in (1, 3) else 11)
+        # Hard vertical separation between the existing dwellings, no new ones.
+        for x in (18, 32, 45):
+            for y in range(17, 26):
+                dot(x, y, 1)
+            for y in (18, 22, 25):
+                dot(x + 1, y, 13)
+
     changed = sum(a != b for old, new in zip(before, art.pix)
                   for a, b in zip(old, new))
     if changed < 70:
