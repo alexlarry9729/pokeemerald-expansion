@@ -176,6 +176,10 @@ def main() -> None:
     stamp_civic_vents(args.root)
     from finish_cuordilava_shop_clinic_walls import run as finish_lower_civic_facades
     finish_lower_civic_facades(args.root)
+    # Last, use only two leftover 8x8 indexed graphics and one unassigned
+    # town-private metatile for low flower gardens on existing walkable floors.
+    from stamp_cuordilava_flower_mosaics import run as stamp_flower_mosaics
+    stamp_flower_mosaics(args.root)
 
 if __name__ == "__main__":
     main()
