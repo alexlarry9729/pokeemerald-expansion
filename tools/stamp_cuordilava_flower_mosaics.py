@@ -50,11 +50,18 @@ def image():
                 (9,5),(10,3),(11,4),(12,6),(4,7),(11,7)):
         p(x,y,10)
         p(x+1,y,15)
-    # Irregular orange blossoms with a brighter copper petal.
-    for x,y in ((4,5),(7,3),(10,6),(12,4)):
+    # Warm volcanic blossoms lead visually, not a flat green orb. Their
+    # arrangement differs between left/right halves and is interleaved with
+    # dark leaves; the low-growing island stays flat and traversable.
+    for x,y in ((2,6),(4,4),(6,2),(7,6),(9,3),(11,5),(13,3)):
         p(x,y,11)
         p(x+1,y,14)
         p(x,y+1,14)
+        if (x+y)%2:
+            p(x+1,y+1,13)
+    for x,y in ((3,2),(8,5),(12,2)):
+        p(x,y,12)
+        p(x+1,y,9)
     # Reuse the top two 8x8 tiles upside-down on the lower half.
     for y in range(8, 16):
         a[y] = a[15-y][:]
