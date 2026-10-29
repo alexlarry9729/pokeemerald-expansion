@@ -107,6 +107,7 @@ from compose_cuordilava_existing_volumes import compose_existing_volumes
 from reprofile_cuordilava_original_roofs import reprofile_existing_roofs
 from finish_cuordilava_foundations import deepen_existing_foundations
 from accent_cuordilava_roof_massing import accent_existing_roof_geometry
+from carve_cuordilava_copper_gables import carve_existing_copper_gables
 
 
 def draw(name,w,h):
@@ -245,6 +246,7 @@ def draw(name,w,h):
     reprofile_existing_roofs(a, name)
     deepen_existing_foundations(a, name)
     accent_existing_roof_geometry(a, name)
+    carve_existing_copper_gables(a, name)
     assert rgb_readable(a.pix)
     return a
 
