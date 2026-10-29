@@ -1571,6 +1571,17 @@ def validate_cuordilava_civic_vents(root: Path) -> list[str]:
     return []
 
 
+def validate_cuordilava_south_housing_registration(root: Path) -> list[str]:
+    """Both original halves must now share the roof's exact 8x8 pixel grid."""
+    try:
+        from stitch_cuordilava_south_housing_roof import validate_built
+        validate_built(root)
+    except (ImportError, OSError, IndexError, TypeError, ValueError, KeyError,
+            struct.error) as exc:
+        return [f"South housing original roof seam regression: {exc}"]
+    return []
+
+
 def validate_cuordilava_flower_mosaics(root: Path) -> list[str]:
     """Ensure the flat reference flora cannot change town routes/events."""
     try:
@@ -1804,6 +1815,7 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_cuordilava_gym_lower_facade(root))
     errors.extend(validate_cuordilava_civic_vents(root))
     errors.extend(validate_cuordilava_flower_mosaics(root))
+    errors.extend(validate_cuordilava_south_housing_registration(root))
     errors.extend(validate_cuordilava_thermal_courtyard(root))
     errors.extend(validate_lavaridge_light_events(root))
     errors.extend(validate_sign_light_placements(root))
