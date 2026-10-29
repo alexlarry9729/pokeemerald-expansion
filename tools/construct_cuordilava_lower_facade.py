@@ -144,6 +144,62 @@ def illustration():
         a.line(x,5,x,11,9)
         a.p(x,6,10)
         a.p(x,10,15)
+
+    # The seven ORIGINAL street-level bays should look like occupied,
+    # differently renovated buildings, not seven copies of the same lightbox.
+    # All relief fits the existing 112x16 pixel mural on the seven original
+    # map cells; the protected door and sign cells are never touched.
+    silhouettes = (
+        # (arch width, cap height, warm trim, window mullion offset)
+        (9, 2, 13, 6),   # compact basalt workshop
+        (11, 3, 6, 9),   # slate hipped residence
+        (9, 2, 13, 7),   # forge with orange service vents
+        (12, 3, 10, 10), # cooler cyber-market service window
+        (10, 2, 13, 5),  # projecting copper dwelling
+        (11, 3, 6, 8),   # industrial water heater
+        (9, 2, 13, 9),   # lower roof, warm-glass townhouse
+    )
+    for i, (cap_width, cap_height, edge, mullion) in enumerate(silhouettes):
+        left = i * 16
+        center = left + 8
+        low = center - cap_width // 2
+        high = low + cap_width - 1
+        # Raised but compact roof impost and shadow; no building gets bigger.
+        for x in range(low, high + 1):
+            rise = abs(x-center)//4
+            y = min(3, rise + (3-cap_height))
+            a.p(x,y,5)
+            a.p(x,min(y+1,3),6)
+        a.line(low+1,3,high-1,3,edge)
+        # Recess the window behind a substantial lintel and a cast shadow.
+        a.line(left+3,4,left+12,4,5)
+        a.line(left+4,5,left+11,5,13 if i!=3 else 10)
+        a.line(left+3,11,left+12,11,6)
+        for xx in (left+3,left+12):
+            a.line(xx,6,xx,10,5)
+        # An asymmetrical iron mullion makes each glazed bay read differently.
+        a.line(left+mullion,6,left+mullion,10,5)
+        for y in (7,9):
+            a.p(left+mullion+1,y,14 if i!=3 else 9)
+        if i in (0,2,4,6):
+            # Furnace-lit glass is accompanied by functional copper grilles.
+            for xx in (left+5,left+9):
+                a.p(xx,12,13)
+                a.p(xx,13,11)
+        elif i==3:
+            # Only the existing commercial frontage gets cyan status LEDs.
+            for xx in (left+5,left+7,left+10):
+                a.p(xx,6,9)
+                a.p(xx,7,10)
+            a.line(left+4,13,left+11,13,10)
+        else:
+            # Boiler channels with bronze footings on residential piers.
+            for y in (6,9,12):
+                a.p(left+2,y,13)
+                a.p(left+13,y,11)
+        # Upper corners remain dark; ember light is concentrated in windows.
+        a.p(left+2,2,3)
+        a.p(left+13,2,3)
     return a.pix
 
 def project(root):
