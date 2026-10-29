@@ -21,6 +21,7 @@ on:
       - 'tools/finish_cuordilava_foundations.py'
       - 'tools/accent_cuordilava_roof_massing.py'
       - 'tools/carve_cuordilava_copper_gables.py'
+      - 'tools/zone_cuordilava_reference_roofs.py'
       - 'tools/engrave_cuordilava_details.py'
       - 'tools/relief_cuordilava_landmarks.py'
       - 'tools/construct_cuordilava_lower_facade.py'
