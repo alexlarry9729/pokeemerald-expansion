@@ -29,6 +29,7 @@ on:
       - 'tools/finish_cuordilava_shop_clinic_walls.py'
       - 'tools/dress_cuordilava_gym_ground_floor.py'
       - 'tools/stamp_cuordilava_civic_vents.py'
+      - 'tools/stamp_cuordilava_flower_mosaics.py'
       - 'tools/polish_cuordilava_monuments.py'
       - 'tools/dress_cuordilava_scenery.py'
       - 'tools/polish_cuordilava_scenery.py'
