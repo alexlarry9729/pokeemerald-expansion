@@ -89,4 +89,59 @@ def polish_scenery(pix, kind):
         for y in (1,6,11,14):
             p(3,y,6)
             p(12,y,6)
+    # Reference landscaping: grouped volcanic flowers and thick fronds,
+    # painted ONLY into the town-private 16x16 scenic artwork. All placement
+    # cells already existed and are impassable, so no route can be blocked.
+    if kind == 'palm':
+        # Broad asymmetrical frond fans rather than a sparse eight-point star.
+        for x,y in ((3,4),(4,4),(5,3),(6,2),(7,1),(9,2),(10,3),
+                    (11,4),(12,4),(13,5),(14,7),(12,8),(11,9),
+                    (4,8),(3,9),(2,8),(6,4),(10,5),(5,7),(11,7)):
+            p(x,y,9)
+        for x,y in ((3,5),(4,3),(5,2),(6,3),(7,3),(9,3),(10,2),
+                    (11,3),(12,5),(13,6),(13,7),(12,9),(10,8),
+                    (5,8),(4,9),(3,8),(2,7),(7,4),(9,4)):
+            p(x,y,10 if (x+y)%3 else 15)
+        for x,y in ((5,5),(6,4),(7,5),(8,4),(9,5),(10,4),
+                    (5,9),(10,9),(6,8),(9,8)):
+            p(x,y,15)
+        # Terraced flowering shrubs at the foot of each EXISTING palm.
+        for x,y in ((1,12),(3,13),(5,14),(10,14),(12,13),(14,12)):
+            p(x,y,9);p(x+1,y,10)
+            p(x,y+1,11);p(x+1,y+1,14)
+        for x,y in ((2,11),(4,12),(11,12),(13,11)):
+            p(x,y,11);p(x+1,y,14)
+        # Keep an unmistakable brown trunk and exposed basalt ground.
+        for y in range(8,15):
+            p(7,y,12);p(8,y,13 if y%2 else 14)
+    elif kind == 'lamp':
+        # Glowing ember chamber, substantial hood, shadow and hot copper trim.
+        for x in range(5,11):
+            p(x,2,5)
+            p(x,7,6)
+        for x in (6,7,8,9):
+            p(x,4,14)
+            p(x,5,12 if x%2 else 14)
+            p(x,6,11)
+        for x,y in ((4,4),(11,4),(4,5),(11,5),(6,1),(9,1)):
+            p(x,y,13)
+        for x in (5,10):
+            p(x,8,5);p(x,9,6)
+    elif kind == 'chimney':
+        # Three parallel furnace shafts with readable hot inner chambers.
+        for y in range(5,15):
+            p(6,y,13)
+            p(8,y,14 if y%2 else 12)
+            p(10,y,11 if y%3 else 14)
+        for x in range(4,13):
+            p(x,4,5)
+            p(x,14,6)
+        for x in (4,12):
+            p(x,5,13);p(x,12,11)
+    elif kind == 'cascade':
+        # Staggered white foam and darker current, without covering its banks.
+        for y in (2,5,8,11,14):
+            for x in (5,8,10):
+                p(x + (y%2),y,1)
+                p(x,y+1,10)
     return pix
