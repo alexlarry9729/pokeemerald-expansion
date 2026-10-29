@@ -1571,6 +1571,16 @@ def validate_cuordilava_civic_vents(root: Path) -> list[str]:
     return []
 
 
+def validate_cuordilava_flower_mosaics(root: Path) -> list[str]:
+    """Ensure the flat reference flora cannot change town routes/events."""
+    try:
+        from stamp_cuordilava_flower_mosaics import validate_built
+        validate_built(root)
+    except (ImportError, OSError, IndexError, TypeError, ValueError, struct.error) as exc:
+        return [f'Cuordilava ground-level flower-bed regression: {exc}']
+    return []
+
+
 def validate_cuordilava_gym_lower_facade(root: Path) -> list[str]:
     """Check the original Gym entrance and lower-story furnace-glass frontage."""
     try:
@@ -1793,6 +1803,7 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_cuordilava_civic_lower_facades(root))
     errors.extend(validate_cuordilava_gym_lower_facade(root))
     errors.extend(validate_cuordilava_civic_vents(root))
+    errors.extend(validate_cuordilava_flower_mosaics(root))
     errors.extend(validate_cuordilava_thermal_courtyard(root))
     errors.extend(validate_lavaridge_light_events(root))
     errors.extend(validate_sign_light_placements(root))
