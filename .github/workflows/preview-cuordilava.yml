@@ -30,6 +30,7 @@ on:
       - 'tools/dress_cuordilava_gym_ground_floor.py'
       - 'tools/stamp_cuordilava_civic_vents.py'
       - 'tools/stamp_cuordilava_flower_mosaics.py'
+      - 'tools/stitch_cuordilava_south_housing_roof.py'
       - 'tools/polish_cuordilava_monuments.py'
       - 'tools/dress_cuordilava_scenery.py'
       - 'tools/polish_cuordilava_scenery.py'
