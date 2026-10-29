@@ -84,6 +84,11 @@ def register_civic_roof_facades(art, name):
         # Grounded support is repeated at exactly the same y in both wings.
         h(left,right,28,5)
         h(left+1,right-1,29,6)
+        # The copper/turquoise furnace channel remains a connected, lit
+        # material plane below the heavy shadow band, not dead dark stone.
+        # This is essential for recognizable night-time glazing at the
+        # Center and Gym; row 28 stays an uninterrupted structural lintel.
+        h(left+3,right-3,29,trim)
         for x in range(left+3,right-2,6):
             p(x,29,trim)
             p(x+1,29,11 if trim!=10 else 9)
