@@ -247,6 +247,34 @@ def draw(name,w,h):
     deepen_existing_foundations(a, name)
     accent_existing_roof_geometry(a, name)
     carve_existing_copper_gables(a, name)
+    if "CENTRAL_VOLCANIC_PLAZA_CREST" in name:
+        # The reference's volcanic village square: a flat inset emblem framed
+        # by staggered copper-burnished basalt joints. These marks remain in
+        # the EXISTING 4x2 decorative town mural. No objects, buildings,
+        # collision, paths or interaction coordinates are introduced.
+        old_plaza = [row[:] for row in a.pix]
+        for left,right in ((2,16),(47,61)):
+            for y in (2,8,23,29):
+                a.line(left,y,right,y,5)
+                a.line(left+1,y+1,right-1,y+1,6)
+                for x in range(left+3,right-2,5):
+                    a.pixel(x,y,13)
+                    a.pixel(x+1,y+1,11)
+            for x in (left+2,right-2):
+                a.line(x,5,x,7,8)
+                a.line(x,25,x,27,8)
+        # The existing red-hot civic crest gets nested lava-engraved traces,
+        # while the center stays flat and passable like the original plaza.
+        a.ring(31,16,13,13,1)
+        a.ring(31,16,10,11,1)
+        for x0,y0,x1,y1 in ((31,8,26,15),(26,15,31,23),
+                             (31,23,37,15),(37,15,31,8)):
+            a.line(x0,y0,x1,y1,12)
+        for x,y in ((31,8),(26,15),(31,23),(37,15)):
+            a.pixel(x,y,14)
+        if sum(a.pix[y][x] != old_plaza[y][x]
+               for y in range(32) for x in range(64)) < 90:
+            raise ValueError("Cuordilava plaza inlay unexpectedly sparse")
     assert rgb_readable(a.pix)
     return a
 
