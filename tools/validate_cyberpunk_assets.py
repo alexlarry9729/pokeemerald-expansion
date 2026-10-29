@@ -614,6 +614,10 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
         179: tuple(range(8)), 181: tuple(range(8)),
         # 285 is the pool's new transparent mineral-water panel (palette 8).
     }
+    # Six EXISTING right-hand residential roof cells now reuse the left
+    # sculpture's palette-6 overlay, with H-flipped 8x8 quadrants. Their
+    # exact locations, base tiles and collision are separately validated.
+    custom_slots.update({tile: (4, 5, 6, 7) for tile in range(416, 422)})
     # A flat civic plaza ornament plus five forge and seven house frontage cells.
     custom_slots.update({tile: (4, 5, 6, 7) for tile in range(424, 437)})
     custom_slots.update({tile: (4, 5, 6, 7) for tile in (437, 439)})
