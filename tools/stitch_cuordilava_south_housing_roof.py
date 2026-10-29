@@ -4,7 +4,7 @@
 The original Lavaridge roofing covers x=11..18, y=12..13. Previously a custom
 mural decorated ONLY x=11..14, leaving a visibly different unmodified right
 half. Mirror the existing authored *roof graphics* across the right four cells
-using the same 32 source 8x8 art tiles and eight UNUSED town-private metatiles.
+using the same 32 source 8x8 art tiles and six UNUSED town-private metatiles.
 
 The code never creates buildings, game objects, extra roof cells, passable
 cells, graphics tiles or scripts. Base-layer graphics, exact per-cell terrain,
@@ -18,9 +18,13 @@ import struct
 SRC_X = (11, 12, 13, 14)
 DST_X = (15, 16, 17, 18)
 YS = (12, 13)
-NEW_METAS = tuple(range(416, 424))
+# Existing rooftop scenery has functional chimney motifs at (15,13) and
+# (17,13). Never replace either with additional slate: stitch around them.
+CHIMNEYS = {(15, 13): 499, (17, 13): 500}
+TARGETS = ((15,12), (16,12), (17,12), (18,12), (16,13), (18,13))
+NEW_METAS = tuple(range(416, 422))
 EXPECTED_OLD = ((8, 9, 9, 10), (16, 17, 17, 18))
-assert len(NEW_METAS) == 8
+assert len(NEW_METAS) == len(TARGETS) == 6
 
 
 def word(data, off):
@@ -54,7 +58,7 @@ def event_guard(p):
                              "coord_events", "warp_events")
                 for e in events.get(kind, [])
                 if "x" in e and "y" in e}
-    roof = {(x,y) for y in YS for x in DST_X}
+    roof = set(TARGETS)
     if reserved & roof:
         raise ValueError(f"Protected house event below the roof: {reserved & roof}")
     if len(events["warp_events"]) != 6:
@@ -84,9 +88,9 @@ def validate_built(root):
     for i in range(400):
         mid = word(m,i*2) & 1023
         used.setdefault(mid,[]).append((i%20,i//20))
-    for row,y in enumerate(YS):
-        for col,x in enumerate(DST_X):
-            mid = NEW_METAS[row*4+col]
+    for n,(x,y) in enumerate(TARGETS):
+            row,col=YS.index(y),DST_X.index(x)
+            mid=NEW_METAS[n]
             old = EXPECTED_OLD[row][col]
             src_x = SRC_X[3-col]
             src_mid = word(m,(20*y+src_x)*2) & 1023
@@ -119,8 +123,13 @@ def run(root):
     if any(512+mid in occupied for mid in NEW_METAS):
         raise ValueError("Chosen private roof registration metas are already used")
     original_map, original_meta, original_attr = bytes(m), bytes(sec), bytes(attr)
-    for row,y in enumerate(YS):
-        for col,x in enumerate(DST_X):
+    # Before painting, verify the two physical chimneys are still present.
+    for (x,y),expected in CHIMNEYS.items():
+        actual=word(m,2*(20*y+x))&1023
+        if actual!=512+expected:
+            raise ValueError(f"Protected town chimney moved at {x},{y}: {actual}")
+    for n,(x,y) in enumerate(TARGETS):
+            row,col=YS.index(y),DST_X.index(x)
             pos = (20*y+x)*2
             oldword = word(m,pos)
             oldid = oldword & 1023
@@ -129,14 +138,14 @@ def run(root):
             src_x = SRC_X[3-col]
             src_mid = word(m,(20*y+src_x)*2)&1023
             donor = mirrored_overlay(sec,src_mid)
-            newmid = NEW_METAS[row*4+col]
+            newmid = NEW_METAS[n]
             background = pri[oldid*16:oldid*16+8]
             if len(background) != 8:
                 raise ValueError("Original housing roof background is invalid")
             sec[newmid*16:newmid*16+16] = background + struct.pack("<4H",*donor)
             attr[newmid*2:newmid*2+2] = priattr[oldid*2:oldid*2+2]
             struct.pack_into("<H",m,pos,(oldword&~1023)|(512+newmid))
-    targets = {(x,y) for x in DST_X for y in YS}
+    targets = set(TARGETS)
     for i in range(400):
         old,new = word(original_map,2*i),word(m,2*i)
         if (old>>10)!=(new>>10) or (
@@ -152,8 +161,9 @@ def run(root):
     p["attr"].write_bytes(attr)
     p["map"].write_bytes(m)
     validate_built(root)
-    print("Cuordilava south roof: joined existing left/right 4+4 roof cells "
-          "with mirrored 4bpp art, eight unused private metatiles, "
+    print("Cuordilava south roof: joined six free east roof cells around "
+          "the two original chimney cells, with mirrored 4bpp art; "
+          "six unused private metatiles, "
           "zero new tiles, entrances, buildings or collision changes.")
 
 
