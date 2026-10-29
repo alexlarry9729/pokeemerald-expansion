@@ -16,8 +16,8 @@ BASALT_COLORS = {
     # Natural volcanic garden: mossy joints and properly green flowering
     # palms instead of bluish, almost black crowns.
     9: (30, 85, 55), 10: (51, 145, 83),
-    11: (193, 111, 63), 12: (91, 76, 77),
-    13: (124, 95, 89), 14: (166, 107, 76),
+    11: (214, 111, 59), 12: (91, 76, 77),
+    13: (124, 95, 89), 14: (203, 116, 65),
     15: (105, 190, 88),
 }
 # IDs in Cuordilava's original thermal-sand court; never shared with other maps.
@@ -66,26 +66,38 @@ def run(root: Path) -> None:
     new_tiles = [t for t in free if t < 464][:4]
     if len(new_tiles) != 4:
         raise ValueError("Missing writable original atlas positions")
+    # Reference-led flowering basalt terraces, painted within the four
+    # private 8x8 tiles already allocated for the original courtyard.
+    # Only the appearance changes; animated water and map geometry do not.
     for corner, tid in enumerate(new_tiles):
         bx, by = (tid % 16) * 8, (tid // 16) * 8
+        def p(x, y, c):
+            if 0 <= x < 8 and 0 <= y < 8:
+                pix[by+y][bx+x] = c
         for y in range(8):
             for x in range(8):
-                pix[by+y][bx+x] = 12
-        for xx in range(1, 7):
-            if xx not in (3, 4):
-                pix[by+1+corner%2][bx+xx] = 13
-            if xx % 2 == 0:
-                pix[by+6][bx+xx] = 13
-        for yy in range(2, 6):
-            pix[by+yy][bx+(1 if corner%2 == 0 else 6)] = 14
-        for x,y,color in (
-            (2,3,13),(4,5,11),(6,4,14),
-            (5,2,15),(6,2,15),(5,3,9),
-        ):
-            if (corner+x+y)%3 != 0:
-                pix[by+y][bx+x] = color
-        pix[by][bx] = 8
-        pix[by+7][bx+7] = 8
+                # Dark brick-brown cobbles, staggered mortar and basalt edges.
+                shade = 12
+                if (y + corner) % 5 == 0 and (x + corner) % 4 != 0:
+                    shade = 13
+                elif x in (0, 7) and (y + corner) % 3 == 0:
+                    shade = 8
+                p(x, y, shade)
+        # Different little plant islands across four neighbouring pavers.
+        clusters = (
+            ((2, 2), (5, 5)), ((3, 2), (6, 5)),
+            ((2, 5), (5, 2)), ((3, 5), (6, 2)),
+        )[corner]
+        for fx, fy in clusters:
+            p(fx - 1, fy, 9)
+            p(fx, fy - 1, 10)
+            p(fx + 1, fy, 15)
+            p(fx, fy + 1, 9)
+            p(fx, fy, 11)  # orange flower centre
+            p(fx + 1, fy + 1, 14)  # copper-red edge
+        for x, y in ((1, 6), (6, 1), (4, 7)):
+            if (x + y + corner) % 2:
+                p(x, y, 14)
 
     for mid in SAND_METATILES:
         origin = (mid - 512) * 16
