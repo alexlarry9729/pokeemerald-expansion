@@ -200,7 +200,36 @@ def illustration():
         # Upper corners remain dark; ember light is concentrated in windows.
         a.p(left+2,2,3)
         a.p(left+13,2,3)
+    # Register the seven independently illustrated bays to ONE coherent
+    # 112px structural grid. Previously, the last/first pixel of neighbours
+    # alternated empty dark gaps and metal, creating visibly offset piers.
+    # This happens BEFORE extraction into seven 16x16 map cells.
+    for y, col in ((0,5),(13,5),(14,11),(15,8)):
+        a.line(0,y,111,y,col)
+    for seam in range(16,112,16):
+        for y in range(4,13):
+            a.p(seam-1,y,5)   # continuous basalt jamb, left module
+            a.p(seam,y,6)     # warm reflected edge, right module
+        for y in (5,9,12):
+            a.p(seam-1,y,13)
+            a.p(seam,y,11)
     return a.pix
+
+
+def validate_facade_registration(rows):
+    """Fail if a 16px join loses its pier or the horizontal plinth shifts."""
+    if len(rows)!=16 or any(len(row)!=112 for row in rows):
+        raise ValueError("Cuordilava seven-bay facade must remain 112x16")
+    for y,col in ((0,5),(13,5),(14,11),(15,8)):
+        if any(c!=col for c in rows[y]):
+            raise ValueError(f"Cuordilava facade continuous belt shifted at y={y}")
+    for seam in range(16,112,16):
+        for y in range(4,13):
+            left,right=rows[y][seam-1],rows[y][seam]
+            expected=(13,11) if y in (5,9,12) else (5,6)
+            if (left,right)!=expected:
+                raise ValueError(f"Broken 16px facade joint at x={seam}, y={y}")
+
 
 def project(root):
     root=Path(root)
@@ -257,6 +286,21 @@ def validate_built(root):
         warm+=sum(c in (11,12,13,14) for row in rows[sy:sy+8] for c in row[sx:sx+8])
     if warm<350:
         raise ValueError(f'Ground-floor windows insufficiently incandescent: {warm}')
+    # Compare every pixel of every 8x8 GBA quadrant to its authored
+    # whole-facade coordinate. Detect wrong quadrant ordering or flip seams.
+    designed=illustration()
+    validate_facade_registration(designed)
+    for cell in range(7):
+        for qtile in range(4):
+            tid=ART_TILES[4*cell+qtile]
+            x0,y0=(tid%16)*8,(tid//16)*8
+            destx=16*cell+(qtile%2)*8
+            desty=(qtile//2)*8
+            for dy in range(8):
+                for dx in range(8):
+                    if rows[y0+dy][x0+dx]!=designed[desty+dy][destx+dx]:
+                        raise ValueError(f"Cuordilava facade tile misregistration: "
+                                         f"cell={cell} quadrant={qtile} pixel={dx},{dy}")
 
 
 def run(root):
