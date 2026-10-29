@@ -1535,6 +1535,18 @@ def validate_cuordilava_scenery(root: Path) -> list[str]:
                 val=entries[slot]
                 if val>>12!=palette_expected or not 512<=val&1023<=1023:
                     errors.append(f"Scenery metatile {mid} slot {slot} wrong palette or tile ID")
+        # Every second existing palm is mirrored as a *whole* two-tile
+        # canopy. Mirror both source-quadrant order and each 8x8 tile, or a
+        # seam appears in the middle of the tree.
+        source=[struct.unpack_from("<H",data,489*16+8+2*q)[0]
+                for q in range(4)]
+        for i, mid in enumerate(range(489,497)):
+            entries=[struct.unpack_from("<H",data,mid*16+8+2*q)[0]
+                     for q in range(4)]
+            expected=[(source[q ^ 1] | 0x400) if i%2 else source[q]
+                      for q in range(4)]
+            if entries!=expected:
+                errors.append(f"Palm {i} loses intact alternating canopy mirror")
         used={struct.unpack_from("<H",layout,i*2)[0]&1023 for i in range(400)}
         for mid in range(489,512):
             if mid+512 not in used:
@@ -1582,8 +1594,17 @@ def validate_cuordilava_civic_lower_facades(root: Path) -> list[str]:
 def validate_cuordilava_lower_facade(root: Path) -> list[str]:
     """Guard the new uninterrupted house frontage and original walkability."""
     try:
-        from construct_cuordilava_lower_facade import validate_built
+        from construct_cuordilava_lower_facade import validate_built, illustration
         validate_built(root)
+        # All seven original frontage cells retain different roof caps,
+        # shadow frames and glazing; no repeated wallpaper storefronts.
+        facade=illustration()
+        panels=[
+            bytes(col for row in facade for col in row[i*16:(i+1)*16])
+            for i in range(7)
+        ]
+        if len(set(panels))!=7:
+            return ["Cuordilava original seven occupied facade bays are visually repeated"]
     except (ImportError, OSError, IndexError, TypeError, ValueError, struct.error) as exc:
         return [f'Cuordilava new house facade regression: {exc}']
     return []
