@@ -69,6 +69,12 @@ def articulate_original_volcanic_facades(art, name):
                     c = 5
                 elif (x + shift + (y // 4) * 3) % 9 == 0:
                     c = 6
+                # Preserve real, previously installed furnace glazing and
+                # neon. Only replace plain wall pixel indices; otherwise a
+                # visually sound building loses its heat source after this
+                # masonry pass and looks lifeless at night.
+                if before[y][x] in (9, 10, 11, 12, 13, 14, 15):
+                    continue
                 dot(x, y, c)
         # Full-width stone plinth reads as a structural beam across 16px joins.
         horizontal(left, right, bottom, 5)
