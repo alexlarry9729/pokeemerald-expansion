@@ -175,7 +175,9 @@ def recompose_original_architecture(a, name):
             p(x, 9, 8)
         # Two broad projecting slate buttresses with larger shop windows.
         for cx in (11, 53):
-            arch(cx, 14, 6, 11, 10, hot=False)
+            # Large orange shop-floor furnace windows anchor the industrial
+            # cyan cart/canopy without turning the whole facade blue.
+            arch(cx, 14, 6, 11, 12, hot=True)
             buttress(cx - 8, 12, 25)
         foot_gallery(11)
         for y in range(11, 26):
