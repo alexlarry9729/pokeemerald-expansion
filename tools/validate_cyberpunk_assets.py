@@ -1661,9 +1661,22 @@ def validate_cuordilava_organic_springs(root: Path) -> list[str]:
             root / 'data/tilesets/secondary/cuordilava/tiles.png'
         )
         metatile_data = (root / 'data/tilesets/secondary/cuordilava/metatiles.bin').read_bytes()
-        for mid in range(508, 512):
-            # Existing four last scenery metatiles, one per exterior cell.
+        # Four original external bank cells share the same four 8x8 art tiles,
+        # but must now be turned into FOUR variant faces by whole-mural
+        # horizontal/vertical flips: no repeated rectangular metal grills.
+        donor = struct.unpack_from('<8H', metatile_data, 508 * 16)[4:]
+        for i, mid in enumerate(range(508, 512)):
+            hflip = bool(i % 2)
+            vflip = bool(i // 2)
             entries = struct.unpack_from('<8H', metatile_data, mid * 16)
+            for q, value in enumerate(entries[4:]):
+                source_quad = q ^ (1 if hflip else 0) ^ (2 if vflip else 0)
+                expected = (
+                    donor[source_quad] & 0x3ff
+                ) | (8 << 12) | (0x400 if hflip else 0) | (0x800 if vflip else 0)
+                if value != expected:
+                    return [f'Exterior basalt bank {mid}: misaligned 16px rock face']
+            # Existing four last scenery metatiles, one per exterior cell.
             for value in entries[4:]:
                 tid = (value & 0x3ff) - 512
                 if (value >> 12) != 8 or not 0 <= tid < 512:
