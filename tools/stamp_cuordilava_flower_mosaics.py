@@ -34,40 +34,70 @@ def read16(data, offset):
 
 
 def image():
-    """Two irregular moss beds with visible copper flowers, never neon rings.
+    """Two irregular terraced flower beds on the *existing* clear 16x16 floor.
 
-    The two 8x8 GBA sources form only the TOP half of a 16x16 mosaic; the
-    hardware's V-flip makes the lower half, conserving the existing art budget.
+    Palette 9 supplies deep volcanic soil (12/13), three natural foliage
+    shades (9/10/15) and copper-orange blossoms (11/14). The upper left and
+    upper right halves are different drawings; full metatiles alternate
+    horizontal orientations, so bottom courtyards don't look like one
+    duplicated fluorescent square. A 0 pixel leaves the old floor visible.
     """
     a = [[0] * 16 for _ in range(16)]
+
     def p(x, y, c):
         if 0 <= x < 16 and 0 <= y < 8:
             a[y][x] = c
 
-    # Compact separated leaf masses, with staggered gaps exposing the
-    # actual town cobbles instead of an implausible glowing green circle.
+    # Basalt soil islands with irregular scalloped outlines; expose clear
+    # cobblestones between their edges and around the plot.
     for y in range(1, 8):
         for x in range(1, 15):
-            west = 2*(x-4)**2 + 3*(y-5)**2 < 23
-            east = 2*(x-11)**2 + 3*(y-4)**2 < 23
-            center = (x-8)**2 + 3*(y-6)**2 < 6
-            if (west or east or center) and (x*7+y*5)%11:
-                p(x, y, 9 if (x+y)%4 <= 1 else 10)
-                if (x*3+y)%5 == 0:
-                    p(x, y, 15)
+            west = (x - 5) ** 2 * 2 + (y - 6) ** 2 * 3 < 49
+            east = (x - 11) ** 2 * 3 + (y - 5) ** 2 * 2 < 37
+            if (west or east) and (x * 11 + y * 7) % 9 != 0:
+                p(x, y, 12 if (x + y) % 4 else 13)
 
-    # Recognizable orange flowers, deliberately offset to avoid tidy rings.
-    for x, y in ((3,4),(5,5),(7,6),(9,5),(11,3),(13,5),(4,7)):
-        p(x,y,11)
-        p(x+1,y,14)
-        p(x,y+1,14)
-        if (x+y)%2:
-            p(x-1,y,13)
-    for x,y in ((2,3),(6,2),(8,7),(12,7)):
-        p(x,y,15)
+    # Serrated leaves grow in two separate masses. Thin transparent gaps
+    # and cooler shadow leaves separate each frond at original GBA scale.
+    for y in range(1, 8):
+        for x in range(1, 15):
+            west = 2 * (x - 5) ** 2 + 3 * (y - 5) ** 2 < 30
+            east = 3 * (x - 11) ** 2 + 2 * (y - 5) ** 2 < 28
+            if (west or east) and ((x * 7 + y * 3) % 8 not in (0, 1)):
+                shade = 9 if (x + 2 * y) % 3 == 0 else 10
+                if (x * 5 + y * 7) % 11 == 0:
+                    shade = 15
+                p(x, y, shade)
 
-    for y in range(8,16):
-        a[y] = a[15-y][:]
+    # Individual stems reach toward the outer soil, increasing natural depth.
+    for x, y in ((3,2), (4,1), (6,1), (7,3), (8,6),
+                 (9,3), (10,2), (12,2), (13,3), (14,6),
+                 (2,5), (4,7), (6,7), (10,7), (12,7)):
+        p(x, y, 9)
+        if y < 7:
+            p(x, y + 1, 15 if x % 3 == 0 else 10)
+
+    # Blossom centers are NOT placed in a repeated circular border.
+    # Two flower colours give four alternating mosaics after the H-flips.
+    for x, y in ((3,5), (5,3), (7,6), (9,5), (11,3), (13,6),
+                 (4,7), (12,7)):
+        p(x, y, 11)
+        p(x + 1, y, 14)
+        p(x, y - 1, 14)
+        if (x + y) % 2:
+            p(x - 1, y, 15)
+
+    # Hardware V-flip in the metatile creates its lower half. This leaves
+    # every border transparent in the same way as the validated base floor.
+    for y in range(8, 16):
+        a[y] = a[15 - y][:]
+
+    foliage = sum(c in (9, 10, 15) for row in a for c in row)
+    flowers = sum(c in (11, 14) for row in a for c in row)
+    if foliage < 70 or flowers < 12:
+        raise ValueError(f"Volcanic flower beds became sparse: {foliage=}, {flowers=}")
+    if any(c < 0 or c > 15 for row in a for c in row):
+        raise ValueError("Volcanic flower beds exceed indexed 4bpp colours")
     return a
 
 
