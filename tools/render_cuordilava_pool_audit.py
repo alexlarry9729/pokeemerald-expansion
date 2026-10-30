@@ -105,12 +105,60 @@ def write_png(path,w,h,flat):
     path.write_bytes(image)
 
 
+# Read the ACTUAL composited day map, not just the 4bpp source tile.
+# These exact RGBs are the intentionally protected spring-only palette-8
+# turquoise colors. In the original buggy preview the four exterior cells
+# contained 2,340 such pixels and 2,124 pure-white foam pixels.
+POOL_TURQUOISE_DAY = {(79, 181, 195), (48, 156, 173)}
+FOAM_WHITE = (255, 255, 255)
+
+
+def water_pixels_in_cells(rows, cells, colors):
+    total = 0
+    for cx, cy in cells:
+        for y in range(cy * CELL_PX, (cy + 1) * CELL_PX):
+            row = rows[y]
+            for x in range(cx * CELL_PX, (cx + 1) * CELL_PX):
+                rgb = tuple(row[x * 3:x * 3 + 3])
+                if rgb in colors:
+                    total += 1
+    return total
+
+
+def check_rendered_pool_containment(rows):
+    exterior_water = water_pixels_in_cells(rows, EXTERIOR, POOL_TURQUOISE_DAY)
+    exterior_foam = water_pixels_in_cells(rows, EXTERIOR, {FOAM_WHITE})
+    interior_water = water_pixels_in_cells(rows, INSIDE, POOL_TURQUOISE_DAY)
+    if exterior_water or exterior_foam:
+        raise ValueError(
+            f"Hot-spring water still leaks past the original masonry rim: "
+            f"{exterior_water} turquoise and {exterior_foam} white-foam "
+            f"pixels in the four EXTERIOR bank cells"
+        )
+    if interior_water < 1500:
+        raise ValueError(
+            f"Protected animated hot-spring water was inadvertently removed: "
+            f"only {interior_water} interior turquoise pixels"
+        )
+    return {
+        'exterior_turquoise_pixels': exterior_water,
+        'exterior_white_foam_pixels': exterior_foam,
+        'interior_turquoise_pixels': interior_water,
+        'baseline_exterior_turquoise_pixels': 2340,
+        'baseline_exterior_white_foam_pixels': 2124,
+    }
+
+
 def run(input_dir,output_dir):
     output_dir.mkdir(parents=True,exist_ok=True)
     results={}
+    containment=None
     for mode in ('day','night'):
         source=input_dir/f'cuordilava-{mode}.png'
-        w,h,pix=crop_with_bank_outline(read_preview(source))
+        raw_rows=read_preview(source)
+        if mode == 'day':
+            containment=check_rendered_pool_containment(raw_rows)
+        w,h,pix=crop_with_bank_outline(raw_rows)
         out=output_dir/f'cuordilava-thermal-perimeter-{mode}.png'
         write_png(out,w,h,pix)
         results[mode]={'file':out.name,'width':w,'height':h,'bytes':out.stat().st_size}
@@ -124,6 +172,7 @@ def run(input_dir,output_dir):
         'region_cells':[list(REGION[:2]),list(REGION[2:])],
         'exterior_bank_cells':list(map(list,EXTERIOR)),
         'pool_inner_cells':list(map(list,INSIDE)),
+        'water_containment':containment,
         'outputs':results,
     }
     (output_dir/'cuordilava-thermal-perimeter.json').write_text(
