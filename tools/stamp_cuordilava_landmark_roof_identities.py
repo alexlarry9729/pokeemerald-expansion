@@ -22,7 +22,7 @@ def stamp_original_landmark_roof_identities(art, name):
         role = "center"
         blocked.update(((31,1),(20,8),(31,16),(31,18),(10,16)))
         blocked.update((x,11) for x in range(7,57))
-        blocked.update((x,y) for y in range(24,41) for x in range(14,25))
+        blocked.update((x,y) for x in range(24,41) for y in range(14,25))
     elif "POKE_MART" in name:
         role = "mart"
         blocked.update(((20,8),(32,20),(9,16)))
