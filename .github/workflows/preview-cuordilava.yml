@@ -9,6 +9,7 @@ on:
       - '.github/workflows/preview-cuordilava.yml'
       - 'tools/render_cuordilava_preview.py'
       - 'tools/render_cuordilava_detail_sheet.py'
+      - 'tools/render_cuordilava_pool_audit.py'
       - 'tools/validate_cyberpunk_assets.py'
       - 'tools/apply_cuordilava_industrial_art.py'
       - 'tools/generate_cuordilava_architecture.py'
@@ -75,6 +76,9 @@ jobs:
       - name: Render indexed seam/alignment close-ups for all seven landmarks
         run: python3 tools/render_cuordilava_detail_sheet.py --input-dir build-preview --output-dir build-preview
 
+      - name: Audit actual thermal pool perimeter in both daylight modes
+        run: python3 tools/render_cuordilava_pool_audit.py --input-dir build-preview --output-dir build-preview
+
       - name: Check diagnostic PNG dimensions and nonempty outputs
         run: |
           python3 - <<'PY'
@@ -97,5 +101,8 @@ jobs:
             build-preview/cuordilava-night.png
             build-preview/cuordilava-landmark-alignment.png
             build-preview/cuordilava-landmark-alignment.json
+            build-preview/cuordilava-thermal-perimeter-day.png
+            build-preview/cuordilava-thermal-perimeter-night.png
+            build-preview/cuordilava-thermal-perimeter.json
           if-no-files-found: error
           retention-days: 30
