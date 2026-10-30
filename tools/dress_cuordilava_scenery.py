@@ -142,12 +142,21 @@ def run(root:Path):
             # GBA H-flip to both. This supplies two distinct canopy shapes
             # without spending a single extra 8x8 tile or metatile.
             mirrored = kind=="palm" and placement_index%2==1
+            # The four adjacent OUTER spring-bank cells now use the same
+            # natural basalt graphic turned into four different rock faces.
+            # Flip the WHOLE 16x16 mural by permuting its source quadrants
+            # as well as setting each tile's hardware H/V flip bit. Thus
+            # no fifth art source or extra GBA metatile is allocated.
+            hflip = mirrored or (kind=="cascade" and placement_index%2==1)
+            vflip = kind=="cascade" and placement_index>=2
             for quadrant in range(4):
-                source_quadrant = quadrant ^ 1 if mirrored else quadrant
+                source_quadrant = quadrant ^ (1 if hflip else 0) ^ (2 if vflip else 0)
                 tid = images[kind][source_quadrant]
                 entry = (colour_bank<<12) | (512+tid)
-                if mirrored:
+                if hflip:
                     entry |= 0x0400
+                if vflip:
+                    entry |= 0x0800
                 body += struct.pack("<H",entry)
             newid=len(meta)//16
             assert newid<512
