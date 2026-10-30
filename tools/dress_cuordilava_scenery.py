@@ -81,7 +81,9 @@ def illustration(kind):
         p(6,11,15);p(9,11,10)
     from polish_cuordilava_scenery import polish_scenery
     from form_cuordilava_palm_fronds import form_original_palm_fronds
-    return form_original_palm_fronds(polish_scenery(art,kind),kind)
+    from recompose_cuordilava_scenery import recompose_scenery
+    original = form_original_palm_fronds(polish_scenery(art,kind),kind)
+    return recompose_scenery(kind, original)
 
 def run(root:Path):
     root=Path(root)
