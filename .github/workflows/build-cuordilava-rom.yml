@@ -52,6 +52,9 @@ jobs:
       - name: Render indexed seam/alignment close-ups for all seven landmarks
         run: python3 tools/render_cuordilava_detail_sheet.py --input-dir build-preview --output-dir build-preview
 
+      - name: Inspect actual thermal pool exterior bank in day and night
+        run: python3 tools/render_cuordilava_pool_audit.py --input-dir build-preview --output-dir build-preview
+
       - name: Upload ROM, diagnostics and tile sources
         uses: actions/upload-artifact@v4
         with:
@@ -64,6 +67,9 @@ jobs:
             build-preview/cuordilava-night.png
             build-preview/cuordilava-landmark-alignment.png
             build-preview/cuordilava-landmark-alignment.json
+            build-preview/cuordilava-thermal-perimeter-day.png
+            build-preview/cuordilava-thermal-perimeter-night.png
+            build-preview/cuordilava-thermal-perimeter.json
             data/tilesets/secondary/cuordilava/tiles.png
             data/tilesets/secondary/cuordilava/metatiles.bin
             data/tilesets/secondary/cuordilava/metatile_attributes.bin
