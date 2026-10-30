@@ -1640,6 +1640,8 @@ def validate_cuordilava_organic_springs(root: Path) -> list[str]:
     try:
         from soften_cuordilava_springs import validate_built
         validate_built(root)
+        from reshape_cuordilava_mineral_pool import validate_built as validate_calm_pool
+        validate_calm_pool(root)
         from deindustrialize_cuordilava_spa import validate_built as validate_spa_landscape
         validate_spa_landscape(root)
         from dress_cuordilava_scenery import illustration, PLACEMENTS
