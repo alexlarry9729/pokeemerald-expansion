@@ -284,7 +284,11 @@ def render(mode: str, output: Path, layout: dict, root: Path) -> None:
                     colour = palette[colour_index]
                     # Outdoor global TimeMixPalettes affects BG banks 0..12,
                     # not time-of-day-immune banks 13..15 or light sprites.
-                    if mode == "night" and palette_index <= 12:
+                    # In the ROM, Cuordilava's private BG palette 6 keeps
+                    # emissive indices 9..15 bright after the moonlight pass.
+                    # Keep this diagnostic render consistent with the engine.
+                    if (mode == "night" and palette_index <= 12
+                            and not (palette_index == 6 and colour_index >= 9)):
                         colour = moonlight_bg_rgb(colour)
                     offset = ((origin_y + py) * out_w + origin_x + px) * 3
                     canvas[offset:offset + 3] = bytes(colour)
