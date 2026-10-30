@@ -69,35 +69,54 @@ def run(root: Path) -> None:
     # Reference-led flowering basalt terraces, painted within the four
     # private 8x8 tiles already allocated for the original courtyard.
     # Only the appearance changes; animated water and map geometry do not.
+    # Four 8x8 donor tiles join into ONE coherent 16x16 volcanic garden
+    # pavement. Slab seams extend across quadrants; flowers form two
+    # irregular organic islands instead of eight identically repeated
+    # neon-orange targets. Existing metatile placements stay untouched.
     for corner, tid in enumerate(new_tiles):
         bx, by = (tid % 16) * 8, (tid // 16) * 8
+        quad_x, quad_y = (corner % 2) * 8, (corner // 2) * 8
+
         def p(x, y, c):
             if 0 <= x < 8 and 0 <= y < 8:
-                pix[by+y][bx+x] = c
+                pix[by + y][bx + x] = c
+
         for y in range(8):
             for x in range(8):
-                # Dark brick-brown cobbles, staggered mortar and basalt edges.
-                shade = 12
-                if (y + corner) % 5 == 0 and (x + corner) % 4 != 0:
-                    shade = 13
-                elif x in (0, 7) and (y + corner) % 3 == 0:
-                    shade = 8
-                p(x, y, shade)
-        # Different little plant islands across four neighbouring pavers.
-        clusters = (
-            ((2, 2), (5, 5)), ((3, 2), (6, 5)),
-            ((2, 5), (5, 2)), ((3, 5), (6, 2)),
-        )[corner]
-        for fx, fy in clusters:
-            p(fx - 1, fy, 9)
-            p(fx, fy - 1, 10)
-            p(fx + 1, fy, 15)
-            p(fx, fy + 1, 9)
-            p(fx, fy, 11)  # orange flower centre
-            p(fx + 1, fy + 1, 14)  # copper-red edge
-        for x, y in ((1, 6), (6, 1), (4, 7)):
-            if (x + y + corner) % 2:
-                p(x, y, 14)
+                gx, gy = quad_x + x, quad_y + y
+                # Connected copper-brown basalt courses with irregular
+                # rectangular joints instead of fine fluorescent noise.
+                colour = 12
+                if gy in (3, 8, 13) and (gx + gy // 3) % 7 not in (0, 1):
+                    colour = 13
+                elif (gx + 4 * (gy // 5)) % 9 == 0:
+                    colour = 8
+                elif (gx * 3 + gy * 7) % 29 == 0:
+                    colour = 13
+
+                # Moss covers two asymmetrical terrace pockets. Their dark
+                # borders sit in the cobblestones, never the actual water.
+                west = (gx - 4) ** 2 * 2 + (gy - 5) ** 2 * 3 < 44
+                east = (gx - 11) ** 2 * 2 + (gy - 11) ** 2 * 3 < 40
+                if (west or east) and (gx * 5 + gy * 3) % 7:
+                    colour = 9 if (gx + gy) % 4 < 2 else 10
+                    if (gx + 3 * gy) % 11 == 0:
+                        colour = 15
+                p(x, y, colour)
+
+        # Copper flowers are concentrated within the two moss islands,
+        # avoiding uniform every-cell checkerboard orange dots.
+        flowers = (
+            (3, 4), (5, 6), (4, 8),
+            (10, 10), (12, 11), (11, 13),
+        )
+        for gx, gy in flowers:
+            x, y = gx - quad_x, gy - quad_y
+            if 0 <= x < 8 and 0 <= y < 8:
+                p(x, y, 11)
+                p(x + 1, y, 14)
+                p(x, y - 1, 15)
+        # Edge stone remains continuous in full 16x16 metatile composition.
 
     for mid in SAND_METATILES:
         origin = (mid - 512) * 16
