@@ -1,0 +1,111 @@
+name: Cuordilava quick visual previews
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/daytime-cyberpunk-lights
+    paths:
+      - '.github/workflows/preview-cuordilava.yml'
+      - 'tools/render_cuordilava_preview.py'
+      - 'tools/render_cuordilava_detail_sheet.py'
+      - 'tools/render_cuordilava_pool_audit.py'
+      - 'tools/validate_cyberpunk_assets.py'
+      - 'tools/apply_cuordilava_industrial_art.py'
+      - 'tools/generate_cuordilava_architecture.py'
+      - 'tools/sculpt_cuordilava_city.py'
+      - 'tools/relief_cuordilava_cast_shadows.py'
+      - 'tools/recompose_cuordilava_architecture.py'
+      - 'tools/recompose_cuordilava_scenery.py'
+      - 'tools/finish_cuordilava_existing_roofs.py'
+      - 'tools/layer_cuordilava_reference_materials.py'
+      - 'tools/deepen_cuordilava_facades.py'
+      - 'tools/join_cuordilava_roof_facades.py'
+      - 'tools/compose_cuordilava_existing_volumes.py'
+      - 'tools/reprofile_cuordilava_original_roofs.py'
+      - 'tools/finish_cuordilava_foundations.py'
+      - 'tools/accent_cuordilava_roof_massing.py'
+      - 'tools/carve_cuordilava_copper_gables.py'
+      - 'tools/zone_cuordilava_reference_roofs.py'
+      - 'tools/register_cuordilava_civic_facades.py'
+      - 'tools/clarify_cuordilava_original_roofs.py'
+      - 'tools/articulate_cuordilava_original_facades.py'
+      - 'tools/stamp_cuordilava_landmark_roof_identities.py'
+      - 'tools/refine_cuordilava_existing_bridge.py'
+      - 'tools/engrave_cuordilava_details.py'
+      - 'tools/relief_cuordilava_landmarks.py'
+      - 'tools/construct_cuordilava_lower_facade.py'
+      - 'tools/rebuild_cuordilava_street_wall.py'
+      - 'tools/rebuild_cuordilava_gym_arcade.py'
+      - 'tools/finish_cuordilava_shop_clinic_walls.py'
+      - 'tools/dress_cuordilava_gym_ground_floor.py'
+      - 'tools/stamp_cuordilava_civic_vents.py'
+      - 'tools/stamp_cuordilava_flower_mosaics.py'
+      - 'tools/stitch_cuordilava_south_housing_roof.py'
+      - 'tools/polish_cuordilava_monuments.py'
+      - 'tools/dress_cuordilava_scenery.py'
+      - 'tools/form_cuordilava_palm_fronds.py'
+      - 'tools/polish_cuordilava_scenery.py'
+      - 'tools/dress_cuordilava_courtyard.py'
+      - 'tools/refine_cuordilava_water.py'
+      - 'tools/reshape_cuordilava_mineral_pool.py'
+      - 'tools/soften_cuordilava_springs.py'
+      - 'tools/deindustrialize_cuordilava_spa.py'
+      - 'data/tilesets/**'
+      - 'data/layouts/**'
+      - 'data/maps/LavaridgeTown/map.json'
+      - 'graphics/object_events/**'
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    name: Validate and render Cuordilava day/night
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+
+      - name: Apply town-private industrial architecture redraw
+        run: python3 tools/apply_cuordilava_industrial_art.py
+
+      - name: Validate original indexed GBA graphics and map accesses
+        run: python3 tools/validate_cyberpunk_assets.py
+
+      - name: Render the real Lavaridge Town map in day and night modes
+        run: python3 tools/render_cuordilava_preview.py --output-dir build-preview
+
+      - name: Render indexed seam/alignment close-ups for all seven landmarks
+        run: python3 tools/render_cuordilava_detail_sheet.py --input-dir build-preview --output-dir build-preview
+
+      - name: Audit actual thermal pool perimeter in both daylight modes
+        run: python3 tools/render_cuordilava_pool_audit.py --input-dir build-preview --output-dir build-preview
+
+      - name: Check diagnostic PNG dimensions and nonempty outputs
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          for mode in ('day', 'night'):
+              png = Path(f'build-preview/cuordilava-{mode}.png').read_bytes()
+              assert png[:8] == b'\x89PNG\r\n\x1a\n', f'{mode} preview invalid PNG'
+              width, height = struct.unpack_from('>II', png, 16)
+              assert (width, height) == (960, 960), (mode, width, height)
+              assert len(png) > 1000, f'{mode} preview is suspiciously small'
+          PY
+
+      - name: Upload both diagnostic map previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: cuordilava-visual-previews-${{ github.sha }}
+          path: |
+            build-preview/cuordilava-day.png
+            build-preview/cuordilava-night.png
+            build-preview/cuordilava-landmark-alignment.png
+            build-preview/cuordilava-landmark-alignment.json
+            build-preview/cuordilava-thermal-perimeter-day.png
+            build-preview/cuordilava-thermal-perimeter-night.png
+            build-preview/cuordilava-thermal-perimeter.json
+          if-no-files-found: error
+          retention-days: 30

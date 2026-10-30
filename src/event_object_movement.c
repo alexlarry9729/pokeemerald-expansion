@@ -585,6 +585,7 @@ static const struct SpritePalette sObjectEventSpritePalettes[] = {
     {gObjectEventPaletteLight2,             OBJ_EVENT_PAL_TAG_LIGHT_2},
     {gObjectEventPaletteEmotes,             OBJ_EVENT_PAL_TAG_EMOTES},
     {gObjectEventPaletteNeonLight,          OBJ_EVENT_PAL_TAG_NEON_LIGHT},
+    {gObjectEventPaletteNeonLightDay,      OBJ_EVENT_PAL_TAG_NEON_LIGHT_DAY},
 #ifdef BUGFIX
     {NULL,                                  OBJ_EVENT_PAL_TAG_NONE},
 #else
@@ -2763,8 +2764,26 @@ void UpdateLightSprite(struct Sprite *sprite)
 
     if (gTimeOfDay != TIME_NIGHT)
     {
-        sprite->invisible = TRUE;
+        // Keep building signs and facade panels subtly illuminated in daylight. The full neon palette
+        // and hardware blending are reserved for night, so lights remain less intense.
+        if (sprite->sLightType == LIGHT_TYPE_BALL)
+        {
+            sprite->invisible = TRUE;
+            return;
+        }
+        sprite->invisible = FALSE;
+        sprite->oam.objMode = ST_OAM_OBJ_NORMAL;
+        if (GetSpritePaletteTagByPaletteNum(sprite->oam.paletteNum) != OBJ_EVENT_PAL_TAG_NEON_LIGHT_DAY)
+            LoadSpritePaletteInSlot(&sObjectEventSpritePalettes[FindObjectEventPaletteIndexByTag(OBJ_EVENT_PAL_TAG_NEON_LIGHT_DAY)], sprite->oam.paletteNum);
         return;
+    }
+
+    // Restore the vivid neon palette at night, when signs and facade lights use blending.
+    if (sprite->sLightType != LIGHT_TYPE_BALL)
+    {
+        sprite->oam.objMode = ST_OAM_OBJ_BLEND;
+        if (GetSpritePaletteTagByPaletteNum(sprite->oam.paletteNum) != OBJ_EVENT_PAL_TAG_NEON_LIGHT)
+            LoadSpritePaletteInSlot(&sObjectEventSpritePalettes[FindObjectEventPaletteIndexByTag(OBJ_EVENT_PAL_TAG_NEON_LIGHT)], sprite->oam.paletteNum);
     }
 
     if (sprite->sLightType == LIGHT_TYPE_BALL)
@@ -2833,6 +2852,7 @@ static void SpawnLightSprite(s16 x, s16 y, s16 camX, s16 camY, u32 lightType)
         break;
     case LIGHT_TYPE_PKMN_CENTER_SIGN:
     case LIGHT_TYPE_POKE_MART_SIGN:
+    case LIGHT_TYPE_FACADE:
         sprite->centerToCornerVecX = -(16 >> 1);
         sprite->centerToCornerVecY = -(16 >> 1);
         sprite->oam.priority = 2;
