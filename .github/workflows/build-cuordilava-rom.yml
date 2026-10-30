@@ -49,6 +49,9 @@ jobs:
       - name: Render Cuordilava day/night layout previews
         run: python3 tools/render_cuordilava_preview.py --output-dir build-preview
 
+      - name: Render indexed seam/alignment close-ups for all seven landmarks
+        run: python3 tools/render_cuordilava_detail_sheet.py --input-dir build-preview --output-dir build-preview
+
       - name: Upload ROM, diagnostics and tile sources
         uses: actions/upload-artifact@v4
         with:
@@ -59,6 +62,8 @@ jobs:
             cuordilava-build-info.txt
             build-preview/cuordilava-day.png
             build-preview/cuordilava-night.png
+            build-preview/cuordilava-landmark-alignment.png
+            build-preview/cuordilava-landmark-alignment.json
             data/tilesets/secondary/cuordilava/tiles.png
             data/tilesets/secondary/cuordilava/metatiles.bin
             data/tilesets/secondary/cuordilava/metatile_attributes.bin
