@@ -34,6 +34,8 @@ on:
       - 'tools/engrave_cuordilava_details.py'
       - 'tools/relief_cuordilava_landmarks.py'
       - 'tools/construct_cuordilava_lower_facade.py'
+      - 'tools/rebuild_cuordilava_street_wall.py'
+      - 'tools/rebuild_cuordilava_gym_arcade.py'
       - 'tools/finish_cuordilava_shop_clinic_walls.py'
       - 'tools/dress_cuordilava_gym_ground_floor.py'
       - 'tools/stamp_cuordilava_civic_vents.py'
