@@ -1846,6 +1846,19 @@ void UpdatePalettesWithTime(u32 palettes)
     if (!palettes)
         return;
     TimeMixPalettes(palettes, gPlttBufferUnfaded, gPlttBufferFaded, &gTimeBlend.startBlend, &gTimeBlend.endBlend, gTimeBlend.weight);
+
+    // Town-only emissive architecture: the Cuordilava private secondary
+    // palette 6 blends from its daytime ramp to its night companion in
+    // UpdateAltBgPalettes. Preserve the bright glass, furnace, teal LEDs and
+    // magenta sign indices AFTER the global moonlight darkening. Leave
+    // indices 0..8 under normal moonlight for readable but dark steel.
+    // The palette mask and layout guard prevent touching other maps, UI,
+    // transitions that update unrelated banks, or object-event palettes.
+    if (gMapHeader.mapLayoutId == LAYOUT_LAVARIDGE_TOWN && (palettes & (1 << 6)))
+    {
+        for (i = 9; i < 16; i++)
+            gPlttBufferFaded[6 * 16 + i] = gPlttBufferUnfaded[6 * 16 + i];
+    }
 }
 
 u8 UpdateSpritePaletteWithTime(u8 paletteNum)
