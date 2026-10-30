@@ -32,38 +32,39 @@ def read16(data, offset):
 
 
 def image():
-    """An oval, low-growing moss/ember flower island on a transparent floor."""
+    """Two irregular moss beds with visible copper flowers, never neon rings.
+
+    The two 8x8 GBA sources form only the TOP half of a 16x16 mosaic; the
+    hardware's V-flip makes the lower half, conserving the existing art budget.
+    """
     a = [[0] * 16 for _ in range(16)]
     def p(x, y, c):
         if 0 <= x < 16 and 0 <= y < 8:
             a[y][x] = c
-    # Deliberately transparent outskirts: paths still appear between plants.
+
+    # Compact separated leaf masses, with staggered gaps exposing the
+    # actual town cobbles instead of an implausible glowing green circle.
     for y in range(1, 8):
         for x in range(1, 15):
-            d = abs(2*x - 15) + abs(2*y - 15)
-            if d < 19 and (x+y) % 7 != 0:
-                p(x, y, 9 if (x*3+y) % 4 else 10)
-            if d < 11 and (x+y) % 5 == 0:
-                p(x, y, 15)
-    # Rich foliage is legible from above, but does not resemble a raised wall.
-    for x,y in ((3,5),(4,3),(5,4),(6,2),(7,4),(8,2),
-                (9,5),(10,3),(11,4),(12,6),(4,7),(11,7)):
-        p(x,y,10)
-        p(x+1,y,15)
-    # Warm volcanic blossoms lead visually, not a flat green orb. Their
-    # arrangement differs between left/right halves and is interleaved with
-    # dark leaves; the low-growing island stays flat and traversable.
-    for x,y in ((2,6),(4,4),(6,2),(7,6),(9,3),(11,5),(13,3)):
+            west = 2*(x-4)**2 + 3*(y-5)**2 < 23
+            east = 2*(x-11)**2 + 3*(y-4)**2 < 23
+            center = (x-8)**2 + 3*(y-6)**2 < 6
+            if (west or east or center) and (x*7+y*5)%11:
+                p(x, y, 9 if (x+y)%4 <= 1 else 10)
+                if (x*3+y)%5 == 0:
+                    p(x, y, 15)
+
+    # Recognizable orange flowers, deliberately offset to avoid tidy rings.
+    for x, y in ((3,4),(5,5),(7,6),(9,5),(11,3),(13,5),(4,7)):
         p(x,y,11)
         p(x+1,y,14)
         p(x,y+1,14)
         if (x+y)%2:
-            p(x+1,y+1,13)
-    for x,y in ((3,2),(8,5),(12,2)):
-        p(x,y,12)
-        p(x+1,y,9)
-    # Reuse the top two 8x8 tiles upside-down on the lower half.
-    for y in range(8, 16):
+            p(x-1,y,13)
+    for x,y in ((2,3),(6,2),(8,7),(12,7)):
+        p(x,y,15)
+
+    for y in range(8,16):
         a[y] = a[15-y][:]
     return a
 
