@@ -89,6 +89,10 @@ def clarify_original_roof_massing(art, name):
             dot(cx - 2, glazing_y + 1, tint)
             if i == 1:
                 dot(cx + 2, glazing_y + 1, 11 if cold else 14)
+        # Re-seat the gutter after the glass treatment. On the taller Gym
+        # roof, the lowest skylight row coincides with the structural y=9
+        # plane; without this, it splits the 4-cell horizontal fascia.
+        line(left, right, bottom, 5)
 
     if role == "center":
         # Clinic: long, warm ruby/copper hip over the existing medical cross.
