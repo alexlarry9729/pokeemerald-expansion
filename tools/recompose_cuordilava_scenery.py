@@ -130,28 +130,50 @@ def recompose_scenery(kind, previous):
         p(9, 12, 10)
 
     elif kind == "cascade":
-        # Four original rock waterfall cells remain non-collidable overlays.
-        # Preserve 3px transparent gutters and show broader water streams
-        # with irregular mineral-white foam, not equal-spacing static lines.
+        # The four existing decorative cells at x=1..2, y=4..5 are OUTSIDE
+        # the hot spring's masonry rim. They formerly showed two luminous
+        # white/turquoise waterfalls against the cliff: this looked as though
+        # pool water escaped beyond its containment wall.
+        #
+        # Replace the 16x16 overlay with DRY volcanic retaining stone. This
+        # keeps every original cell, collision attribute, and 8x8 art ID; no
+        # changes to the three animated interior hot-water tiles 320/321/336.
+        # Palette 8 water indices 9,10, and foam index 1 are forbidden here.
         for y in range(16):
-            left = 3 + (1 if y in (4, 9, 13) else 0)
-            right = 12 - (1 if y in (3, 8, 12) else 0)
-            p(left, y, 7)
-            p(right, y, 7)
-            for x in range(left + 1, right):
-                c = 10 if (x + y*3)%5 in (0, 1) else 9
-                if (x*7+y*5)%11 in (0,1,2):
-                    c = 1  # white mineral foam remains abundant
-                p(x, y, c)
-        for x0, y0, x1, y1 in (
-            (5, 0, 4, 5), (8, 1, 9, 6),
-            (7, 7, 6, 12), (10, 8, 10, 14),
-            (4, 13, 7, 15), (8, 14, 11, 15),
-        ):
-            stroke(x0, y0, x1, y1, 1)
-        for y in (0, 6, 12):
-            p(2, y, 6)
-            p(13, y, 6)
+            for x in range(2, 14):
+                # Interlocking, staggered masonry blocks and shadowed mortar.
+                # The 2px transparent edge exposes existing terrain/cliff.
+                course = y // 4
+                joint = (x + (5 if course % 2 else 0)) % 9
+                if y in (3, 7, 11, 15):
+                    tone = 8  # dark, continuous horizontal masonry joints
+                elif joint in (0, 1):
+                    tone = 7 if x < 8 else 8
+                elif y in (0, 4, 8, 12):
+                    tone = 5  # muted ash rim
+                elif x in (2, 13):
+                    tone = 6
+                else:
+                    tone = 6 if (x * 3 + y * 5) % 7 < 3 else 7
+                p(x, y, tone)
+
+        # Wide stone shoulders and their recessed return shadows keep the
+        # outer spring bank legible, especially under nighttime moonlight.
+        for y in range(1, 15):
+            p(3, y, 5 if y % 4 else 6)
+            p(12, y, 8 if y % 4 else 5)
+        for x in range(4, 12):
+            p(x, 1, 5)
+            p(x, 2, 6)
+            p(x, 13, 8)
+            p(x, 14, 5)
+        # Sparse dry mineral/copper flecks, NOT bright water foam. These are
+        # small and do not create a false second basin outside the rim.
+        for x, y in ((5, 5), (10, 6), (6, 9), (11, 12)):
+            p(x, y, 13)
+            p(x + 1, y, 11)
+        for x, y in ((4, 4), (11, 8), (7, 12)):
+            p(x, y, 4)
 
     if any(not 0 <= color <= 15 for row in art for color in row):
         raise ValueError(f"{kind}: new scenic graphic exceeds GBA 4bpp")
@@ -165,7 +187,12 @@ def recompose_scenery(kind, previous):
         if leaves < 65 or flowers < 8:
             raise ValueError(f"New palm too sparse: {leaves=}, {flowers=}")
     if kind == "cascade":
-        foam = sum(v == 1 for row in art for v in row)
-        if foam < 20 or any(row[0] != 0 for row in art):
-            raise ValueError("Organic cascade spills water across its metatile border")
+        # This scene is now the OUTER ROCK WALL, not a waterfall outside the
+        # hot spring. Never reintroduce any water or water-foam pixels here.
+        wet = sum(v in (1, 9, 10) for row in art for v in row)
+        stone = sum(v in (5, 6, 7, 8) for row in art for v in row)
+        if wet or stone < 120 or any(row[0] or row[15] for row in art):
+            raise ValueError(
+                f"Thermal retaining bank is leaking/transparent: wet={wet}, stone={stone}"
+            )
     return art
