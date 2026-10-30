@@ -1642,11 +1642,38 @@ def validate_cuordilava_organic_springs(root: Path) -> list[str]:
         validate_built(root)
         from deindustrialize_cuordilava_spa import validate_built as validate_spa_landscape
         validate_spa_landscape(root)
-        from dress_cuordilava_scenery import illustration
-        cascade = illustration('cascade')
-        foam = sum(pixel == 1 for row in cascade for pixel in row)
-        if foam < 20 or any(cascade[y][0] for y in range(16)):
-            return ['Thermal cascade lost its mineral foam or transparent edge']
+        from dress_cuordilava_scenery import illustration, PLACEMENTS
+        from render_cuordilava_preview import png_indexed
+        # These four scenery cells lie OUTSIDE the thermal pool's stone rim.
+        # They formerly displayed an extraneous white/turquoise waterfall.
+        # Source-art checks alone are not enough: also inspect the actual
+        # composed ROM atlas and each of the four final GBA metatiles.
+        dry_bank = illustration('cascade')
+        if set(PLACEMENTS['cascade']) != {
+            (1, 4), (2, 4), (1, 5), (2, 5)
+        }:
+            return ['Cuordilava outer thermal bank placement changed']
+        if any(v in (1, 9, 10) for row in dry_bank for v in row):
+            return ['Thermal pool water/foam escaped outside the stone rim']
+        if any(row[0] or row[15] for row in dry_bank):
+            return ['Thermal stone bank should blend into the original cliff']
+        _, _, atlas = png_indexed(
+            root / 'data/tilesets/secondary/cuordilava/tiles.png'
+        )
+        metatile_data = (root / 'data/tilesets/secondary/cuordilava/metatiles.bin').read_bytes()
+        for mid in range(508, 512):
+            # Existing four last scenery metatiles, one per exterior cell.
+            entries = struct.unpack_from('<8H', metatile_data, mid * 16)
+            for value in entries[4:]:
+                tid = (value & 0x3ff) - 512
+                if (value >> 12) != 8 or not 0 <= tid < 512:
+                    return [f'Exterior thermal wall {mid}: corrupt 4bpp tile or palette']
+                x, y = tid % 16 * 8, tid // 16 * 8
+                if any(
+                    atlas[y + dy][x + dx] in (1, 9, 10)
+                    for dy in range(8) for dx in range(8)
+                ):
+                    return [f'Exterior thermal wall {mid}: actual atlas contains water']
     except (OSError, ImportError, IndexError, AssertionError, TypeError, ValueError) as exc:
         return [f'Organic thermal spring regression: {exc}']
     return []
