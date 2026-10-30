@@ -166,6 +166,10 @@ def main() -> None:
     # Last pass: mineral-water surface and organic bank reuse existing graphics.
     from soften_cuordilava_springs import run as soften_thermal_springs
     soften_thermal_springs(args.root)
+    # The already isolated original 8x8 water characters are now calmer,
+    # while every water-bank/collision metatile remains byte-identical.
+    from reshape_cuordilava_mineral_pool import run as reshape_mineral_pool
+    reshape_mineral_pool(args.root)
     from deindustrialize_cuordilava_spa import run as deindustrialize_spa
     deindustrialize_spa(args.root)
     from construct_cuordilava_lower_facade import run as build_lower_facade
