@@ -3,7 +3,7 @@
 
 The reference has many green/orange islands rather than an empty industrial
 forecourt. Reuse exactly two presently unreferenced GBA 8x8 tiles (510, 511)
-with vertical flips in one inactive town-private metatile (438). Map remains
+with vertical flips in one inactive town-private metatiles (438, 422). Map remains
 EXACTLY 20x20. This does not create trees, objects, buildings, blocked paths,
 warps, scripts, or a new palette. It runs LAST in the art generation chain.
 """
@@ -15,6 +15,8 @@ from render_cuordilava_preview import png_indexed
 from apply_cuordilava_industrial_art import write_png
 
 METATILE = 438
+MIRROR_METATILE = 422
+METATILES = (METATILE, MIRROR_METATILE)
 GRAPHICS = (510, 511)
 ORIGINAL_FLOOR = 1
 # These are already WALKABLE original floor cells, away from doorways,
@@ -100,14 +102,19 @@ def ensure_events_clear(root):
         raise ValueError(f"Flower overlays would hide active events: {protected & set(CELLS)}")
 
 
-def expected_overlay():
-    a, b = GRAPHICS
-    # bottom: flip the corresponding TOP graphic vertically, not the
-    # quadrant positions. Both halves join into a single oval flower bed.
+def mosaic_metatile(x,y):
+    return MIRROR_METATILE if (x+y)%2 else METATILE
+
+
+def expected_overlay(mirrored=False):
+    a,b=GRAPHICS
+    if mirrored:
+        a,b=b,a
+    flip=0x0400 if mirrored else 0
     return (
-        (9 << 12) | (512+a), (9 << 12) | (512+b),
-        (9 << 12) | 0x0800 | (512+a),
-        (9 << 12) | 0x0800 | (512+b),
+        (9<<12)|flip|(512+a), (9<<12)|flip|(512+b),
+        (9<<12)|flip|0x0800|(512+a),
+        (9<<12)|flip|0x0800|(512+b),
     )
 
 
@@ -118,16 +125,20 @@ def validate_built(root):
     pri, pattrs = (q[k].read_bytes() for k in ("primary", "primary_attr"))
     if (len(m), len(met), len(attrs)) != (800, 8192, 1024):
         raise ValueError("Flower bed exceeds fixed 20x20 GBA map budget")
-    used = {(i % 20, i // 20) for i in range(400)
-            if (read16(m, 2*i) & 1023) == 512+METATILE}
+    used = {(i%20,i//20) for i in range(400)
+            if (read16(m,2*i)&1023) in (512+METATILE,512+MIRROR_METATILE)}
     if used != set(CELLS):
-        raise ValueError(f"Flower-beds changed their exact safe cells: {used ^ set(CELLS)}")
-    if met[METATILE*16:METATILE*16+8] != pri[ORIGINAL_FLOOR*16:ORIGINAL_FLOOR*16+8]:
-        raise ValueError("Original cobble underlay no longer intact")
-    if attrs[METATILE*2:METATILE*2+2] != pattrs[ORIGINAL_FLOOR*2:ORIGINAL_FLOOR*2+2]:
-        raise ValueError("Flower beds changed ground behavior/collision")
-    if tuple(read16(met, METATILE*16+8+2*i) for i in range(4)) != expected_overlay():
-        raise ValueError("Flowerbed GBA graphics / flips are not correctly assembled")
+        raise ValueError(f"Flower-bed safe cells changed: {used^set(CELLS)}")
+    for mid in METATILES:
+        if met[mid*16:mid*16+8]!=pri[ORIGINAL_FLOOR*16:ORIGINAL_FLOOR*16+8]:
+            raise ValueError("Original cobbles beneath the flowers changed")
+        if attrs[mid*2:mid*2+2]!=pattrs[ORIGINAL_FLOOR*2:ORIGINAL_FLOOR*2+2]:
+            raise ValueError("Flower mosaics changed original collision")
+        if tuple(read16(met,mid*16+8+2*q) for q in range(4)) != expected_overlay(mid==MIRROR_METATILE):
+            raise ValueError("Flower mosaic 8x8 mirror / flip seam")
+    for x,y in CELLS:
+        if read16(m,2*(20*y+x))&1023 != 512+mosaic_metatile(x,y):
+            raise ValueError(f"Flower mosaic mirrored cell mismatch: {(x,y)}")
     if any((read16(m, 2*(20*y+x)) >> 10) & 3 for x,y in CELLS):
         raise ValueError("Flower-beds must remain exactly walkable")
     w,h,pix = png_indexed(q["atlas"])
@@ -155,8 +166,9 @@ def run(root):
     pri, pattrs = (q[k].read_bytes() for k in ("primary", "primary_attr"))
     if (len(raw),len(meta),len(attrs)) != (800,8192,1024):
         raise ValueError("Flower beds require the completed town-private tileset")
-    if 512+METATILE in {read16(raw,2*i)&1023 for i in range(400)}:
-        raise ValueError("Flower-bed donor metatile already used in map")
+    occupied={read16(raw,2*i)&1023 for i in range(400)}
+    if any(512+mid in occupied for mid in METATILES):
+        raise ValueError("Flower-bed donor metatiles already occupied")
     if any((read16(meta,off)&1023) in (512+GRAPHICS[0],512+GRAPHICS[1])
            for off in range(0,len(meta),2)):
         raise ValueError("The two final atlas tiles are no longer free; refusing art corruption")
@@ -178,32 +190,33 @@ def run(root):
         for y in range(8):
             for x in range(8):
                 pixels[ty+y][tx+x] = design[y][8*quadrant+x]
-    entries = bytearray(pri[ORIGINAL_FLOOR*16:ORIGINAL_FLOOR*16+8])
-    entries += struct.pack("<4H", *expected_overlay())
-    meta[METATILE*16:(METATILE+1)*16] = entries
-    attrs[METATILE*2:METATILE*2+2] = pattrs[ORIGINAL_FLOOR*2:ORIGINAL_FLOOR*2+2]
+    for mid in METATILES:
+        entries=bytearray(pri[ORIGINAL_FLOOR*16:ORIGINAL_FLOOR*16+8])
+        entries+=struct.pack("<4H",*expected_overlay(mid==MIRROR_METATILE))
+        meta[mid*16:(mid+1)*16]=entries
+        attrs[mid*2:mid*2+2]=pattrs[ORIGINAL_FLOOR*2:ORIGINAL_FLOOR*2+2]
     for x,y in CELLS:
-        off = 2*(20*y+x)
+        off=2*(20*y+x)
         old=read16(raw,off)
-        struct.pack_into("<H",raw,off,(old&~1023)|(512+METATILE))
+        struct.pack_into("<H",raw,off,(old&~1023)|(512+mosaic_metatile(x,y)))
     for i in range(400):
         old,new=read16(original_map,2*i),read16(raw,2*i)
         if (old>>10)!=(new>>10) or (
             (i%20,i//20) not in CELLS and old!=new):
             raise ValueError("Flower bed changed a gameplay map cell")
     if any(meta[16*i:16*i+16]!=original_meta[16*i:16*i+16]
-           for i in range(512) if i!=METATILE):
+           for i in range(512) if i not in METATILES):
         raise ValueError("Flowerbed overwritten unrelated metatile graphics")
     if any(attrs[2*i:2*i+2]!=original_attr[2*i:2*i+2]
-           for i in range(512) if i!=METATILE):
+           for i in range(512) if i not in METATILES):
         raise ValueError("Flowerbed overwritten another metatile's collision")
     write_png(q["atlas"],w,h,pixels,plte)
     q["map"].write_bytes(raw)
     q["meta"].write_bytes(meta)
     q["attr"].write_bytes(attrs)
     validate_built(root)
-    print("Cuordilava: 12 walkable volcanic flower mosaics, 1 private metatile, "
-          "2 recycled 8x8 atlas graphics; all six doors/events unchanged.")
+    print("Cuordilava: 12 walkable floral mosaics, two alternating mirrored private "
+          "metatiles, 2 reused 8x8 graphics, six doors/events unchanged.")
 
 
 if __name__ == "__main__":
