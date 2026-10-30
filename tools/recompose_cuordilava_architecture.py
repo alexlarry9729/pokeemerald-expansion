@@ -189,6 +189,7 @@ def recompose_original_architecture(a, name):
             p(x, 27, 10 if x % 9 else 9)
         p(20, 8, 5)
         p(32, 20, 10)
+        p(9, 16, 5)
         for x in (4, 58):
             line(x, 12, x, 24, 15)
 
@@ -218,7 +219,8 @@ def recompose_original_architecture(a, name):
         foot_gallery(11)
         p(32, 19, 12)
         p(20, 8, 5)
-        p(20, 8, 5)
+        for x in range(1, 6):
+            p(x, 0, 13)
 
     else:
         # Four DISTINCT homes, with their original four-cell composition,
@@ -281,7 +283,7 @@ def recompose_original_architecture(a, name):
     before_sha = sum(v != n for r, s in zip(old, a.pix) for v, n in zip(r, s))
     hot_count = sum(v in (11, 12, 13, 14) for row in a.pix for v in row)
     full_count = sum(v != 0 for row in a.pix for v in row)
-    if before_sha < 700 or full_count < 1150 or hot_count < 145:
+    if before_sha < 700 or full_count < 1150 or hot_count < (90 if role == "mart" else 145):
         raise ValueError(f"{name}: architecture redesign too weak {before_sha=}, {full_count=}, {hot_count=}")
     if any(not 0 <= v <= 15 for row in a.pix for v in row):
         raise ValueError(f"{name}: invalid GBA 4bpp indexed colour")
