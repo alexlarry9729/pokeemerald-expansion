@@ -130,50 +130,67 @@ def recompose_scenery(kind, previous):
         p(9, 12, 10)
 
     elif kind == "cascade":
-        # The four existing decorative cells at x=1..2, y=4..5 are OUTSIDE
-        # the hot spring's masonry rim. They formerly showed two luminous
-        # white/turquoise waterfalls against the cliff: this looked as though
-        # pool water escaped beyond its containment wall.
-        #
-        # Replace the 16x16 overlay with DRY volcanic retaining stone. This
-        # keeps every original cell, collision attribute, and 8x8 art ID; no
-        # changes to the three animated interior hot-water tiles 320/321/336.
-        # Palette 8 water indices 9,10, and foam index 1 are forbidden here.
+        # This 2x2 original cliff strip is OUTSIDE the original pool's
+        # enclosing stone ring. Its old vertical turquoise/white streams
+        # looked like the hot spring leaked down the outside of the rim.
+        # Carve a NATURAL ROCK RETAINING BANK, not square gray grille panels.
+        # Keep palette-8 water indices 1, 9 and 10 entirely absent.
+        rocks = (
+            (5, 3, 5, 4),   # (cx,cy,halfwidth,halfheight) large upper mass
+            (11, 5, 4, 5),  # right steep cliff shoulder
+            (5, 12, 5, 5),  # irregular lower basalt step
+            (12, 13, 4, 3),
+        )
         for y in range(16):
-            for x in range(2, 14):
-                # Interlocking, staggered masonry blocks and shadowed mortar.
-                # The 2px transparent edge exposes existing terrain/cliff.
-                course = y // 4
-                joint = (x + (5 if course % 2 else 0)) % 9
-                if y in (3, 7, 11, 15):
-                    tone = 8  # dark, continuous horizontal masonry joints
-                elif joint in (0, 1):
-                    tone = 7 if x < 8 else 8
-                elif y in (0, 4, 8, 12):
-                    tone = 5  # muted ash rim
-                elif x in (2, 13):
-                    tone = 6
+            for x in range(1, 15):
+                # Indented boundary dissolves into the old original rock,
+                # instead of creating a straight metallic rectangle.
+                left_edge = 2 + (1 if y in (1, 8, 13) else 0)
+                right_edge = 13 - (1 if y in (3, 10, 15) else 0)
+                if not left_edge <= x <= right_edge:
+                    continue
+                mass = -1
+                for i, (cx, cy, rx, ry) in enumerate(rocks):
+                    if (x-cx)**2 * ry**2 + (y-cy)**2 * rx**2 < rx**2*ry**2:
+                        mass = i
+                        break
+                if mass == -1:
+                    # Deep gaps between large rough volcanic stones.
+                    c = 8 if (x + 3*y) % 3 else 7
                 else:
-                    tone = 6 if (x * 3 + y * 5) % 7 < 3 else 7
-                p(x, y, tone)
+                    d = (x * 17 + y * 11 + mass * 7) % 17
+                    if d in (0, 4):
+                        c = 4  # lighter weathered basalt highlights
+                    elif d in (5, 12):
+                        c = 5
+                    elif d in (1, 3, 9):
+                        c = 6
+                    else:
+                        c = 7 if (x + y + mass) % 3 else 8
+                p(x, y, c)
 
-        # Wide stone shoulders and their recessed return shadows keep the
-        # outer spring bank legible, especially under nighttime moonlight.
-        for y in range(1, 15):
-            p(3, y, 5 if y % 4 else 6)
-            p(12, y, 8 if y % 4 else 5)
-        for x in range(4, 12):
-            p(x, 1, 5)
-            p(x, 2, 6)
-            p(x, 13, 8)
-            p(x, 14, 5)
-        # Sparse dry mineral/copper flecks, NOT bright water foam. These are
-        # small and do not create a false second basin outside the rim.
-        for x, y in ((5, 5), (10, 6), (6, 9), (11, 12)):
-            p(x, y, 13)
-            p(x + 1, y, 11)
-        for x, y in ((4, 4), (11, 8), (7, 12)):
-            p(x, y, 4)
+        # Two angled cracks, shallow stone plateaus and ash-filled crevices,
+        # explicitly NOT horizontal/vertical metal grid-lines.
+        for x0, y0, x1, y1 in (
+            (4, 2, 7, 5), (7, 5, 5, 8),
+            (10, 2, 12, 5), (12, 5, 10, 7),
+            (3, 11, 6, 9), (6, 9, 9, 11),
+            (10, 12, 12, 14),
+        ):
+            stroke(x0, y0, x1, y1, 8)
+        for x0, y0, x1, y1 in (
+            (3, 4, 6, 3), (9, 7, 12, 6),
+            (3, 13, 7, 12), (9, 14, 12, 13),
+        ):
+            stroke(x0, y0, x1, y1, 5)
+        # Sparse DRY yellow-ochre mineral veins (palette 8: ochre, not
+        # teal); a few faint moss-coloured deposits live at the cliff base.
+        for x, y, color in (
+            (3, 2, 12), (4, 2, 13), (11, 3, 13),
+            (9, 9, 12), (10, 9, 13), (4, 12, 13),
+            (5, 13, 14), (12, 13, 14),
+        ):
+            p(x, y, color)
 
     if any(not 0 <= color <= 15 for row in art for color in row):
         raise ValueError(f"{kind}: new scenic graphic exceeds GBA 4bpp")
