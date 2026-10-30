@@ -150,6 +150,32 @@ def articulate_original_volcanic_facades(art, name):
             if i != 3:
                 vertical(right, 17, 25, 8)
 
+    # Retain meaningful heat emanating from existing occupied windows.
+    # Earlier revisions accidentally converted entire glazed strips into
+    # black/gray wall, making the town less like the warm reference at night.
+    # Keep only ORIGINAL contiguous heat-glass pixels behind the newly
+    # constructed jambs, never on mortar, piers or outer roof edges.
+    for left, right in wings:
+        for y in range(19, 25):
+            for x in range(left + 3, right - 2):
+                if ((x, y) not in protected and
+                    before[y][x] in (11, 12, 14) and
+                    art.pix[y][x] in (2, 3, 6, 8)):
+                    art.pixel(x, y, before[y][x])
+
+    # Regression check: avoid darkening or deleting the heat-glass panels
+    # during future masonry refactors, even if pixel count remains high.
+    for left, right in wings:
+        old_heat = sum(before[y][x] in (11, 12, 14)
+                       for y in range(19, 25)
+                       for x in range(left + 3, right - 2))
+        new_heat = sum(art.pix[y][x] in (11, 12, 14)
+                       for y in range(19, 25)
+                       for x in range(left + 3, right - 2))
+        if old_heat >= 8 and new_heat * 10 < old_heat * 9:
+            raise ValueError(f"Cuordilava facade lost heat-glass area: "
+                             f"{name}, {old_heat} -> {new_heat}")
+
     # No municipality, graphic allocation or gameplay can change in this pass.
     changes = sum(a != b for old, new in zip(before, art.pix)
                   for a, b in zip(old, new))
