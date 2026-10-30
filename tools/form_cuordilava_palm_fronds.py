@@ -55,7 +55,8 @@ def form_original_palm_fronds(pix, kind):
         p(x,y,9)
     # Orange autumn-flower beds planted along the existing tree root; they
     # remain decorative within the original impassable landscaping cell.
-    for x,y in ((1,12),(3,13),(11,12),(13,13),(4,15),(10,15)):
+    for x,y in ((1,12),(3,13),(11,12),(13,13),(4,15),(10,15),
+                (2,14),(12,14),(0,11),(14,12)):
         p(x,y,11)
         p(x+1,y,14)
         p(x,y-1,10)
