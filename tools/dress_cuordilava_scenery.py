@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scenic 20x20 Lavaridge dressing: palms, furnace chimneys, magma lamps, cascade.
+"""Scenic 20x20 Lavaridge dressing: palms, furnace chimneys, magma lamps, dry basalt spa bank.
 
 23 new collision-preserving private secondary metatiles (489..511), produced
 AFTER the 48 civic landmarks. No global or shared graphics are modified.
@@ -14,7 +14,7 @@ PLACEMENTS = {
     "palm": ((19,1),(18,3),(12,5),(13,5),(12,6),(13,6),(18,6),(1,7)),
     "chimney": ((2,12),(7,12),(15,13),(17,13),(15,1),(8,2)),
     "lamp": ((18,5),(18,14),(7,13),(1,11),(0,8)),
-    "cascade": ((1,4),(2,4),(1,5),(2,5)),
+    "cascade": ((1,4),(2,4),(1,5),(2,5)),  # historical name: now dry exterior rock
 }
 assert sum(map(len, PLACEMENTS.values()))==23
 
@@ -172,7 +172,7 @@ def run(root:Path):
     write_png(atlas,128,256,pixels,palette)
     assert png_indexed(atlas)==(128,256,pixels)
     town.write_bytes(m);metap.write_bytes(meta);attrp.write_bytes(attr)
-    print("Cuordilava scenery: 8 palms, 6 rooftop chimneys, 5 magma lamps, 4 waterfall cells;")
+    print("Cuordilava scenery: 8 palms, 6 rooftop chimneys, 5 magma lamps, 4 dry rocky spa-bank cells;")
     print("23 additional private metatiles, fixed 20x20 and exact original collision/warps.")
 
 if __name__=="__main__":run(Path(__file__).resolve().parents[1])
