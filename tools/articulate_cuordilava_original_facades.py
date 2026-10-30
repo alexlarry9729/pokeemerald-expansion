@@ -155,5 +155,6 @@ def articulate_original_volcanic_facades(art, name):
         raise ValueError(f"Invalid 4bpp facade pixel: {name}")
     if role != "housing":
         for left, right in wings:
-            if any(art.pix[27][x] != 5 for x in range(left, right + 1)):
+            if any(art.pix[27][x] != 5 for x in range(left, right + 1)
+                   if (x, 27) not in protected):
                 raise ValueError(f"Cuordilava facade eave lost alignment: {name}")
