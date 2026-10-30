@@ -160,7 +160,11 @@ def articulate_original_volcanic_facades(art, name):
             for x in range(left + 3, right - 2):
                 if ((x, y) not in protected and
                     before[y][x] in (11, 12, 14) and
-                    art.pix[y][x] in (2, 3, 6, 8)):
+                    art.pix[y][x] not in (11, 12, 14, 15)):
+                    # Original heat-glass takes precedence over both dark
+                    # masonry AND an accidentally placed frame mullion.
+                    # This stays inside the old window recess; all outside
+                    # iron/stone edges and landmark masks remain unchanged.
                     art.pixel(x, y, before[y][x])
 
     # Regression check: avoid darkening or deleting the heat-glass panels
