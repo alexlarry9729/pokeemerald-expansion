@@ -115,6 +115,7 @@ from articulate_cuordilava_original_facades import articulate_original_volcanic_
 from stamp_cuordilava_landmark_roof_identities import stamp_original_landmark_roof_identities
 from refine_cuordilava_existing_bridge import refine_existing_thermal_bridge
 from relief_cuordilava_cast_shadows import relief_existing_roof_massing
+from sculpt_cuordilava_volcanic_terrace import sculpt_volcanic_terrace
 
 
 def draw(name,w,h):
@@ -289,6 +290,7 @@ def draw(name,w,h):
         if sum(a.pix[y][x] != old_plaza[y][x]
                for y in range(32) for x in range(64)) < 90:
             raise ValueError("Cuordilava plaza inlay unexpectedly sparse")
+    sculpt_volcanic_terrace(a, name)
     assert rgb_readable(a.pix)
     return a
 
