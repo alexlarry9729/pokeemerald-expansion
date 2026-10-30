@@ -213,7 +213,10 @@ def illustration():
         for y in (5,9,12):
             a.p(seam-1,y,13)
             a.p(seam,y,11)
-    return a.pix
+    # Final architectural reconstruction of all seven occupied street bays.
+    # Original private tile IDs, exact cell positions and underlay are unchanged.
+    from rebuild_cuordilava_street_wall import rebuild_existing_street_wall
+    return rebuild_existing_street_wall(a.pix)
 
 
 def validate_facade_registration(rows):
