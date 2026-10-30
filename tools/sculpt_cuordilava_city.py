@@ -117,6 +117,7 @@ from refine_cuordilava_existing_bridge import refine_existing_thermal_bridge
 from relief_cuordilava_cast_shadows import relief_existing_roof_massing
 from sculpt_cuordilava_volcanic_terrace import sculpt_volcanic_terrace
 from recompose_cuordilava_architecture import recompose_original_architecture
+from rebuild_cuordilava_gym_arcade import forge_ground_storey
 
 
 def draw(name,w,h):
@@ -293,6 +294,7 @@ def draw(name,w,h):
             raise ValueError("Cuordilava plaza inlay unexpectedly sparse")
     sculpt_volcanic_terrace(a, name)
     recompose_original_architecture(a, name)
+    forge_ground_storey(a, name)
     assert rgb_readable(a.pix)
     return a
 
