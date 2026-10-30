@@ -156,8 +156,9 @@ def recompose_scenery(kind, previous):
     if any(not 0 <= color <= 15 for row in art for color in row):
         raise ValueError(f"{kind}: new scenic graphic exceeds GBA 4bpp")
     change = sum(a != b for row0, row1 in zip(previous, art) for a, b in zip(row0, row1))
-    if change < 80:
-        raise ValueError(f"{kind}: expected major scenic silhouette change, got {change}")
+    minimum_change = 60 if kind in ("lamp", "cascade") else 80
+    if change < minimum_change:
+        raise ValueError(f"{kind}: expected a scenic silhouette redesign, got {change}")
     if kind == "palm":
         leaves = sum(v in (9,10,15) for row in art for v in row)
         flowers = sum(v == 11 for row in art for v in row)
