@@ -23,6 +23,7 @@ on:
       - 'tools/carve_cuordilava_copper_gables.py'
       - 'tools/zone_cuordilava_reference_roofs.py'
       - 'tools/register_cuordilava_civic_facades.py'
+      - 'tools/clarify_cuordilava_original_roofs.py'
       - 'tools/refine_cuordilava_existing_bridge.py'
       - 'tools/engrave_cuordilava_details.py'
       - 'tools/relief_cuordilava_landmarks.py'
