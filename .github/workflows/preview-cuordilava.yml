@@ -13,6 +13,7 @@ on:
       - 'tools/apply_cuordilava_industrial_art.py'
       - 'tools/generate_cuordilava_architecture.py'
       - 'tools/sculpt_cuordilava_city.py'
+      - 'tools/relief_cuordilava_cast_shadows.py'
       - 'tools/finish_cuordilava_existing_roofs.py'
       - 'tools/layer_cuordilava_reference_materials.py'
       - 'tools/deepen_cuordilava_facades.py'
