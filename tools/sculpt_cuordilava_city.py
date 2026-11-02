@@ -120,6 +120,7 @@ from sculpt_cuordilava_volcanic_terrace import sculpt_volcanic_terrace
 from recompose_cuordilava_architecture import recompose_original_architecture
 from rebuild_cuordilava_gym_arcade import forge_ground_storey
 from rebuild_cuordilava_civic_massing import rebuild_civic_massing
+from organize_cuordilava_districts import organize_districts
 
 
 def draw(name,w,h):
@@ -301,6 +302,11 @@ def draw(name,w,h):
     # the medical tower, market roofs, forging kilns, four-home
     # skyline and central caldera are substantial new architectural art.
     rebuild_civic_massing(a, name)
+    # Five coordinated civic zones: physical thermal square, four readable
+    # houses, and visually distinct healthcare, market and forge facades.
+    # Source-art-only: all original metatile, map, collision/elevation and
+    # events remain untouched, with the verified BG2 walkability fix.
+    organize_districts(a, name)
     assert rgb_readable(a.pix)
     return a
 
