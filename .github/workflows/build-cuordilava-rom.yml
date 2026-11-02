@@ -29,6 +29,9 @@ jobs:
       - name: Validate cyberpunk assets
         run: python3 tools/validate_cyberpunk_assets.py
 
+      - name: Verify original gameplay routes before compiling ROM
+        run: python3 tools/validate_cuordilava_connectivity.py --output build-preview/cuordilava-navigation.json
+
       - name: Compile Pokémon Emerald
         env:
           GAME_VERSION: EMERALD
@@ -70,6 +73,7 @@ jobs:
             build-preview/cuordilava-thermal-perimeter-day.png
             build-preview/cuordilava-thermal-perimeter-night.png
             build-preview/cuordilava-thermal-perimeter.json
+            build-preview/cuordilava-navigation.json
             data/tilesets/secondary/cuordilava/tiles.png
             data/tilesets/secondary/cuordilava/metatiles.bin
             data/tilesets/secondary/cuordilava/metatile_attributes.bin
