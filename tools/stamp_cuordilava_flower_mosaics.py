@@ -115,6 +115,12 @@ def image():
     for x in (4, 10, 12):
         p(x, 7, 6)
 
+    # No green frond may create a hard 16px seam against the surrounding
+    # original floor. Keep the entire x=0 / x=15 pixel edge transparent.
+    for y in range(8):
+        a[y][0] = 0
+        a[y][15] = 0
+
     # Bottom source quadrants are ROM H/V flipped, not redrawn separately.
     for y in range(8, 16):
         a[y] = a[15-y][:]
