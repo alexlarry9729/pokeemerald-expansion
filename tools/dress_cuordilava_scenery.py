@@ -136,7 +136,9 @@ def run(root:Path):
             bank,attributes,idx=(meta,attr,oldid-512) if oldid>=512 else (pri,pa,oldid)
             body=bytearray(bank[idx*16:idx*16+8])
             old_attribute=attributes[idx*2:idx*2+2]
-            colour_bank=9 if kind=="palm" else 8 if kind=="cascade" else 6
+            # Mountain palette 10 (indices 9..14) exactly matches the adjacent
+            # original cliffs; palette 8 made these dry cells appear blue.
+            colour_bank=9 if kind=="palm" else 10 if kind=="cascade" else 6
             # Mirror each alternate *whole* 16x16 palm crown, not each
             # quadrant in place: swap left/right source quadrants and apply
             # GBA H-flip to both. This supplies two distinct canopy shapes
