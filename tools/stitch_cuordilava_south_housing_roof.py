@@ -14,6 +14,7 @@ Run at the very end of the town-only graphic pipeline (after existing roofs).
 from pathlib import Path
 import json
 import struct
+from cuordilava_layers import player_above_walkable_art, validate_covered
 
 SRC_X = (11, 12, 13, 14)
 DST_X = (15, 16, 17, 18)
@@ -99,8 +100,12 @@ def validate_built(root):
                 raise ValueError(f"South housing roof still separated at {x},{y}")
             if sec[mid*16:mid*16+8] != pri[old*16:old*16+8]:
                 raise ValueError(f"Original housing roof base replaced at {x},{y}")
-            if attr[mid*2:mid*2+2] != priattr[old*2:old*2+2]:
-                raise ValueError(f"Roof terrain behavior altered at {x},{y}")
+            donor_attr=word(priattr,old*2)
+            new_attr=word(attr,mid*2)
+            if ((current >> 10) & 3) == 0:
+                validate_covered(donor_attr,new_attr,f"walkable housing {(x,y)}")
+            elif new_attr != donor_attr:
+                raise ValueError(f"Blocked roof terrain behavior altered at {x},{y}")
             overlay = tuple(word(sec,mid*16+8+2*q) for q in range(4))
             if overlay != mirrored_overlay(sec,src_mid):
                 raise ValueError(f"Mirrored 8x8 quadrants misregistered at {x},{y}")
@@ -143,7 +148,12 @@ def run(root):
             if len(background) != 8:
                 raise ValueError("Original housing roof background is invalid")
             sec[newmid*16:newmid*16+16] = background + struct.pack("<4H",*donor)
-            attr[newmid*2:newmid*2+2] = priattr[oldid*2:oldid*2+2]
+            # These four original y12 roof tiles are WALKABLE even though
+            # they display opaque new mural art. BG1 would hide the player.
+            source_attr=word(priattr,oldid*2)
+            if not ((oldword>>10)&3):
+                source_attr=player_above_walkable_art(source_attr)
+            struct.pack_into("<H",attr,newmid*2,source_attr)
             struct.pack_into("<H",m,pos,(oldword&~1023)|(512+newmid))
     targets = set(TARGETS)
     for i in range(400):
