@@ -69,97 +69,114 @@ def source_for(x, y, raw):
 
 
 def drawing(kind):
-    """Calm large-slab basalt rather than the previous repeating noisy carpet.
+    """Large irregular volcanic plates with low-contrast broken mineral joints.
 
-    Twelve original-footprint 16x16 tiles remain distinct. All share broad,
-    continuous slate courses, one recessed structural joint and a much less
-    aggressive lighting palette. The engineering road adds a shallow copper
-    service rail, while pedestrian stones stay quiet.
+    Previous source art laid strong straight joint lines at y=7 and y=14 in
+    EVERY 16x16 metatile; across 84 city cells this formed an overwhelming
+    repeated brick wall and distracted from the buildings. These twelve
+    existing motifs make 2-3 broad ASYMMETRIC polygon plates each instead.
+    A low, inset copper service rail survives only on street variants.
+    Same 48 already-allocated 8x8 characters and 12 metatiles, no extra
+    palette, no map edits; gameplay flags and COVERED/BG2 remain intact.
     """
-    if kind not in range(12):
-        raise ValueError(f"Unsupported Cuordilava pavement motif {kind}")
-    art = [[12] * 16 for _ in range(16)]
-    road = kind >= 6
-    v = kind % 6
+    if not 0 <= kind < 12:
+        raise ValueError("Unexpected volcanic district paving motif")
+    road=kind>=6
+    v=kind%6
+    a=[[12]*16 for _ in range(16)]
 
-    def p(x, y, c):
-        if 0 <= x < 16 and 0 <= y < 16:
-            art[y][x] = c
+    def p(x,y,c):
+        if 0<=x<16 and 0<=y<16:
+            a[y][x]=c
 
-    # Stone courses are deliberately aligned at y7/14 for ALL 12 motifs,
-    # allowing their long seams to read as a connected roadway at map scale.
-    # Each course contains only two large mineral slabs, not a field of dots.
+    # Different angles prevent aligned horizontal tile/row grids.
+    # The seams stop before the border and bevel into the actual slab:
+    # finished tiles look like a local stone terrace, not a wallpaper.
+    s1=(4,6,9,5,10,7)[v]
+    slope=(-1,1,2,-2,1,-1)[v]
     for y in range(16):
-        seam = 7 if y < 8 else 14
-        cut = (4 + (v % 3) * 2) if y < 8 else (10 - (v % 3) * 2)
+        main_cut=s1+(slope*(y-7))//8
+        main_cut=max(2,min(13,main_cut))
         for x in range(16):
-            if y == seam:
-                c = 5
-            elif y == seam + 1:
-                c = 6
-            elif x == cut and 1 <= y <= 13:
-                c = 8
-            elif x == cut + 1 and 1 <= y <= 13:
-                c = 6
-            else:
-                # A continuous broad slab with very subtle shade changes,
-                # never per-pixel procedural neon/black confetti.
-                c = 12 if (y < 8 or x < cut) else 13
-                if (v in (2, 5)) and y in (2, 3) and 3 <= x <= 11:
-                    c = 13
-            p(x, y, c)
+            # Four broad colors, selected per plate not per pixel.
+            c=(12 if x<main_cut else 13)
+            if v in (2,5) and y>=9 and x>4:
+                c=3
+            if v in (1,4) and x<5 and y>11:
+                c=12
+            if (x,y) in ((0,0),(15,0),(0,15),(15,15)):
+                c=12
+            if 2<=y<=13:
+                if x==main_cut:
+                    c=5
+                elif x==main_cut+1:
+                    c=6
+            p(x,y,c)
 
-    # Small asymmetric chipped masonry is enough to make each stone unique.
-    # These marks are sparse and bounded by the quiet slate materials.
-    chips = (
-        ((2, 2), (12, 5), (3, 12)),
-        ((4, 3), (13, 4), (7, 11)),
-        ((3, 4), (11, 2), (9, 13)),
-        ((2, 5), (12, 3), (5, 10)),
-        ((3, 2), (10, 4), (8, 12)),
-        ((4, 5), (13, 2), (6, 11)),
-    )
-    for x,y in chips[v]:
-        p(x, y, 6)
-        p(x + 1, y, 13)
+    # A diagonal shale rift crosses PART of a slab, not every entire row.
+    # Vary the height/length in each variant to avoid periodic striping.
+    for x in range(2,14):
+        if v in (0,3):
+            fracture=5 + (x//5) + (1 if v==3 else 0)
+        elif v in (1,4):
+            fracture=11-(x//4)+(1 if v==4 else 0)
+        else:
+            fracture=7+(x//6)
+        if 2<=fracture<14:
+            p(x,fracture,5)
+            if x%3!=0:
+                p(x,fracture+1,6)
+
+    # Broken edges, low-frequency stone flakes and very few mineral colors.
+    for x,y in (
+        ((3,2),(11,11),(6,14)),
+        ((4,3),(12,6),(8,13)),
+        ((2,4),(12,12),(8,3)),
+        ((3,13),(10,4),(5,7)),
+        ((4,11),(11,3),(13,8)),
+        ((3,3),(9,12),(13,5)),
+    )[v]:
+        p(x,y,6)
+        p(x+1,y,13)
 
     if road:
-        # One broad continuous buried thermal-service channel connects
-        # contiguous east-west road metatiles at the SAME exact y offsets.
+        # One engineered geothermal service rail, clearly smaller than
+        # the pavement itself; its tiny copper core is physically inset.
         for x in range(16):
-            p(x, 9, 5)
-            p(x, 10, 13)
-            p(x, 11, 11 if x % 6 not in (0, 1) else 13)
-        # Two embedded low-profile rivets per segment, never square
-        # flashing signal lights occupying the pedestrian path.
-        for x in (3 + v % 3, 12 - v % 3):
-            p(x, 9, 8)
-            p(x, 10, 14)
-    elif v in (1, 4):
-        # Only two of six pedestrian designs have genuinely tiny
-        # herb-filled fissures. They do NOT spawn new blocking plants.
-        for x,y in ((11, 3), (12, 3), (12, 4), (3, 11), (4, 11)):
-            p(x, y, 9 if (x + y) % 2 else 10)
-    elif v in (2, 5):
-        for x,y in ((3, 5), (4, 5), (12, 12)):
-            p(x, y, 13)
+            p(x,9,5)
+            p(x,10,13)
+            p(x,11,6)
+            if x in range(4,12) and (x+v)%4 not in (0,1):
+                p(x,10,11)
+        # A single low rivet instead of repeated glowing orange pixels.
+        p(3+v%4,9,8)
+        p(3+v%4,10,14)
+    elif v in (1,4):
+        # Living cliff grass appears only in two of the six sidewalks,
+        # subdued and embedded in fine stone fissures.
+        for x,y in ((3,3),(4,3),(4,4),(12,12)):
+            p(x,y,9 if (x+y)%2 else 10)
 
-    # A few chipped corners expose the original underlying cobble.
+    # Rare chipped corners expose the original cobbles without creating
+    # a hard rectilinear border around all the different pavement cells.
     for x,y in ((0,0),(15,0),(0,15),(15,15)):
-        if (v + x + y) % 3 == 0:
-            p(x, y, 0)
+        if (x+3*y+v)%5==0:
+            p(x,y,0)
 
-    stone = sum(c in (5,6,12,13) for row in art for c in row)
-    copper = sum(c in (11,14) for row in art for c in row)
-    moss = sum(c in (9,10,15) for row in art for c in row)
-    dark = sum(c == 8 for row in art for c in row)
-    filled = sum(c != 0 for row in art for c in row)
-    if stone < (195 if road else 215) or copper > 36 or moss > 12 or dark > 34:
-        raise ValueError(f"Volcanic street motif {kind} has excessive visual noise: "
-                         f"{stone=},{copper=},{moss=},{dark=}")
-    if filled < 248 or any(not 0 <= c < 16 for row in art for c in row):
-        raise ValueError("Invalid original-capacity 4bpp walkable road art")
-    return art
+    counts={v:sum(c==v for row in a for c in row) for v in range(16)}
+    stone=sum(counts[c] for c in (3,5,6,12,13))
+    copper=counts[11]+counts[14]
+    moss=counts[9]+counts[10]+counts[15]
+    if stone<220 or copper>12 or moss>8 or counts[8]>16:
+        raise ValueError(
+            f"Paving kind {kind} lost broad matte basalt plates: "
+            f"stone={stone}, copper={copper}, moss={moss}, shadow={counts[8]}"
+        )
+    if sum(c!=0 for row in a for c in row)<250:
+        raise ValueError("Volcanic paving left the original floor exposed")
+    if any(not 0<=c<16 for row in a for c in row):
+        raise ValueError("Invalid 4bpp indexed color in large volcanic paving")
+    return a
 
 
 def find_changes(map_bytes, event_cells):
