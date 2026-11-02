@@ -22,6 +22,7 @@ on:
       - 'tools/relief_cuordilava_cast_shadows.py'
       - 'tools/recompose_cuordilava_architecture.py'
       - 'tools/rebuild_cuordilava_civic_massing.py'
+      - 'tools/organize_cuordilava_districts.py'
       - 'tools/recompose_cuordilava_scenery.py'
       - 'tools/finish_cuordilava_existing_roofs.py'
       - 'tools/layer_cuordilava_reference_materials.py'
