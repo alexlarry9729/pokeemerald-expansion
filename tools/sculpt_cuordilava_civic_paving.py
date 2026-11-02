@@ -47,6 +47,14 @@ def files(root):
 def source_for(x, y, raw):
     """Choose exactly one of twelve private paving patterns, or None."""
     mid = raw & 1023
+    # Southern GYM approach: extend the same massive stone courses over
+    # already walkable original floor at x4..7,y16..18. These cells are far
+    # below the spa (y<11). Event cells are excluded by find_changes and all
+    # flower-beds already installed have another source metatile ID, so they
+    # are untouched. This makes the southwestern quarter a real continuation
+    # of the redesigned central promenade, not an abrupt rock-carpet edge.
+    if mid == FLOOR_SOURCE and 4 <= x <= 7 and 16 <= y <= 18:
+        return ((x * 7 + y * 3) % 6, mid)
     # Already existing original walkable floor in the town center, southern
     # arcade and walkway. Keep thermal basin x<8 and all building cells away.
     if mid == FLOOR_SOURCE and 8 <= x <= 18 and 7 <= y <= 18:
