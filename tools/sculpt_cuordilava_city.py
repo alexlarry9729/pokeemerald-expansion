@@ -118,6 +118,7 @@ from relief_cuordilava_cast_shadows import relief_existing_roof_massing
 from sculpt_cuordilava_volcanic_terrace import sculpt_volcanic_terrace
 from recompose_cuordilava_architecture import recompose_original_architecture
 from rebuild_cuordilava_gym_arcade import forge_ground_storey
+from rebuild_cuordilava_civic_massing import rebuild_civic_massing
 
 
 def draw(name,w,h):
@@ -295,6 +296,10 @@ def draw(name,w,h):
     sculpt_volcanic_terrace(a, name)
     recompose_original_architecture(a, name)
     forge_ground_storey(a, name)
+    # Whole 64x32 volumes, not tiny isolated industrial accents:
+    # the medical tower, market roofs, forging kilns, four-home
+    # skyline and central caldera are substantial new architectural art.
+    rebuild_civic_massing(a, name)
     assert rgb_readable(a.pix)
     return a
 
