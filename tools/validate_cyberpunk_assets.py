@@ -1848,6 +1848,17 @@ def validate_mineral_spring_water(root: Path) -> list[str]:
     return errors
 
 
+def validate_cuordilava_paved_promenade(root: Path) -> list[str]:
+    """Verify the substantial new city-wide walkable ground has correct 4bpp art,
+    original ground-level collision/terrain attributes and no event overlaps."""
+    try:
+        from sculpt_cuordilava_civic_paving import validate_built
+        validate_built(root)
+    except (ImportError, OSError, IndexError, ValueError, AssertionError, struct.error) as exc:
+        return [f'Volcanic civic paving regression: {exc}']
+    return []
+
+
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     errors.extend(validate_cuordilava_fixed_footprint(root))
@@ -1860,6 +1871,7 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_cuordilava_civic_lower_facades(root))
     errors.extend(validate_cuordilava_gym_lower_facade(root))
     errors.extend(validate_cuordilava_civic_vents(root))
+    errors.extend(validate_cuordilava_paved_promenade(root))
     errors.extend(validate_cuordilava_flower_mosaics(root))
     errors.extend(validate_cuordilava_south_housing_registration(root))
     errors.extend(validate_cuordilava_thermal_courtyard(root))
