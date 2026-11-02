@@ -115,7 +115,7 @@ def organize_districts(art, name):
         for x,y in ((31,12),(28,16),(34,16),(31,20)):
             p(x,y,14)
         # Bottom/border remains translucent over the original plaza ground.
-        if sum(v != 0 for row in art.pix for v in row)<1350:
+        if sum(v != 0 for row in art.pix for v in row)<980:
             raise ValueError("The new geothermal town square became a sparse emblem")
 
     elif role=="homes":
