@@ -1,166 +1,197 @@
 #!/usr/bin/env python3
-"""One coherent lower-storey rebuild across the seven original house wall cells.
+"""Rebuild the original seven ground-floor wall bays as a volcanic street arcade.
 
-The same seven existing 16x16 tiles are also the pool of noninteractive wall
-panels for the Center and Mart; the two reused images consequently inherit a
-proper functional furnace-glass facade. No extra GBA graphic, palette, metatile,
-map cell, roof, object or collision is allocated.
+Seven 16x16 images supply seven residential facade cells, five Gym-side
+forge-wall cells, and two non-interactive Center/Mart wall cells. The NEW
+112x16 composition consists of three larger architectural wings (kiln,
+geothermal workshop and inhabited vaulted arcade), with thick structural
+stonework, curved glazing, copper mineral shadow, and functional material
+differences. It is not a repeat of seven bright rectangular windows.
 
-Within the original 112x16 panel, three adjoining architectural sections have
-unequal widths (2, 2, 3 bays): a forge annex, a mineral engineering workshop
-and an inhabited copper residential arcade. Material planes and copper pipes
-cross every 16px boundary, rather than wallpapering seven identical windows.
+This is SOURCE ART ONLY. The existing generator, metatile ID allocation,
+primary base art, attribute/collision bits, warp/sign/NPC positions and
+20x20 map dimensions remain byte-for-byte controlled by their validators.
 """
 
 
 def rebuild_existing_street_wall(previous):
     if len(previous) != 16 or any(len(row) != 112 for row in previous):
-        raise ValueError("Existing seven-cell wall is not 112x16")
+        raise ValueError("Original Cuordilava seven-cell facade is not 112x16")
     art = [[0] * 112 for _ in range(16)]
 
     def p(x, y, c):
         if 0 <= x < 112 and 0 <= y < 16:
             art[y][x] = c
 
-    def line(x0, x1, y, c):
-        for x in range(max(0, x0), min(111, x1) + 1):
-            p(x, y, c)
+    def span(left, right, y, color):
+        for x in range(max(0, left), min(111, right) + 1):
+            p(x, y, color)
 
-    def column(x, y0, y1, left=5, right=6):
-        for y in range(y0, y1 + 1):
-            p(x, y, left)
-            p(x + 1, y, right)
-            if y in (5, 9, 12):
-                p(x, y, 13)
+    def solid(left, top, right, bottom, color):
+        for y in range(top, bottom + 1):
+            span(left, right, y, color)
 
-    # Continuous charcoal/dark copper facade. Horizontal stone courses align
-    # across all seven former cells; three color planes separate real wings.
+    def pillar(left, top=3, bottom=12, glow=False):
+        for y in range(top, bottom + 1):
+            p(left, y, 8)
+            p(left+1, y, 5 if y%4 else 6)
+            p(left+2, y, 6)
+            if glow and y in (4, 8, 11):
+                p(left+1, y, 13)
+        span(left-1, left+3, top, 5)
+        span(left-1, left+3, bottom, 6)
+
+    # Structural silhouette: 3 building wings, each with its own masonry.
+    # Horizontal construction courses connect across all seven tile borders,
+    # while the left charcoal foundry, center copper geothermal workshop,
+    # and right inhabited basalt vault have genuinely different tones.
     for y in range(16):
         for x in range(112):
-            wing = 0 if x < 32 else 1 if x < 64 else 2
-            c = (2, 3, 8)[wing]
+            wing = 0 if x < 33 else 1 if x < 65 else 2
+            c = (3, 2, 8)[wing]
             if y in (0, 13):
                 c = 5
             elif y == 1:
                 c = 6
             elif y == 2:
-                c = 13 if x % 6 else 5
+                c = 13 if (x//6+wing)%5 == 0 else 5
             elif y == 14:
                 c = 11
             elif y == 15:
                 c = 8
-            elif (y + wing) % 5 == 0 and (x // 5) % 3 == 0:
-                c = 4
-            elif x % 11 == (wing + 2):
+            elif y in (5, 10) and x % 13 in (0, 1):
                 c = 6
+            elif (x*3 + y*5 + wing) % 23 == 0:
+                c = 4
+            elif y % 4 == 0 and x % 8 in (1, 2):
+                c = 5
             p(x, y, c)
 
-    # Irregular but joined upper industrial portico. The original four-tile
-    # roof is above this street-wall row: this is an under-roof lintel, not an
-    # extra building placed on top of a street or doorway.
-    for x0, x1, top in ((1, 30, 3), (33, 62, 4), (65, 110, 3)):
-        for y in range(top, 5):
-            line(x0, x1, y, 5 if y == top else 6)
-        line(x0, x1, 5, 8)
-        for x in range(x0 + 2, x1, 6):
-            p(x, 2, 13)
-
-    # Seven different large furnace/inhabited glass bays. Their widths,
-    # mullions, arched crowns and materials shift with each room type.
-    # Each window contributes ~45+ warm pixels, rather than scattered dots.
-    variations = (
-        # (frame-left, frame-right, glass colour, frame scheme, crossbar row)
-        (3, 13, 12, 0, 9),
-        (18, 29, 11, 1, 8),
-        (35, 46, 12, 2, 10),
-        (50, 61, 12, 3, 8),
-        (67, 78, 11, 1, 9),
-        (83, 94, 12, 0, 10),
-        (99, 108, 11, 2, 8),
-    )
-    for bay, (left, right, glass, frame, crossbar) in enumerate(variations):
-        center = (left + right) // 2
-        line(left - 1, right + 1, 5, 5)
-        line(left - 1, right + 1, 12, 6)
-        for y in range(6, 12):
-            for x in range(left, right + 1):
-                if x in (left, right):
-                    color = 5 if bay % 2 else 8
-                elif y == 6 and abs(x - center) > (right-left)//2 - 3:
-                    color = 8
-                elif (frame == 0 and x == center) or (
-                    frame == 1 and x == center - 2
-                ) or (frame == 2 and x == center + 2) or (
-                    frame == 3 and x in (center - 2, center + 2)
-                ):
-                    color = 5
-                elif y == crossbar:
-                    color = 13
-                elif (x * 7 + y * 3 + bay) % 11 == 0:
-                    color = 14
-                else:
-                    color = glass
-                p(x, y, color)
-        for x in range(left + 1, right):
-            p(x, 12, 13 if (x + bay) % 4 != 0 else 8)
-        # Deep copper sill, not a wafer-thin colored window rectangle.
-        p(left - 1, 11, 8)
-        p(right + 1, 11, 6)
-        p(left, 4, 13)
-        p(right, 4, 13)
-
-    # Three big masonry abutments divide the old seven-panels into adjacent
-    # buildings; thicker than repeated one-pixel wallpaper seams.
-    for x0 in (0, 31, 63, 109):
-        for y in range(4, 13):
-            for x in (x0, x0 + 1, x0 + 2):
-                p(x, y, 8 if x == x0 else 5 if x == x0 + 1 else 6)
-        for y in (5, 9):
-            p(x0 + 1, y, 13)
-
-    # Long functional steam/copper conduits join side wings, partially
-    # reflecting the lights but never becoming prominent magenta grids.
-    for start, end, y in ((3, 28, 3), (35, 59, 3), (67, 106, 3)):
-        line(start, end, y, 5)
-        for x in range(start + 2, end, 7):
+    # Two imposing cross-wing masonry abutments, offset from tile seams.
+    # Large buttresses visually read as a building, not checkerboard paving.
+    for x0, top in ((0, 3), (31, 2), (63, 3), (108, 3)):
+        pillar(x0, top, 12, glow=x0 in (31, 63))
+    for left, right, y in (
+        (2, 29, 3), (35, 60, 4), (67, 106, 3)
+    ):
+        span(left, right, y, 5)
+        span(left+1, right-1, y+1, 8)
+        for x in range(left+2, right-1, 9):
             p(x, y, 13)
-            if y + 1 < 5:
-                p(x, y + 1, 11)
-    for x0 in (16, 47, 79, 96):
-        for y in range(3, 12):
-            p(x0, y, 6)
-            if y in (5, 8, 11):
-                p(x0, y, 14)
-    # Third wing is lived in: three small shadowed copper wall lamps.
-    for x in (73, 88, 104):
-        p(x, 3, 5)
-        p(x, 4, 13)
-        p(x + 1, 4, 11)
+            p(x+1, y+1, 6)
 
-    # Keep the original exact soldered seams (and the paving/plinth belt);
-    # these are invariants of the existing metatile validator.
-    for y, c in ((0, 5), (13, 5), (14, 11), (15, 8)):
-        line(0, 111, y, c)
-    for seam in range(16, 112, 16):
-        for y in range(4, 13):
-            p(seam - 1, y, 5)
-            p(seam, y, 6)
-        for y in (5, 9, 12):
-            p(seam - 1, y, 13)
-            p(seam, y, 11)
-
-    # Enforce art budget AND visual significance. The old 7-bay facade is
-    # *completely* redrawn, but every original collision bit is still owned
-    # by the unchanged world and attribute generator.
-    changed = sum(
-        before != after for old, new in zip(previous, art)
-        for before, after in zip(old, new)
+    # Arches live across the ORIGINAL 7 cell slots. Three functional facade
+    # families: tall molten glass; ventilated narrow technical shutters;
+    # wider warm inhabited window with dark carved volcanic arch.
+    bays = (
+        # left,right,arch-top,glass,design,transom height
+        (3, 13, 4, 12, "kiln", 9),
+        (18, 29, 3, 11, "kiln", 8),
+        (35, 46, 4, 12, "vent", 9),
+        (50, 61, 3, 12, "vent", 8),
+        (67, 78, 4, 11, "home", 9),
+        (83, 94, 3, 12, "home", 8),
+        (99, 107, 4, 11, "home", 9),
     )
-    warm = sum(c in (11, 12, 13, 14) for row in art for c in row)
+    for i, (left, right, top, glass, design, transom) in enumerate(bays):
+        center = (left + right) // 2
+        solid(left-1, top, right+1, 12, 8)
+        span(left-1, right+1, top, 5)
+        span(left-1, right+1, 12, 6)
+        for y in range(top+1, 12):
+            for x in range(left, right+1):
+                dx = abs(x-center)
+                # Recessed arch: dark outer corners are cut from every upper
+                # window. Visually deeper and more natural than an orange box.
+                arch_half = (right-left)//2
+                if y == top+1 and dx >= arch_half-1:
+                    c = 8
+                elif y == top+2 and dx >= arch_half:
+                    c = 5
+                elif x in (left,right):
+                    c = 5 if y%4 else 6
+                elif design == "kiln":
+                    # Furnace chambers glow strongly, guarded by substantial
+                    # central ribs and copper cross-bracing.
+                    if x in (center-2, center+2):
+                        c = 5 if y%3 else 13
+                    elif y == transom:
+                        c = 13
+                    else:
+                        c = glass if (x+3*y+i)%7 else 14
+                elif design == "vent":
+                    # Taller geothermal service vent, staggered paired amber
+                    # louvers and cold status glass; a different silhouette.
+                    if x in (center-3, center+2):
+                        c = 5
+                    elif y in (top+3, transom, 11):
+                        c = 6
+                    elif x in (center,center+1) and y%4 == 0:
+                        c = 9 if i==3 else 14
+                    else:
+                        c = glass if (x+y+i)%6 else 13
+                else:
+                    # Occupied residential arches: small shadowed stone
+                    # mullion plus convincing copper-orange interior glass.
+                    if x == center+(1 if i==5 else 0):
+                        c = 5
+                    elif y == transom:
+                        c = 6
+                    elif x in (left+1,right-1) and y in (top+2, 10):
+                        c = 13
+                    else:
+                        c = glass if (x*2+y+i)%9 else 14
+                p(x,y,c)
+
+        # Deep projecting sill and small warm light under each room.
+        for x in range(left+1, right):
+            p(x, 12, 13 if x%5 != i%5 else 8)
+        # Wide carved header with stone lintel shadow catches actual light.
+        span(left-1,right+1,top-1,6)
+        p(left,top-1,13)
+        p(right,top-1,11)
+
+    # Shared functional copper steam conduits, with occasional gauges
+    # concentrated at real workshop joints rather than a neon pixel grid.
+    for left, right in ((3,29),(35,60),(67,105)):
+        span(left,right,2,5)
+        for x in range(left+5,right-1,8):
+            p(x,2,13)
+            if x%3:
+                p(x,3,11)
+    for x in (16, 47, 79, 96):
+        for y in range(4,12):
+            p(x,y,6)
+        for y in (5,8,11):
+            p(x,y,14 if x<65 else 13)
+    for x in (72, 88, 103):
+        p(x,3,5)
+        p(x,4,13)
+        p(x+1,4,11)
+
+    # Register to all existing metatile-seam validators EXACTLY; connected
+    # plinth lines match every original building base and source alpha rule.
+    for y,c in ((0,5),(13,5),(14,11),(15,8)):
+        span(0,111,y,c)
+    for seam in range(16,112,16):
+        for y in range(4,13):
+            p(seam-1,y,5)
+            p(seam,y,6)
+        for y in (5,9,12):
+            p(seam-1,y,13)
+            p(seam,y,11)
+
+    changed = sum(a != b for old, new in zip(previous, art)
+                  for a, b in zip(old, new))
+    warm = sum(v in (11,12,13,14) for row in art for v in row)
     if changed < 900 or warm < 350:
-        raise ValueError(f"Cuordilava street wall not substantially rebuilt: {changed=}, {warm=}")
-    if len(set(tuple(v for row in art for v in row[16*i:16*i+16]) for i in range(7))) != 7:
-        raise ValueError("Street wall contains duplicated housing bays")
-    if any(not 0 <= c <= 15 for row in art for c in row):
-        raise ValueError("Street wall breaks GBA 4bpp palette")
+        raise ValueError(
+            f"7-bay monumental street arcade lacks substantial visual "
+            f"redesign: changed={changed}, warm={warm}"
+        )
+    if len({tuple(v for row in art for v in row[16*i:16*i+16])
+            for i in range(7)}) != 7:
+        raise ValueError("New street arcade accidentally duplicates entire wall bays")
+    if any(not 0 <= v <= 15 for row in art for v in row):
+        raise ValueError("Street arcade exceeds GBA 4bpp")
     return art
