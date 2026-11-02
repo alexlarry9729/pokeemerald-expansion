@@ -34,13 +34,14 @@ def read16(data, offset):
 
 
 def image():
-    """Two irregular terraced flower beds on the *existing* clear 16x16 floor.
+    """Asymmetrical terraced basalt garden on the same two 8x8 GBA chars.
 
-    Palette 9 supplies deep volcanic soil (12/13), three natural foliage
-    shades (9/10/15) and copper-orange blossoms (11/14). The upper left and
-    upper right halves are different drawings; full metatiles alternate
-    horizontal orientations, so bottom courtyards don't look like one
-    duplicated fluorescent square. A 0 pixel leaves the old floor visible.
+    Replace the former glowing, near-circular orange/green badges with two
+    differently shaped LOW herb beds, thick moss fronds, inset rock edges and
+    a handful of copper flowers. These are overlays on the original
+    WALKABLE cobbles: no NPC, event, collision, world or tile-budget edits.
+    Two top-half 8x8 sources are mirrored vertically by GBA hardware; the
+    second metatile mirrors the entire patch horizontally.
     """
     a = [[0] * 16 for _ in range(16)]
 
@@ -48,58 +49,89 @@ def image():
         if 0 <= x < 16 and 0 <= y < 8:
             a[y][x] = c
 
-    # Basalt soil islands with irregular scalloped outlines; expose clear
-    # cobblestones between their edges and around the plot.
+    # A broad low retaining planter with a deliberately jagged silhouette:
+    # two interlocking terraces but no bright symmetrical ring. Tiny gaps
+    # let the original basalt promenade show through.
     for y in range(1, 8):
         for x in range(1, 15):
-            west = (x - 5) ** 2 * 2 + (y - 6) ** 2 * 3 < 49
-            east = (x - 11) ** 2 * 3 + (y - 5) ** 2 * 2 < 37
-            if (west or east) and (x * 11 + y * 7) % 9 != 0:
-                p(x, y, 12 if (x + y) % 4 else 13)
+            lower_west = 3*(x-5)**2 + 2*(y-5)**2 < 51
+            upper_east = 2*(x-11)**2 + 4*(y-4)**2 < 40
+            root = y >= 5 and 5 <= x <= 12
+            if not (lower_west or upper_east or root):
+                continue
+            # Dark mineral joints and shaded cobbled border, warmer dry
+            # earth inside the actual planting holes.
+            edge = (
+                not (3*(x-5)**2 + 2*(y-5)**2 < 32)
+                and not (2*(x-11)**2 + 4*(y-4)**2 < 23)
+                and not (y == 6 and 5 <= x <= 11)
+            )
+            c = 6 if edge and (x+3*y)%4 else 12
+            if (x*5 + y*7)%11 == 0:
+                c = 13
+            p(x, y, c)
 
-    # Serrated leaves grow in two separate masses. Thin transparent gaps
-    # and cooler shadow leaves separate each frond at original GBA scale.
+    # Interleaved moss and leaf fans across the FULL planter mass; their
+    # asymmetry produces more of a real overgrown basalt garden than a
+    # mechanically repeated circular flower icon.
     for y in range(1, 8):
         for x in range(1, 15):
-            west = 2 * (x - 5) ** 2 + 3 * (y - 5) ** 2 < 30
-            east = 3 * (x - 11) ** 2 + 2 * (y - 5) ** 2 < 28
-            if (west or east) and ((x * 7 + y * 3) % 8 not in (0, 1)):
-                shade = 9 if (x + 2 * y) % 3 == 0 else 10
-                if (x * 5 + y * 7) % 11 == 0:
-                    shade = 15
-                p(x, y, shade)
+            west = 3*(x-5)**2 + 3*(y-5)**2 < 39
+            east = 3*(x-11)**2 + 4*(y-4)**2 < 32
+            bridge = 5 <= x <= 10 and y in (5, 6)
+            if not (west or east or bridge):
+                continue
+            if (x*7 + y*3)%11 == 0:
+                continue  # frond gap shows underlying basalt soil
+            color = 9 if (x + 2*y)%4 == 0 else 10
+            if y in (1, 2, 3) and x%3 != 0:
+                color = 15  # new leaf tips (not magenta/neon)
+            p(x, y, color)
 
-    # Individual stems reach toward the outer soil, increasing natural depth.
-    for x, y in ((3,2), (4,1), (6,1), (7,3), (8,6),
-                 (9,3), (10,2), (12,2), (13,3), (14,6),
-                 (2,5), (4,7), (6,7), (10,7), (12,7)):
-        p(x, y, 9)
-        if y < 7:
-            p(x, y + 1, 15 if x % 3 == 0 else 10)
+    # Four distinct short natural stems grow out of soil, not an evenly
+    # spaced checkerboard of identical flowers.
+    for x, top, lean in ((4, 2, -1), (7, 3, 1), (10, 2, -1), (13, 3, 1)):
+        for y in range(top, 7):
+            px = x + (lean if y in (top, top+1) else 0)
+            p(px, y, 9 if y%2 else 10)
+            if y in (top+1, top+3):
+                p(px-1, y, 10)
+                p(px+1, y-1, 15)
+        p(x+lean, top, 15)
 
-    # Blossom centers are NOT placed in a repeated circular border.
-    # Two flower colours give four alternating mosaics after the H-flips.
-    for x, y in ((3,5), (5,3), (7,6), (9,5), (11,3), (13,6),
-                 (4,7), (12,7)):
+    # Natural sparse copper flowers, placed on staggered leaf tops.
+    # No target-shaped concentric halo, no orange 16px square.
+    for x, y in ((3, 4), (6, 3), (10, 3), (12, 5), (5, 6), (9, 6)):
         p(x, y, 11)
-        p(x + 1, y, 14)
-        p(x, y - 1, 14)
-        if (x + y) % 2:
-            p(x - 1, y, 15)
+        p(x+1, y, 14)
+        p(x, y-1, 14 if (x+y)%2 else 15)
+        p(x-1, y, 9)
 
-    # Hardware V-flip in the metatile creates its lower half. This leaves
-    # every border transparent in the same way as the validated base floor.
+    # Add a single broken retaining stone sill embedded within the flowers.
+    # It visually rests on the volcanic paving instead of floating over it.
+    for x in range(3, 14):
+        if x not in (6, 11):
+            p(x, 7, 12 if x%3 else 13)
+    for x in (4, 10, 12):
+        p(x, 7, 6)
+
+    # Bottom source quadrants are ROM H/V flipped, not redrawn separately.
     for y in range(8, 16):
-        a[y] = a[15 - y][:]
+        a[y] = a[15-y][:]
 
     foliage = sum(c in (9, 10, 15) for row in a for c in row)
     flowers = sum(c in (11, 14) for row in a for c in row)
-    if foliage < 70 or flowers < 12:
-        raise ValueError(f"Volcanic flower beds became sparse: {foliage=}, {flowers=}")
+    stone = sum(c in (6, 12, 13) for row in a for c in row)
+    if foliage < 80 or flowers < 18 or stone < 25:
+        raise ValueError(
+            f"Terraced herb gardens lost dense foliage/flowers/basalt: "
+            f"{foliage}/{flowers}/{stone}"
+        )
     if any(c < 0 or c > 15 for row in a for c in row):
         raise ValueError("Volcanic flower beds exceed indexed 4bpp colours")
+    if any(a[y][0] or a[y][15] for y in range(16)):
+        raise ValueError("Herb beds would create straight border seams")
     return a
-
 
 def paths(root):
     r = Path(root)
