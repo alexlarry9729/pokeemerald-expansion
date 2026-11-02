@@ -11,6 +11,7 @@ on:
       - 'tools/render_cuordilava_detail_sheet.py'
       - 'tools/render_cuordilava_pool_audit.py'
       - 'tools/validate_cyberpunk_assets.py'
+      - 'tools/validate_cuordilava_connectivity.py'
       - 'tools/apply_cuordilava_industrial_art.py'
       - 'tools/generate_cuordilava_architecture.py'
       - 'tools/sculpt_cuordilava_city.py'
@@ -75,6 +76,9 @@ jobs:
       - name: Validate original indexed GBA graphics and map accesses
         run: python3 tools/validate_cyberpunk_assets.py
 
+      - name: Audit original six door approaches and elevated thermal navigation
+        run: python3 tools/validate_cuordilava_connectivity.py --output build-preview/cuordilava-navigation.json
+
       - name: Render the real Lavaridge Town map in day and night modes
         run: python3 tools/render_cuordilava_preview.py --output-dir build-preview
 
@@ -109,5 +113,6 @@ jobs:
             build-preview/cuordilava-thermal-perimeter-day.png
             build-preview/cuordilava-thermal-perimeter-night.png
             build-preview/cuordilava-thermal-perimeter.json
+            build-preview/cuordilava-navigation.json
           if-no-files-found: error
           retention-days: 30
