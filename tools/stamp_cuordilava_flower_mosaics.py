@@ -85,8 +85,8 @@ def image():
             if (x*7 + y*3)%11 == 0:
                 continue  # frond gap shows underlying basalt soil
             color = 9 if (x + 2*y)%4 == 0 else 10
-            if y in (1, 2, 3) and x%3 != 0:
-                color = 15  # new leaf tips (not magenta/neon)
+            if y in (1, 2, 3) and x % 5 == 0:
+                color = 15  # Sparse leaf-tip highlights, no fluorescent tuft
             p(x, y, color)
 
     # Four distinct short natural stems grow out of soil, not an evenly
@@ -102,7 +102,7 @@ def image():
 
     # Natural sparse copper flowers, placed on staggered leaf tops.
     # No target-shaped concentric halo, no orange 16px square.
-    for x, y in ((3, 4), (6, 3), (10, 3), (12, 5), (5, 6), (9, 6)):
+    for x, y in ((3, 4), (6, 3), (10, 3), (12, 5), (8, 6)):
         p(x, y, 11)
         p(x+1, y, 14)
         p(x, y-1, 14 if (x+y)%2 else 15)
