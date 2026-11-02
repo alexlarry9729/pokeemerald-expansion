@@ -247,77 +247,62 @@ def rebuild_civic_massing(art, name):
         p(13,8,5)
         # LOWER y>=13 house windows and entrances copied unchanged.
 
-    else: # 64x32 existing 4x2 civic square — wholly redesigned
-        # Rebuild from top to bottom as a monumental sunken lava caldera.
-        # Pixel 0 stays transparent to the ORIGINAL walkable pavement base.
-        # Surface is a mosaic, not a water cell or a raised obstacle.
-        art.pix = [[0]*64 for _ in range(32)]
+    else: # Full 64x32 civic plaza: calm volcanic civic landmark
+        # Major composition change: instead of a busy full-block lava badge,
+        # build one readable recessed octagonal assembly inset within spacious
+        # slate flagstones. All is walkable art on existing BG2 metatiles.
+        art.pix = [[0] * 64 for _ in range(32)]
         for y in range(32):
             for x in range(64):
-                dx=abs(x-31)
-                dy=abs(y-15)
-                # Wide octagonal stone terrace, deep shadow inside and
-                # copper mineral vein ring. An asymmetric municipal emblem
-                # replaces the former small industrial hexagon.
-                radial=dx*3+dy*5
-                if radial<66:
-                    c=8 if radial<33 else 2
-                    if radial in (61,62,63,64,65):
-                        c=5
-                    elif 47<=radial<=51:
-                        c=13 if (x+y)%4 else 11
-                    elif 33<=radial<=36:
-                        c=6
-                    elif radial<20:
-                        c=8 if (x+y)%5 else 3
+                dx, dy = abs(x-31), abs(y-15)
+                ring = dx*2 + dy*3
+                if ring <= 61:
+                    # Massive uninterrupted slate paving outside an inset seal.
+                    color = 12 if ((x//14)+(y//8))%3 else 13
+                    if y in (7, 24) and 7 <= x <= 55:
+                        color = 5
+                    elif (x in (14, 49)) and 9 <= y <= 22:
+                        color = 6
+                    p(x, y, color)
+                # Beyond the stone octagon let the ORIGINAL walkable
+                # cobbled underlay show through; no decorative pixel noise.
+        # Large octagonal recessed basalt plinth, three coherent bands.
+        for y in range(6,26):
+            for x in range(12,52):
+                dx,dy=abs(x-31),abs(y-15)
+                edge = dx*2+dy*3
+                if edge <= 50:
+                    c = 5 if edge>=47 else 6 if edge>=43 else 8
                     p(x,y,c)
-                # Irregular large surrounding ash flagstones, leaving
-                # untouched passage cobbles between the terrace arcs.
-                elif radial<90 and (x//8+y//5)%4==0:
-                    p(x,y,5 if (x+y)%3 else 6)
-        # Deep beveled wide outer stone rim, not a continuous angular line
-        # visible at the map boundary. This shape is NOT an obstacle.
-        for x in range(10,54):
-            top=3+(abs(x-31)//6)
-            bot=28-(abs(x-31)//6)
-            for y in (top,bot):
-                p(x,y,5)
-                if top+1<bot:
-                    p(x,top+1,6)
-        # Concentric geothermal seal: molten copper flowing in a dark
-        # recessed open bowl. Stronger silhouette and connected geometry.
-        for y in range(10,23):
-            for x in range(22,42):
-                dx=abs(x-31)
-                dy=abs(y-16)
-                if 3*dx+5*dy<=30:
+                if edge <= 31:
+                    p(x,y,12 if edge>27 else 13)
+                if edge in (27,28) and (x+y)%5:
+                    p(x,y,11)
+        # Centerpiece is a contained geothermal compass, not a chaotic
+        # open magma lake. Four cardinal stone arms with copper at their
+        # ends deliberately leave large clean stone negative space.
+        for x in range(25,39):
+            p(x,15,5)
+            if x in (25,38):
+                p(x,15,14)
+        for y in range(10,22):
+            p(31,y,5)
+            if y in (10,21):
+                p(31,y,14)
+        # Distinctive central low furnace seal; visible but not sprite-high.
+        for y in range(13,19):
+            for x in range(28,35):
+                if abs(x-31)+abs(y-15)<=4:
                     p(x,y,8)
-                if 3*dx+5*dy in (28,29,30):
-                    p(x,y,13)
-        for x0,y0,x1,y1 in (
-            (31,11,26,17),(26,17,31,22),(31,22,37,16),
-            (37,16,31,11),(24,15,39,15),(24,19,39,19)
-        ):
-            # Draw this symbolic shape as molten veins within the bowl.
-            art.line(x0,y0,x1,y1,12 if (x0+y0)%2 else 14)
-        rect(30,14,33,19,12)
-        p(31,15,11)
-        p(32,16,14)
-        for cx in (6,58):
-            # Embedded street drain/garden motifs inside the existing
-            # 64-pixel mural; no separate new map objects are placed.
-            for y in (7,24):
-                rect(cx-2,y-2,cx+2,y+2,8)
-                p(cx,y,13)
-                p(cx-1,y,5)
-                p(cx+1,y,5)
-        # Four corner foundation tie-ins share the dark basalt pavement
-        # vocabulary of the newly rebuilt 74-cell pedestrian promenade.
-        for x0 in (2,51):
-            for y0 in (2,24):
-                for x in range(x0,x0+10):
-                    p(x,y0,5 if x%3 else 8)
-                    p(x,y0+1,6 if x%4 else 13)
+        for x,y in ((31,13),(29,15),(33,15),(31,17)):
+            p(x,y,11)
+        p(31,15,14)
+        # Four clean inset municipal corner grates, no fake obstacles.
+        for cx,cy in ((9,8),(54,8),(9,24),(54,24)):
+            for yy in range(cy-2,cy+2):
+                for xx in range(cx-2,cx+2):
+                    p(xx,yy,8 if xx in (cx-2,cx+1) or yy in (cy-2,cy+1) else 6)
+            p(cx,cy,13)
 
     # Guard emblem, exact identity, non-invasive dimensions and magnitude.
     if (art.w,art.h)!=(64,32):
