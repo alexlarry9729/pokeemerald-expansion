@@ -10,6 +10,7 @@ warps, scripts, or a new palette. It runs LAST in the art generation chain.
 from pathlib import Path
 import json
 import struct
+from cuordilava_layers import player_above_walkable_art, validate_covered
 
 from render_cuordilava_preview import png_indexed
 from apply_cuordilava_industrial_art import write_png
@@ -200,8 +201,7 @@ def validate_built(root):
     for mid in METATILES:
         if met[mid*16:mid*16+8]!=pri[ORIGINAL_FLOOR*16:ORIGINAL_FLOOR*16+8]:
             raise ValueError("Original cobbles beneath the flowers changed")
-        if attrs[mid*2:mid*2+2]!=pattrs[ORIGINAL_FLOOR*2:ORIGINAL_FLOOR*2+2]:
-            raise ValueError("Flower mosaics changed original collision")
+        validate_covered(read16(pattrs,ORIGINAL_FLOOR*2),\n                         read16(attrs,mid*2),\n                         f'Walkable flowerbed metatile {mid}')
         if tuple(read16(met,mid*16+8+2*q) for q in range(4)) != expected_overlay(mid==MIRROR_METATILE):
             raise ValueError("Flower mosaic 8x8 mirror / flip seam")
     for x,y in CELLS:
@@ -262,7 +262,7 @@ def run(root):
         entries=bytearray(pri[ORIGINAL_FLOOR*16:ORIGINAL_FLOOR*16+8])
         entries+=struct.pack("<4H",*expected_overlay(mid==MIRROR_METATILE))
         meta[mid*16:(mid+1)*16]=entries
-        attrs[mid*2:mid*2+2]=pattrs[ORIGINAL_FLOOR*2:ORIGINAL_FLOOR*2+2]
+        struct.pack_into('<H',attrs,mid*2,\n                         player_above_walkable_art(read16(pattrs,ORIGINAL_FLOOR*2)))
     for x,y in CELLS:
         off=2*(20*y+x)
         old=read16(raw,off)
