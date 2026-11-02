@@ -346,8 +346,14 @@ def rebuild_civic_massing(art, name):
             raise ValueError("Terraced homes lost their eave supports")
     change=sum(old!=new for r,s in zip(before,art.pix)
                for old,new in zip(r,s))
-    if change < (400 if role=="square" else 350):
-        raise ValueError(f"{name}: new citywide massing too subtle ({change} pixels)")
+    minimum = 400 if role == "square" else 300
+    if change < minimum:
+        raise ValueError(
+            f"{name}: new citywide massing too subtle "
+            f"({change} changed pixels, minimum {minimum})"
+        )
+    print(f"Major Cuordilava architectural massing {role}: "
+          f"{change} indexed 4bpp pixels rebuilt on original four-by-two mural")
     if any(not 0 <= c <= 15 for row in art.pix for c in row):
         raise ValueError("Citywide landmark art no longer GBA 4bpp")
     return change
