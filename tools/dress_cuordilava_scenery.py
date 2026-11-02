@@ -166,6 +166,49 @@ def run(root:Path):
             struct.pack_into("<H",m,index*2,(previous&~1023)|(512+newid))
             assert attr[newid*2:newid*2+2]==old_attribute
     assert len(meta)==512*16 and len(attr)==512*2
+
+    # Finish the OUTER cliff shoulders immediately ABOVE and BELOW the 2x2
+    # former-waterfall region: the original (2,3) and (2,6) cliff-edge
+    # metatiles used pale shoreline overlays, leaving yellow vertical slits
+    # outside the hot-spring rim after the main 4-cell repair.
+    #
+    # Both source metatiles (161,177) are unique to their original position.
+    # Keep their existing 4 underlay quadrants (and all original terrain,
+    # event, map and collision data); only replace each upper graphics layer
+    # with one of the 4 existing palette-10 mountain-rock source quadrants.
+    # No new 8x8 characters, secondary metatiles or GBA palette allocations.
+    shoulder_sources = ((2, 3, 161, True, True),
+                        (2, 6, 177, True, False))
+    pristine = bytes(meta[:489*16])
+    donor = images["cascade"]
+    for x, y, mid, hflip, vflip in shoulder_sources:
+        before_cell = struct.unpack_from("<H", m, (y*20+x)*2)[0]
+        if (before_cell & 1023) != 512+mid or ((before_cell>>10)&3)!=1:
+            raise ValueError(f"Volcanic cliff shoulder shifted at {(x,y)}")
+        if (x,y) in reserved:
+            raise ValueError("Thermal cliff shoulder overlaps an event")
+        if sum((struct.unpack_from("<H", m, k*2)[0]&1023)==512+mid
+               for k in range(400))!=1:
+            raise ValueError("Thermal cliff shoulder metatile reused outside its spot")
+        base=meta[mid*16:mid*16+8]
+        if tuple(struct.unpack("<4H",base)) != (
+            (8<<12)|264, (8<<12)|280, (8<<12)|280, (8<<12)|264
+        ):
+            raise ValueError("Original thermal shoulder base graphics changed")
+        for q in range(4):
+            source=q^(1 if hflip else 0)^(2 if vflip else 0)
+            value=(10<<12)|(512+donor[source])
+            if hflip: value|=0x0400
+            if vflip: value|=0x0800
+            struct.pack_into("<H",meta,mid*16+8+q*2,value)
+        if meta[mid*16:mid*16+8]!=base:
+            raise ValueError("Cliff shoulder underlay changed")
+    for old_mid in range(489):
+        if old_mid not in (161,177) and (
+            meta[old_mid*16:old_mid*16+16]
+            != pristine[old_mid*16:old_mid*16+16]
+        ):
+            raise ValueError("Volcanic shoulder unexpectedly altered other metatiles")
     for cell in range(400):
         before=struct.unpack_from("<H",prior,cell*2)[0]
         after=struct.unpack_from("<H",m,cell*2)[0]
@@ -174,7 +217,7 @@ def run(root:Path):
     write_png(atlas,128,256,pixels,palette)
     assert png_indexed(atlas)==(128,256,pixels)
     town.write_bytes(m);metap.write_bytes(meta);attrp.write_bytes(attr)
-    print("Cuordilava scenery: 8 palms, 6 rooftop chimneys, 5 magma lamps, 4 dry rocky spa-bank cells;")
+    print("Cuordilava scenery: 8 palms, 6 rooftop chimneys, 5 magma lamps, 6 connected dry rock spa-bank cells;")
     print("23 additional private metatiles, fixed 20x20 and exact original collision/warps.")
 
 if __name__=="__main__":run(Path(__file__).resolve().parents[1])
