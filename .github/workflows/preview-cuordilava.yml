@@ -12,6 +12,7 @@ on:
       - 'tools/render_cuordilava_pool_audit.py'
       - 'tools/validate_cyberpunk_assets.py'
       - 'tools/validate_cuordilava_connectivity.py'
+      - 'tools/render_cuordilava_accessibility.py'
       - 'tools/apply_cuordilava_industrial_art.py'
       - 'tools/generate_cuordilava_architecture.py'
       - 'tools/sculpt_cuordilava_city.py'
@@ -82,6 +83,9 @@ jobs:
       - name: Render the real Lavaridge Town map in day and night modes
         run: python3 tools/render_cuordilava_preview.py --output-dir build-preview
 
+      - name: Visualize street and elevated thermal connectivity on the real map
+        run: python3 tools/render_cuordilava_accessibility.py --root . --input-dir build-preview --output-dir build-preview
+
       - name: Render indexed seam/alignment close-ups for all seven landmarks
         run: python3 tools/render_cuordilava_detail_sheet.py --input-dir build-preview --output-dir build-preview
 
@@ -114,5 +118,8 @@ jobs:
             build-preview/cuordilava-thermal-perimeter-night.png
             build-preview/cuordilava-thermal-perimeter.json
             build-preview/cuordilava-navigation.json
+            build-preview/cuordilava-accessibility-day.png
+            build-preview/cuordilava-accessibility-night.png
+            build-preview/cuordilava-accessibility.json
           if-no-files-found: error
           retention-days: 30
