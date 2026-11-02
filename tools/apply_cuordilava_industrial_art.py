@@ -188,6 +188,10 @@ def main() -> None:
     # right half: register all eight roof cells without new tiles or buildings.
     from stitch_cuordilava_south_housing_roof import run as stitch_south_roof
     stitch_south_roof(args.root)
+    # Final civic ground/road layer uses only unused private GBA graphics,
+    # building twelve sizeable stone motifs across existing walkable cells.
+    from sculpt_cuordilava_civic_paving import run as sculpt_volcanic_pavement
+    sculpt_volcanic_pavement(args.root)
 
 if __name__ == "__main__":
     main()
