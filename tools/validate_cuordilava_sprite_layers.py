@@ -21,13 +21,15 @@ from cuordilava_layers import COVERED_LAYER, validate_covered
 PAVEMENTS = set(range(400,412))   # 84 walkable original street cells
 FLOWERS = {422,438}              # 12 walkable low basalt herb gardens
 VENTS = {424}                    # 4 flush inlaid copper grilles
+HOUSING_TERRACE = set(range(416,420)) # 4 original walkable roof-edge cells
 # Entire architectural mural pieces whose ORIGINAL map collision is 0.
 # Flannery ground approach, central plaza caldera, home roof approach.
 WALKABLE_MURALS = set(range(457,461)) | set(range(465,473)) | set(range(477,481))
 GROUPS = {"pavement": PAVEMENTS, "flowers":FLOWERS,
-          "vents":VENTS,"walkable_murals":WALKABLE_MURALS}
+          "vents":VENTS,"walkable_murals":WALKABLE_MURALS,
+          "housing_terrace":HOUSING_TERRACE}
 EXPECTED_COUNTS = {"pavement":84, "flowers":12,
-                   "vents":4,"walkable_murals":16}
+                   "vents":4,"walkable_murals":16,"housing_terrace":4}
 
 
 def audit(root):
@@ -45,6 +47,17 @@ def audit(root):
         mid=(raw&1023)-512
         if mid<0:
             continue
+        # Catch ALL FUTURE town-specific 8x8 mural/roof/inlay artwork,
+        # not just known groups. In the user's actual ROM four
+        # y12 residential-roof cells escaped the previous enumerated test.
+        # Any new walkable town private metatile on BG1 obscures sprites.
+        if mid >= 400 and not ((raw>>10)&3):
+            live_attr=struct.unpack_from("<H",a,mid*2)[0]
+            if (live_attr>>12) != COVERED_LAYER:
+                raise ValueError(
+                    f"PLAYER HIDDEN BY UNREGISTERED TILE: cell {(pos%20,pos//20)} "
+                    f"town metatile {mid}, layer {live_attr>>12}"
+                )
         groups=[k for k,values in GROUPS.items() if mid in values]
         if not groups:
             continue
