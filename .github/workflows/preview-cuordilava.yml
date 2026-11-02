@@ -11,6 +11,8 @@ on:
       - 'tools/render_cuordilava_detail_sheet.py'
       - 'tools/render_cuordilava_pool_audit.py'
       - 'tools/validate_cyberpunk_assets.py'
+      - 'tools/cuordilava_layers.py'
+      - 'tools/validate_cuordilava_sprite_layers.py'
       - 'tools/validate_cuordilava_connectivity.py'
       - 'tools/render_cuordilava_accessibility.py'
       - 'tools/check_cuordilava_release_evidence.py'
