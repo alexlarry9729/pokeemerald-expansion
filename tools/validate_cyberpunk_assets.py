@@ -1908,9 +1908,22 @@ def validate_cuordilava_paved_promenade(root: Path) -> list[str]:
     return []
 
 
+def validate_cuordilava_connected_routes(root: Path) -> list[str]:
+    """Ensure all six original warps, signs and the isolated elevated spa
+    remain accessible with EXACTLY the same GBA collision graph and scripts."""
+    try:
+        from validate_cuordilava_connectivity import audit
+        audit(root)
+    except (ImportError, OSError, IndexError, KeyError, ValueError,
+            TypeError, AssertionError) as exc:
+        return [f'Cuordilava gameplay-route regression: {exc}']
+    return []
+
+
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     errors.extend(validate_cuordilava_fixed_footprint(root))
+    errors.extend(validate_cuordilava_connected_routes(root))
     errors.extend(validate_cuordilava_monument_identity(root))
     errors.extend(validate_cuordilava_scenery(root))
     errors.extend(validate_cuordilava_lush_scenery(root))
