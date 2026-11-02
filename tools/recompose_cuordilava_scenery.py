@@ -41,69 +41,89 @@ def recompose_scenery(kind, previous):
                 y0 += sy
 
     if kind == "palm":
-        # Broad orange-flowering green volcanic tropical plant. It occupies
-        # the original ONE 16x16 palm cell, not a new two-block sprite.
-        for y in range(1, 11):
+        # NEW mature broad-canopy volcanic palm, not an angular neon-green
+        # snowflake. This 16x16 plant uses precisely the existing 8 original
+        # planted cells, same 4 indexed 8x8 graphics and same palette9.
+        # Overlapping uneven leaf clusters create a larger continuous shade
+        # mass; little holes let the original soil/rock show through.
+        for y in range(1, 13):
             for x in range(1, 15):
-                left = 3*(x-5)**2 + 2*(y-6)**2 < 51
-                crown = 2*(x-8)**2 + 3*(y-4)**2 < 72
-                right = 3*(x-11)**2 + 2*(y-7)**2 < 55
-                if left or crown or right:
-                    if (x*3 + y*7) % 13 == 0:
-                        c = 0  # serrated canopy, not a square green blob
-                    elif y < 4 and (x+y)%3:
-                        c = 15  # bright new leaf tips
-                    elif (x*5 + y*2)%7 in (0,1):
-                        c = 9  # deep foliage cutout
-                    else:
-                        c = 10  # dominant natural mid-green
-                    p(x, y, c)
-        # Tapered branches grow through the canopy, clearly belonging to a
-        # single organic plant and casting shadow across the lower ground.
-        stroke(8, 6, 7, 15, 8)
-        stroke(9, 7, 9, 15, 13)
-        for y in range(10, 16):
-            p(7, y, 8 if y % 3 else 5)
-            p(8, y, 13 if y % 4 else 11)
-            p(9, y, 8)
-        for x, y in ((3, 5), (5, 3), (12, 5), (13, 7),
-                     (2, 8), (5, 9), (11, 9), (10, 3)):
-            p(x, y, 11)
-            p(x+1, y, 14)
-            p(x, y+1, 15)
-        for x, y in ((1, 8), (3, 10), (13, 10), (14, 8),
-                     (2, 7), (12, 3), (6, 1)):
-            p(x, y, 15)
-        for x in (6, 7, 9, 10):
-            p(x, 15, 8)
+                crown = (
+                    2*(x-7)**2 + 3*(y-5)**2 < 93
+                    or 2*(x-4)**2 + 3*(y-8)**2 < 49
+                    or 2*(x-11)**2 + 3*(y-7)**2 < 59
+                )
+                if not crown or (x*3+y*7)%13 == 0:
+                    continue
+                leaf = (15 if y<4 and (x+y)%3
+                        else 9 if (x+3*y)%4 == 0
+                        else 10)
+                p(x,y,leaf)
+        # Lower palm trunk is buried behind the real canopy with a visible
+        # narrow basalt-shadow silhouette and warm mineral bark.
+        for y in range(8,16):
+            p(7,y,5 if y%3 else 8)
+            p(8,y,8)
+            if y>11:
+                p(9,y,13 if y%3 else 8)
+        # Organic asymmetric fronds fall below the left/right crown, with
+        # a few ochre-copper blossoms; no bright square flower borders.
+        for x,y in ((2,7),(3,6),(5,4),(9,3),(12,6),
+                    (13,9),(4,10),(10,10),(7,2),(11,4)):
+            p(x,y,11)
+            p(x+1,y,14)
+        for x,y in ((2,11),(3,12),(11,12),(12,11),
+                    (4,3),(13,5),(6,1),(9,1)):
+            p(x,y,15)
+        # Small spread roots tie the tree into the existing volcanic soil.
+        for x,y in ((6,14),(9,14),(6,15),(9,15)):
+            p(x,y,8)
 
     elif kind == "chimney":
-        # Wide battered brick forging stack: shoulder, vent mouth and
-        # continuous warm glass between basalt support posts.
-        rect(5, 4, 11, 15, 8)
-        rect(6, 5, 10, 14, 13)
-        for y in range(5, 15):
-            p(5, y, 5)
-            p(11, y, 8)
-            p(6, y, 11 if y % 4 else 14)
-            p(10, y, 12 if y % 3 else 11)
-            p(7, y, 12)
-            p(8, y, 14 if y%3 == 0 else 12)
-            p(9, y, 12)
-            if y in (7, 11):
-                stroke(4, y, 12, y, 5)
-        rect(3, 2, 13, 4, 8)
-        stroke(3, 2, 13, 2, 6)
-        stroke(4, 3, 12, 3, 5)
-        # Structural iron vent cap and two orange exhaust highlights.
-        rect(5, 0, 11, 1, 8)
-        stroke(5, 0, 11, 0, 5)
-        for x in (6, 8, 10):
-            p(x, 1, 11)
-        for x, y in ((3, 1), (12, 1), (2, 3), (13, 4)):
-            p(x, y, 13)
-            p(x+1, y, 14)
-        stroke(4, 15, 12, 15, 5)
+        # NEW basalt furnace stack, stepped shoulders and a real recessed
+        # rectangular exhaust mouth. Old bright orange ladder/grid replaced
+        # by a large dark metal mass with warm glass and pale mineral steam.
+        # Palette 6 already contains natural slate (1..8) and copper(11..14).
+        # All six previously placed chimneys retain their ORIGINAL
+        # impassable roof metatiles and hardware attributes.
+        for y in range(5,16):
+            left = 4 if y>=11 else 5 if y>=7 else 6
+            right = 12 if y>=11 else 11 if y>=7 else 10
+            for x in range(left,right+1):
+                wall = x in (left,right)
+                face = (8 if wall else
+                        5 if y in (6,10,14) else
+                        3 if (x//3+y//4)%3 else 4)
+                p(x,y,face)
+        # Thick projecting steel lintels, a dark mouth and broad flue hood.
+        rect(3,4,13,5,8)
+        stroke(3,4,13,4,5)
+        stroke(4,5,12,5,6)
+        rect(5,1,11,3,8)
+        stroke(5,1,11,1,5)
+        for x in (7,8,9):
+            p(x,2,2)
+            p(x,3,1)
+        # Orange furnace glass is INSIDE a masonry/iron frame, not painted
+        # as separate diagonal spots on an oversized glowing pole.
+        rect(6,8,10,12,8)
+        rect(7,9,9,11,12)
+        for y in (9,10,11):
+            p(7,y,11 if y%2 else 14)
+            p(8,y,14 if y%2 else 12)
+            p(9,y,11)
+        for x in (5,11):
+            stroke(x,7,x,15,5)
+            for y in (8,12):
+                p(x,y,6)
+        # Two connected dry metal bases and a molten mineral footing.
+        stroke(3,14,13,14,5)
+        stroke(4,15,12,15,13)
+        for x in (4,7,10,12):
+            p(x,15,8)
+        # Small smoke stream at mouth, using original gray slate colors.
+        for x,y,c in ((8,0,6),(7,0,5),(9,0,7),(6,1,6),(10,1,5)):
+            p(x,y,c)
 
     elif kind == "lamp":
         # Replace original lollipop with a recognisable enclosed copper
