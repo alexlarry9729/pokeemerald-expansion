@@ -45,7 +45,7 @@ if [[ -z "$wid" ]]; then
     exit 1
 fi
 
-xdotool windowactivate --sync "$wid"
+xdotool windowfocus --sync "$wid"
 # Allow the real emulated Game Boy Advance BIOS/title sequence to render.
 sleep 13
 kill -0 "$pid"
@@ -53,7 +53,7 @@ import -silent -window "$wid" "$out/emulator-boot.png"
 
 # Start is the default Enter mapping of the real SDL mGBA frontend. This
 # enters its title/menu flow without modifying memory, saves or ROM bytes.
-xdotool windowactivate --sync "$wid"
+xdotool windowfocus --sync "$wid"
 xdotool key --clearmodifiers Return
 sleep 6
 kill -0 "$pid"
