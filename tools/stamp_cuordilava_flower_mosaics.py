@@ -201,7 +201,9 @@ def validate_built(root):
     for mid in METATILES:
         if met[mid*16:mid*16+8]!=pri[ORIGINAL_FLOOR*16:ORIGINAL_FLOOR*16+8]:
             raise ValueError("Original cobbles beneath the flowers changed")
-        validate_covered(read16(pattrs,ORIGINAL_FLOOR*2),\n                         read16(attrs,mid*2),\n                         f'Walkable flowerbed metatile {mid}')
+        validate_covered(read16(pattrs,ORIGINAL_FLOOR*2),
+                         read16(attrs,mid*2),
+                         f'Walkable flowerbed metatile {mid}')
         if tuple(read16(met,mid*16+8+2*q) for q in range(4)) != expected_overlay(mid==MIRROR_METATILE):
             raise ValueError("Flower mosaic 8x8 mirror / flip seam")
     for x,y in CELLS:
@@ -262,7 +264,8 @@ def run(root):
         entries=bytearray(pri[ORIGINAL_FLOOR*16:ORIGINAL_FLOOR*16+8])
         entries+=struct.pack("<4H",*expected_overlay(mid==MIRROR_METATILE))
         meta[mid*16:(mid+1)*16]=entries
-        struct.pack_into('<H',attrs,mid*2,\n                         player_above_walkable_art(read16(pattrs,ORIGINAL_FLOOR*2)))
+        struct.pack_into('<H',attrs,mid*2,
+                         player_above_walkable_art(read16(pattrs,ORIGINAL_FLOOR*2)))
     for x,y in CELLS:
         off=2*(20*y+x)
         old=read16(raw,off)
