@@ -121,6 +121,15 @@ def recompose_scenery(kind, previous):
         stroke(4,15,12,15,13)
         for x in (4,7,10,12):
             p(x,15,8)
+        # Substantial warm copper fixing plates along the base of the
+        # smokestack: tie the new heavy masonry to the city's furnace
+        # lighting without restoring the old full-height neon ladder.
+        for y in (7, 9, 11, 13):
+            p(4, y, 13 if y%2 else 11)
+            p(12, y, 11 if y%2 else 13)
+        for x in (7, 8, 9):
+            p(x, 13, 12 if x!=8 else 14)
+
         # Small smoke stream at mouth, using original gray slate colors.
         for x,y,c in ((8,0,6),(7,0,5),(9,0,7),(6,1,6),(10,1,5)):
             p(x,y,c)
