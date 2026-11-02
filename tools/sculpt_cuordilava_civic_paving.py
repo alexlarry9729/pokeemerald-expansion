@@ -60,100 +60,130 @@ def source_for(x, y, raw):
 
 
 def drawing(kind):
-    """12 differentiated 16px ground tiles with continuous masonry bands.
+    """Twelve massive connected original-footprint civic pavement motifs.
 
-    0..5: ash-slate side paving, interleaved with existing cracked basalt.
-    6..11: copper-burnished broad central street / volcanic plaza ground.
-    All 0-valued pixels are transparent to the original terrain.
+    Each 16x16 tile now contains 2-3 LARGE dressed basalt slabs instead of
+    pseudo-random noisy speckles. Long horizontal joints line up at y=5/12
+    across ALL neighbouring pavement cells. In six existing road variants,
+    the broad buried mineral service channel stays continuous across x=0..15,
+    with occasional copper rivets. Pedestrian flagstones have crosscuts with
+    deliberately staggered construction-joint positions. The two families
+    share material and scale but are recognizable at map scale.
+
+    Palette9 is already in-game: charcoal/ashen reddish stone (5,6,12,13),
+    natural copper (11,14), moss (9,10,15), dark grout (8). Pixel 0 is
+    original terrain: limited to a handful of outer corner dents.
     """
-    pix = [[0]*16 for _ in range(16)]
+    if not 0 <= kind < 12:
+        raise ValueError(f'No Cuordilava road tile family for {kind}')
+    a = [[0] * 16 for _ in range(16)]
+    street = kind >= 6
+    variant = kind % 6
+
     def p(x, y, c):
         if 0 <= x < 16 and 0 <= y < 16:
-            pix[y][x] = c
+            a[y][x] = c
 
-    street = kind >= 6
-    phase = kind if not street else kind-6
+    for y in range(16):
+        # The same y=5/12 long stone courses across every urban district
+        # tile produce readable joined paving even if unrelated road variants
+        # are neighbours. Recessed ends create real long slabs.
+        course = 0 if y < 5 else 1 if y < 12 else 2
+        crosscut = (3 + variant * 3 + course * 6) % 16
+        if crosscut in (0, 15):
+            crosscut = 4 if crosscut == 0 else 11
+        for x in range(16):
+            if y in (5, 12):
+                # Broad but visually thin matte grout course.
+                c = 6 if (x + variant) % 5 == 0 else 5
+            elif y in (6, 13):
+                # Beveled underside catches pale volcanic mineral light.
+                c = 13 if (x + variant) % 6 else 6
+            elif x in (crosscut, crosscut + 1) and y not in (0, 5, 6, 12, 13, 15):
+                c = 8 if x == crosscut else 6
+            elif x in (crosscut - 1, crosscut + 2) and y not in (0, 5, 6, 12, 13, 15):
+                c = 5
+            else:
+                # Large smooth, connected slate faces with limited low-
+                # frequency natural mineral color variation (NOT confetti).
+                slab = ((x // 7) + (y // 5) + variant) % 4
+                c = (12, 13, 12, 6)[slab]
+                if (x + 2 * y + variant * 5) % 23 == 0:
+                    c = 5
+            p(x, y, c)
+
     if street:
-        # Large dark slabs and shadowed construction joints. A 2x2 cell
-        # rectangle looks like wide paving slabs, not scattered lava dots.
-        for y in range(16):
-            for x in range(16):
-                # Continuous two-pixel perimeter of ORIGINAL ground at
-                # extreme outer corners, avoiding a floating carpet edge.
-                if x in (0,15) and y in (0,15):
-                    continue
-                # The street's rich ash-brown base is deliberately less red
-                # than the previous unbroken original sandy-red promenade.
-                if y in (3,11):
-                    c = 8 if (x+phase)%7 == 0 else 5
-                elif x in (1,14) and 4 <= y <= 10:
-                    c = 6
-                elif (x + 3*(y//5) + phase) % 11 == 0:
-                    c = 8
-                elif (x * 5 + y * 3 + phase * 7) % 19 in (0,1,2):
-                    c = 13
-                else:
-                    c = 12 if ((x//7 + y//5 + phase)%4 != 0) else 5
-                p(x,y,c)
-
-        # The warm copper service rail is a coherent horizontal stripe
-        # across each neighbouring 16px metatile on the city's old roadway.
-        for x in range(1,15):
-            p(x,4,13)
-            p(x,12,6)
-            if x%7 not in (0,1):
-                p(x,13,11)
-        for cx in (4,12):
-            p(cx,4,14)
-            p(cx+1,13,14)
-        # Separate the mineral promenade from the city square with dark
-        # stepping stones and two small vegetation pockets in 2 of 6 variants.
-        if kind in (8,11):
-            for yy in range(7,10):
-                for xx in range(6,11):
-                    if (xx+yy)%3:
-                        p(xx,yy,9 if yy%2 else 10)
-            p(7,7,15)
+        # Continuous recessed copper steam-service trough across the SIX
+        # original east-west roadway graphic variants. All x edges join.
+        for x in range(16):
+            p(x, 8, 8 if x % 9 == 0 else 6)
+            p(x, 9, 11 if x % 7 not in (0, 1) else 13)
+            p(x, 10, 13 if x % 4 else 5)
+        # Massive copper riveting, a few underlit insets, instead of a
+        # ribbon of evenly spaced orange specks along every paving seam.
+        for x in (3 + variant % 3, 12 - variant % 3):
+            p(x, 8, 13)
+            p(x, 9, 14)
+            p(x + 1, 9, 11)
+        # An occasional recessed obsidian drain or moss corner gives
+        # functional road identity without suggesting standing pool water.
+        if variant in (2, 5):
+            for y in (2, 3, 4):
+                for x in (11, 12, 13):
+                    p(x, y, 8 if (x+y) % 3 else 6)
+            p(12, 2, 13)
+            p(12, 3, 5)
+        elif variant in (1, 4):
+            for x, y in ((2, 2), (3, 2), (2, 3), (4, 3)):
+                p(x, y, 9 if (x+y)%2 else 10)
     else:
-        # Large dry interconnected flagstones, with changing seam lengths,
-        # rather than a repeated 8px checker texture on every pavement.
-        for y in range(16):
-            for x in range(16):
-                shift=(phase*3 + (y//6)*5)%10
-                seam=((x+shift)%13 in (0,1)) or y in (6,13)
-                if seam:
-                    c=8 if (x+y+phase)%4 else 6
-                elif (x*3+y*5+phase*11)%31 in (0,1):
-                    c=13
-                elif (x+y+phase)%11 in (0,1):
-                    c=5
-                else:
-                    c=12 if (x + 2*y + phase)%5 else 6
-                # Original cobblestone outlines break through along the
-                # jagged corners to blend the original town ground.
-                if x in (0,15) and y in (0,1,14,15):
-                    c=0
-                p(x,y,c)
-        if phase in (1,4):
-            # Natural tiny moss niches along paths; no hazardous puddles.
-            for y in range(9,13):
-                for x in range(10,14):
-                    if (x+y+phase)%4!=0:
-                        p(x,y,9 if x%2 else 10)
-        if phase in (2,5):
-            for x,y in ((4,4),(5,4),(10,11),(11,11)):
-                p(x,y,11)
-                p(x+1,y,14)
-        for x in range(2,14):
-            if phase in (0,3) and x%4 not in (0,1):
-                p(x,2,5)
+        # Pedestrian lanes use the same heavy flagstone scale, without
+        # engineering rail. Wide 2px chamfered masonry ridge instead.
+        for x in range(1, 15):
+            if (x + variant) % 9 in (0, 1, 2):
+                p(x, 2, 5)
+                p(x, 3, 6)
+        for x0 in (1, 13):
+            for y in (4, 10, 15):
+                p(x0, y, 6 if (y+variant)%2 else 5)
+        # Small, organically irregular green mineral seams on only two of
+        # six variants: adjacent to other stone they read as scattered
+        # vegetation, not repeated pool-green stains.
+        if variant in (1, 4):
+            for x, y in ((10, 2), (11, 2), (11, 3), (12, 2),
+                         (9, 10), (10, 10), (10, 11)):
+                p(x, y, 9 if (x+y) % 3 else 10)
+            p(11, 3, 15)
+        if variant in (2, 5):
+            # Sparse copper mineral inclusions rather than road neon.
+            for x, y in ((3, 3), (4, 3), (10, 9), (11, 9)):
+                p(x, y, 11 if (x+y)%2 else 13)
+            p(4, 4, 14)
 
-    if any(not 0 <= v < 16 for row in pix for v in row):
-        raise ValueError('Invalid indexed 4bpp pedestrian ground')
-    if sum(v != 0 for row in pix for v in row) < 190:
-        raise ValueError('Volcanic paving is just decorative speckles')
-    return pix
+    # Use the original cobbled underlay at a FEW chipped corners to
+    # eliminate the rectangular carpet/square-tile visual border.
+    for x, y in ((0, 0), (15, 0), (0, 15), (15, 15)):
+        if (x + 3*y + variant) % 3 == 0:
+            p(x, y, 0)
 
+    # Appearance guards go beyond valid 4bpp: reject bright confetti and
+    # accidental full-neon streets. Tested against the final composited
+    # preview as well, while source-level guards are deterministic.
+    counts = {v: sum(pixel == v for row in a for pixel in row)
+              for v in range(16)}
+    stone = sum(counts[v] for v in (5, 6, 12, 13))
+    copper = counts[11] + counts[14]
+    moss = counts[9] + counts[10] + counts[15]
+    dark = counts[8]
+    if stone < (166 if street else 195):
+        raise ValueError(f'Insufficient continuous basalt on tile {kind}: {stone}')
+    if dark > 35 or moss > 18 or copper > 36:
+        raise ValueError(f'Tile {kind} overdecorated: {dark=}, {moss=}, {copper=}')
+    if sum(c != 0 for row in a for c in row) < 248:
+        raise ValueError(f'Tile {kind} did not fill the flagstone surface')
+    if any(c < 0 or c >= 16 for row in a for c in row):
+        raise ValueError('Invalid indexed 4bpp Cuordilava road color')
+    return a
 
 def find_changes(map_bytes, event_cells):
     old = {}
