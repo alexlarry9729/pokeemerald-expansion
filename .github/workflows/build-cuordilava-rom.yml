@@ -37,6 +37,9 @@ jobs:
           GAME_VERSION: EMERALD
         run: make -j$(nproc) -O all
 
+      - name: Verify actual compiled ROM contains correct 120-cell player priority
+        run: python3 tools/check_cuordilava_compiled_rom_layers.py --rom pokeemerald.gba --output build-preview/cuordilava-rom-layer-audit.json
+
       - name: Verify ROM and generate checksum
         run: |
           test -s pokeemerald.gba
@@ -68,6 +71,7 @@ jobs:
           path: |
             pokeemerald.gba
             pokeemerald.gba.sha256
+            build-preview/cuordilava-rom-layer-audit.json
             cuordilava-build-info.txt
             build-preview/cuordilava-day.png
             build-preview/cuordilava-night.png
