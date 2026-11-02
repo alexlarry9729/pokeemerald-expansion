@@ -217,11 +217,11 @@ def rebuild_civic_massing(art, name):
                 slope=(abs(cx-x)*3)//(4 if i in (0,2) else 5)
                 first=min(10,top+slope)
                 for y in range(first,12):
-                    c=6 if y==first else
-                      5 if y==first+1 else
-                      8 if y==11 else
-                      5 if y==10 else
-                      body if (x//4+y//3)%5 else 3
+                    c=(6 if y==first else
+                       5 if y==first+1 else
+                       8 if y==11 else
+                       5 if y==10 else
+                       body if (x//4+y//3)%5 else 3)
                     p(x,y,c)
             # Each home gets a framed, varied attic window.
             w=2 if i in (0,2) else 3
