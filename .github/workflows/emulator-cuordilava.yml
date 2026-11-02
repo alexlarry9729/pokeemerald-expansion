@@ -52,6 +52,9 @@ jobs:
           GAME_VERSION: EMERALD
         run: make -j$(nproc) -O all
 
+      - name: Audit actual ROM byte table before emulator starts
+        run: python3 tools/check_cuordilava_compiled_rom_layers.py --rom pokeemerald.gba --output build-emulator/cuordilava-rom-layer-audit.json
+
       - name: Really boot the compiled GBA ROM in mGBA and capture screen
         run: |
           bash tools/smoke_cuordilava_emulator.sh pokeemerald.gba build-emulator
@@ -68,6 +71,7 @@ jobs:
             build-emulator/emulator-smoke-report.json
             build-emulator/mgba.log
             build-emulator/verified-navigation.json
+            build-emulator/cuordilava-rom-layer-audit.json
             build-emulator/rom-tested.sha256
           if-no-files-found: warn
           retention-days: 14
