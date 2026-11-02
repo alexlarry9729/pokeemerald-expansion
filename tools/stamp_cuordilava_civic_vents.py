@@ -12,6 +12,7 @@ Runs after housing/Gym facade construction, never edits any sprite or script.
 from pathlib import Path
 import json
 import struct
+from cuordilava_layers import player_above_walkable_art, validate_covered
 from render_cuordilava_preview import png_indexed
 from apply_cuordilava_industrial_art import write_png
 
@@ -85,8 +86,7 @@ def validate_built(root):
         raise ValueError('Civic hot-vent placement has leaked to another map cell')
     if meta[METATILE*16:METATILE*16+8]!=pri[FLOOR_METATILE*16:FLOOR_METATILE*16+8]:
         raise ValueError('Original walkable cobble base not preserved')
-    if u16(attr,METATILE*2)!=u16(pattr,FLOOR_METATILE*2):
-        raise ValueError('Civic hot vents altered movement or interaction')
+    validate_covered(u16(pattr,FLOOR_METATILE*2),u16(attr,METATILE*2),\n                     'Copper inlaid walkable civic vents')
     for q,tile in enumerate(TILES):
         actual=u16(meta,METATILE*16+8+q*2)
         if actual != (6<<12)|(512+tile):
@@ -150,7 +150,7 @@ def run(root):
             for x in range(8):
                 pix[y0+y][x0+x]=a[y1+y][x1+x]
     meta[METATILE*16:METATILE*16+16]=overlay
-    attrs[METATILE*2:METATILE*2+2]=pattr[FLOOR_METATILE*2:FLOOR_METATILE*2+2]
+    struct.pack_into('<H',attrs,METATILE*2,\n                     player_above_walkable_art(u16(pattr,FLOOR_METATILE*2)))
     for x,y in CELLS:
         raw=u16(layout,(y*20+x)*2)
         struct.pack_into('<H',layout,(y*20+x)*2,(raw&~1023)|(512+METATILE))
