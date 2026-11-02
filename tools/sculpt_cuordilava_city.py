@@ -14,6 +14,7 @@ import hashlib
 import struct
 from render_cuordilava_preview import png_indexed
 from apply_cuordilava_industrial_art import write_png
+from cuordilava_layers import player_above_walkable_art
 
 # Each panel forms ONE continuous 64x32 (or 64x16) illustration.
 # All locations are existing roof/terrace/plaza cells, never doors or warps.
@@ -413,7 +414,16 @@ def run(root: Path):
                 newidx=len(sec)//16
                 if newidx>=512:raise ValueError("Secondary metatile ID overflow")
                 sec+=new_entries
-                secattr+=oldattrs[oldidx*2:oldidx*2+2]
+                old_attr=struct.unpack_from('<H',oldattrs,oldidx*2)[0]
+                # Broad town-only murals have solid top graphics. Where the
+                # source cell is WALKABLE, NORMAL puts them on BG1, over the
+                # player. Move those specific panels to COVERED/BG2; never
+                # change any original map elevation or gameplay behavior.
+                if name in ('FLANNERY_GYM_MOLTEN_FORGE',
+                            'CENTRAL_VOLCANIC_PLAZA_CREST',
+                            'HOUSING_MAGMA_TERRACES') and not ((raw>>10)&3):
+                    old_attr=player_above_walkable_art(old_attr)
+                secattr+=struct.pack('<H',old_attr)
                 struct.pack_into("<H",m,i*2,(raw&~1023)|(512+newidx))
                 changed[(x,y)]=(oldmeta,512+newidx,name)
                 count+=1
@@ -431,7 +441,14 @@ def run(root: Path):
     for (x,y),(oldmeta,newmeta,label) in changed.items():
         oldbuf=secattr[:882] if oldmeta>=512 else pattr
         oldindex=oldmeta-512 if oldmeta>=512 else oldmeta
-        assert secattr[(newmeta-512)*2:(newmeta-512)*2+2]==oldbuf[oldindex*2:oldindex*2+2],(label,x,y)
+        source_attr=struct.unpack_from('<H',oldbuf,oldindex*2)[0]
+        raw_before=previous[y*20+x]
+        if label in ('FLANNERY_GYM_MOLTEN_FORGE',
+                     'CENTRAL_VOLCANIC_PLAZA_CREST',
+                     'HOUSING_MAGMA_TERRACES') and not ((raw_before>>10)&3):
+            source_attr=player_above_walkable_art(source_attr)
+        actual_attr=struct.unpack_from('<H',secattr,(newmeta-512)*2)[0]
+        assert actual_attr==source_attr,(label,x,y,hex(actual_attr),hex(source_attr))
     write_png(tiles,128,256,pix,palette)
     w,h,check=png_indexed(tiles)
     assert (w,h,check)==(128,256,pix)
