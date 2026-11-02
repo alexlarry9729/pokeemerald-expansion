@@ -122,6 +122,20 @@ def image():
         a[y][0] = 0
         a[y][15] = 0
 
+    # Citywide visual hierarchy: the floor planters must read as muted
+    # moss embedded in basalt, not twelve identical neon-green/orange badges.
+    # Palette index 9 is the existing deep forest green. Keep only sparse
+    # index-10 leaf highlights and index-14 blossoms. This makes the
+    # surrounding buildings and the larger central geothermal plaza legible
+    # while preserving the same original 4bpp graphics and collision.
+    for y in range(8):
+        for x in range(16):
+            c = a[y][x]
+            if c in (10, 15) and (x * 3 + y * 5) % 5 != 0:
+                a[y][x] = 9
+            elif c == 14 and (x + 2 * y) % 4 != 0:
+                a[y][x] = 11
+
     # Bottom source quadrants are ROM H/V flipped, not redrawn separately.
     for y in range(8, 16):
         a[y] = a[15-y][:]
