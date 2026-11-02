@@ -994,10 +994,16 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
         262, 263, 278, 279, 396, 397, 398, 399,
         412, 413, 414, 415,
     }
+    # The cliff shoulder reconstruction at ORIGINAL metatiles 161/177
+    # retired these five former cyan industrial/shoreline graphics. No
+    # other factory graphics are exempt; the replacement two unique
+    # cliff shoulders, their unchanged underlays and exact palette-10
+    # quadrants are explicitly checked by validate_cuordilava_organic_springs.
+    retired_cliff_shoulder_panels = {312, 328, 338, 343, 344}
     for tile_id in target_tiles:
         if tile_id not in active_secondary_tiles:
-            if tile_id in retired_spring_panels:
-                continue  # Intentionally removed from spa-only factory panels.
+            if tile_id in retired_spring_panels | retired_cliff_shoulder_panels:
+                continue  # Retired only from isolated original spa / cliff cells.
             errors.append(
                 f"{path}: facade tile {tile_id} is not referenced by LavaridgeTown; check the art target"
             )
