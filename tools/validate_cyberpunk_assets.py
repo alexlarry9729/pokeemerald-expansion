@@ -1701,7 +1701,38 @@ def validate_cuordilava_organic_springs(root: Path) -> list[str]:
                     for dy in range(8) for dx in range(8)
                 ):
                     return [f'Exterior thermal wall {mid}: actual atlas contains water']
-    except (OSError, ImportError, IndexError, AssertionError, TypeError, ValueError) as exc:
+        # The source cliff-edge metatiles 161 and 177 occur once each,
+        # immediately above/below the four formerly blue side panels. They
+        # retain the original palette-8 UNDERLAY and movement attribute;
+        # only their exterior rock overlay is rebuilt in mountain palette10.
+        town = (root / 'data/layouts/LavaridgeTown/map.bin').read_bytes()
+        attrs = (root / 'data/tilesets/secondary/cuordilava/metatile_attributes.bin').read_bytes()
+        for x, y, mid, hflip, vflip in (
+            (2, 3, 161, True, True), (2, 6, 177, True, False)
+        ):
+            base=(8<<12)|264, (8<<12)|280, (8<<12)|280, (8<<12)|264
+            actual=struct.unpack_from('<8H',metatile_data,mid*16)
+            if actual[:4]!=base:
+                return [f'Thermal mountain shoulder {(x,y)} lost its original base art']
+            if struct.unpack_from('<H',attrs,mid*2)[0]!=0x1000:
+                return [f'Thermal mountain shoulder {(x,y)} changed ground behavior']
+            cell=struct.unpack_from('<H',town,2*(20*y+x))[0]
+            if (cell&1023)!=512+mid or ((cell>>10)&3)!=1:
+                return [f'Thermal mountain shoulder {(x,y)} lost impassability']
+            appearances=sum(
+                (struct.unpack_from('<H',town,2*i)[0]&1023)==512+mid
+                for i in range(400)
+            )
+            if appearances!=1:
+                return [f'Thermal shoulder metatile {mid} reused outside safe cliff']
+            for q,val in enumerate(actual[4:]):
+                src=q^(1 if hflip else 0)^(2 if vflip else 0)
+                expected=(donor[src]&1023)|(10<<12)
+                if hflip: expected|=0x0400
+                if vflip: expected|=0x0800
+                if val!=expected:
+                    return [f'Thermal mountain shoulder {(x,y)} lost its seamless stone art']
+    except (OSError, ImportError, IndexError, AssertionError, TypeError, ValueError, struct.error) as exc:
         return [f'Organic thermal spring regression: {exc}']
     return []
 
