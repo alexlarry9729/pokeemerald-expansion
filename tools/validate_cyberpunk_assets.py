@@ -1897,6 +1897,17 @@ def validate_mineral_spring_water(root: Path) -> list[str]:
     return errors
 
 
+def validate_cuordilava_player_visibility(root: Path) -> list[str]:
+    """No opaque BG1 foreground above the walking player on new plaza art."""
+    try:
+        from validate_cuordilava_sprite_layers import audit
+        audit(root)
+    except (ImportError, OSError, IndexError, KeyError, TypeError,
+            ValueError, AssertionError, struct.error) as exc:
+        return [f'PLAYER HIDDEN by Cuordilava 4bpp background: {exc}']
+    return []
+
+
 def validate_cuordilava_paved_promenade(root: Path) -> list[str]:
     """Verify the substantial new city-wide walkable ground has correct 4bpp art,
     original ground-level collision/terrain attributes and no event overlaps."""
@@ -1934,6 +1945,7 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_cuordilava_gym_lower_facade(root))
     errors.extend(validate_cuordilava_civic_vents(root))
     errors.extend(validate_cuordilava_paved_promenade(root))
+    errors.extend(validate_cuordilava_player_visibility(root))
     errors.extend(validate_cuordilava_flower_mosaics(root))
     errors.extend(validate_cuordilava_south_housing_registration(root))
     errors.extend(validate_cuordilava_thermal_courtyard(root))
