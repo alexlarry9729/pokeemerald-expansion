@@ -1533,7 +1533,7 @@ def validate_cuordilava_scenery(root: Path) -> list[str]:
         if (len(data),len(a),len(layout)) != (512*16,512*2,800):
             return ["Cuordilava scenery must remain 512 16-byte metatiles, matching attributes and 20x20 layout"]
         for mid in range(489,512):
-            palette_expected=9 if mid<497 else 6 if mid<508 else 8
+            palette_expected=9 if mid<497 else 6 if mid<508 else 10
             entries=struct.unpack_from("<8H",data,mid*16)
             for slot in range(4,8):
                 val=entries[slot]
@@ -1655,10 +1655,22 @@ def validate_cuordilava_organic_springs(root: Path) -> list[str]:
             (1, 4), (2, 4), (1, 5), (2, 5)
         }:
             return ['Cuordilava outer thermal bank placement changed']
-        if any(v in (1, 9, 10) for row in dry_bank for v in row):
-            return ['Thermal pool water/foam escaped outside the stone rim']
-        if any(row[0] or row[15] for row in dry_bank):
-            return ['Thermal stone bank should blend into the original cliff']
+        # Palette-10 indices 9/10 are charcoal cliff, NOT turquoise water
+        # as in palette 8. Fully opaque rock hides old yellow shoreline
+        # underlay, including the x=0 and x=15 vertical tile seams.
+        if any(v not in (9, 10, 11, 12, 13, 14)
+               for row in dry_bank for v in row):
+            return ['Outer thermal bank is not fully covered by mountain rock']
+        mountain_palette = parse_palette(
+            root / 'data/tilesets/secondary/cuordilava/palettes/10.pal'
+        )
+        expected_mountain = (
+            (88, 78, 80), (78, 68, 71), (68, 58, 61),
+            (58, 49, 52), (65, 47, 48), (38, 31, 36),
+        )
+        if any(tuple(mountain_palette[9+i]) != rgb
+               for i, rgb in enumerate(expected_mountain)):
+            return ['Outer pool cliff no longer shares original mountain RGB colors']
         _, _, atlas = png_indexed(
             root / 'data/tilesets/secondary/cuordilava/tiles.png'
         )
@@ -1675,17 +1687,17 @@ def validate_cuordilava_organic_springs(root: Path) -> list[str]:
                 source_quad = q ^ (1 if hflip else 0) ^ (2 if vflip else 0)
                 expected = (
                     donor[source_quad] & 0x3ff
-                ) | (8 << 12) | (0x400 if hflip else 0) | (0x800 if vflip else 0)
+                ) | (10 << 12) | (0x400 if hflip else 0) | (0x800 if vflip else 0)
                 if value != expected:
                     return [f'Exterior basalt bank {mid}: misaligned 16px rock face']
             # Existing four last scenery metatiles, one per exterior cell.
             for value in entries[4:]:
                 tid = (value & 0x3ff) - 512
-                if (value >> 12) != 8 or not 0 <= tid < 512:
+                if (value >> 12) != 10 or not 0 <= tid < 512:
                     return [f'Exterior thermal wall {mid}: corrupt 4bpp tile or palette']
                 x, y = tid % 16 * 8, tid // 16 * 8
                 if any(
-                    atlas[y + dy][x + dx] in (1, 9, 10)
+                    atlas[y + dy][x + dx] not in (9, 10, 11, 12, 13, 14)
                     for dy in range(8) for dx in range(8)
                 ):
                     return [f'Exterior thermal wall {mid}: actual atlas contains water']
