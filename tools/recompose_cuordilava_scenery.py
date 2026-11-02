@@ -2,7 +2,7 @@
 """Strong, coherent scenery shapes on the 23 ORIGINAL Cuordilava scenic cells.
 
 A new full 16x16 illustration is composed for palms, chimney, forge-lantern,
-and mineral-water cascades. No extra pixels outside the existing four 8x8
+and a dry natural cliff in the four former exterior cascade cells. No extra pixels outside the existing four 8x8
 sources per type. The exact old metatile attributes and event-safe 20x20 map
 positions stay in dress_cuordilava_scenery.py.
 """
@@ -130,67 +130,63 @@ def recompose_scenery(kind, previous):
         p(9, 12, 10)
 
     elif kind == "cascade":
-        # This 2x2 original cliff strip is OUTSIDE the original pool's
-        # enclosing stone ring. Its old vertical turquoise/white streams
-        # looked like the hot spring leaked down the outside of the rim.
-        # Carve a NATURAL ROCK RETAINING BANK, not square gray grille panels.
-        # Keep palette-8 water indices 1, 9 and 10 entirely absent.
-        rocks = (
-            (5, 3, 5, 4),   # (cx,cy,halfwidth,halfheight) large upper mass
-            (11, 5, 4, 5),  # right steep cliff shoulder
-            (5, 12, 5, 5),  # irregular lower basalt step
-            (12, 13, 4, 3),
+        # ORIGINAL OUTER CLIFF left of the mineral pool, not a waterfall.
+        # The old art was correctly DRY but used water/shoreline PALETTE 8:
+        # its gray-blue RGB ramps looked like a foreign mechanical grille.
+        #
+        # This 16x16 rock face instead uses PALETTE 10, whose indices 9..14
+        # are exactly the same brown/charcoal tones used by the adjacent
+        # ORIGINAL MOUNTAIN (88/78/80 to 38/31/36 RGB). All 256 source
+        # pixels are opaque cliff stone, hiding the misplaced original
+        # yellow shoreline slits between the four adjacent map cells.
+        #
+        # Four hardware-mirrored orientations in the placement pass give
+        # the 2x2 cliff region four different faceted surfaces with zero
+        # additional GBA tile IDs or world geometry changes.
+        faces = (
+            (5, 3, 6, 5),    # upper western rock mass
+            (12, 5, 5, 6),   # asymmetric right shoulder
+            (4, 12, 6, 5),   # large lower volcanic outcrop
+            (12, 13, 5, 4),  # terrace-rooting lower shoulder
         )
         for y in range(16):
-            for x in range(1, 15):
-                # Indented boundary dissolves into the old original rock,
-                # instead of creating a straight metallic rectangle.
-                left_edge = 2 + (1 if y in (1, 8, 13) else 0)
-                right_edge = 13 - (1 if y in (3, 10, 15) else 0)
-                if not left_edge <= x <= right_edge:
-                    continue
-                mass = -1
-                for i, (cx, cy, rx, ry) in enumerate(rocks):
-                    if (x-cx)**2 * ry**2 + (y-cy)**2 * rx**2 < rx**2*ry**2:
-                        mass = i
+            for x in range(16):
+                # Charcoal fissure background—not translucent pixels.
+                # The repeated vertical white/yellow lines were exposed
+                # underlying terrain because x=0,1,14,15 used to be 0.
+                color = 13 if (x * 7 + y * 3) % 9 else 14
+                for i, (cx, cy, rx, ry) in enumerate(faces):
+                    ellipse = ((x-cx)*(x-cx)*ry*ry
+                               + (y-cy)*(y-cy)*rx*rx)
+                    if ellipse < rx*rx*ry*ry:
+                        if x < cx-1 and y < cy:
+                            color = 9 if (x+y+i)%4 else 10
+                        elif x <= cx+1 and y < cy+2:
+                            color = 10 if (x*3+y+i)%5 else 11
+                        elif x > cx+2 or y > cy+1:
+                            color = 12 if (x+y+i)%3 else 13
+                        else:
+                            color = 11
                         break
-                if mass == -1:
-                    # Deep gaps between large rough volcanic stones.
-                    c = 8 if (x + 3*y) % 3 else 7
-                else:
-                    d = (x * 17 + y * 11 + mass * 7) % 17
-                    if d in (0, 4):
-                        c = 4  # lighter weathered basalt highlights
-                    elif d in (5, 12):
-                        c = 5
-                    elif d in (1, 3, 9):
-                        c = 6
-                    else:
-                        c = 7 if (x + y + mass) % 3 else 8
-                p(x, y, c)
+                p(x, y, color)
 
-        # Two angled cracks, shallow stone plateaus and ash-filled crevices,
-        # explicitly NOT horizontal/vertical metal grid-lines.
+        # Angled natural cracks and broken basalt strata. All values are
+        # mountain palette 10; there are no teal/white water/foam indices.
         for x0, y0, x1, y1 in (
-            (4, 2, 7, 5), (7, 5, 5, 8),
-            (10, 2, 12, 5), (12, 5, 10, 7),
-            (3, 11, 6, 9), (6, 9, 9, 11),
-            (10, 12, 12, 14),
+            (0, 4, 3, 6), (3, 6, 5, 9),
+            (5, 9, 8, 8), (8, 8, 10, 10),
+            (11, 0, 10, 3), (10, 3, 13, 5),
+            (13, 5, 15, 7), (1, 14, 4, 12),
+            (8, 14, 11, 12), (11, 12, 14, 15),
         ):
-            stroke(x0, y0, x1, y1, 8)
+            stroke(x0, y0, x1, y1, 14)
+        # Small natural ridges catch light, like the neighboring mountain.
         for x0, y0, x1, y1 in (
-            (3, 4, 6, 3), (9, 7, 12, 6),
-            (3, 13, 7, 12), (9, 14, 12, 13),
+            (1, 2, 4, 1), (6, 3, 9, 2),
+            (9, 6, 12, 5), (2, 11, 5, 10),
+            (10, 13, 12, 12),
         ):
-            stroke(x0, y0, x1, y1, 5)
-        # Sparse DRY yellow-ochre mineral veins (palette 8: ochre, not
-        # teal); a few faint moss-coloured deposits live at the cliff base.
-        for x, y, color in (
-            (3, 2, 12), (4, 2, 13), (11, 3, 13),
-            (9, 9, 12), (10, 9, 13), (4, 12, 13),
-            (5, 13, 14), (12, 13, 14),
-        ):
-            p(x, y, color)
+            stroke(x0, y0, x1, y1, 9)
 
     if any(not 0 <= color <= 15 for row in art for color in row):
         raise ValueError(f"{kind}: new scenic graphic exceeds GBA 4bpp")
@@ -204,12 +200,12 @@ def recompose_scenery(kind, previous):
         if leaves < 65 or flowers < 8:
             raise ValueError(f"New palm too sparse: {leaves=}, {flowers=}")
     if kind == "cascade":
-        # This scene is now the OUTER ROCK WALL, not a waterfall outside the
-        # hot spring. Never reintroduce any water or water-foam pixels here.
-        wet = sum(v in (1, 9, 10) for row in art for v in row)
-        stone = sum(v in (5, 6, 7, 8) for row in art for v in row)
-        if wet or stone < 120 or any(row[0] or row[15] for row in art):
-            raise ValueError(
-                f"Thermal retaining bank is leaking/transparent: wet={wet}, stone={stone}"
-            )
+        # Palette 10 indices 9/10 are DARK MOUNTAIN ROCK, not water.
+        # Require a fully opaque 16x16 cliff. This is essential because
+        # transparent edges exposed pale yellow shoreline under the old art.
+        if any(v not in (9, 10, 11, 12, 13, 14) for row in art for v in row):
+            raise ValueError("External volcanic cliff contains transparent/water art")
+        rock_shadows = sum(v in (12, 13, 14) for row in art for v in row)
+        if rock_shadows < 65:
+            raise ValueError("External cliff has lost its characteristic deep basalt shadow")
     return art
