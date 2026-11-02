@@ -35,8 +35,9 @@ def check(directory):
     if any(door.get("min_approach_steps",-1)<0
            for door in nav["entrances"].values()):
         raise ValueError("Original town door has no reachable approach")
+    containment=pool.get("water_containment",{})
     for key in POOL_ZERO:
-        if pool.get(key)!=0:
+        if containment.get(key)!=0:
             raise ValueError(f"Thermal pool left-bank visual regression: {key}")
     for mode in ("day","night"):
         for prefix in ("cuordilava-","cuordilava-accessibility-"):
@@ -55,7 +56,7 @@ def check(directory):
         "doors_verified":len(DOORS),
         "street_component":nav["original_street_component_cells"],
         "raised_spring_component":nav["original_elevated_spring_component_cells"],
-        "left_cliff_water_or_yellow_pixels":{k:pool[k] for k in POOL_ZERO},
+        "left_cliff_water_or_yellow_pixels":{k:containment[k] for k in POOL_ZERO},
     }
 
 if __name__=="__main__":
