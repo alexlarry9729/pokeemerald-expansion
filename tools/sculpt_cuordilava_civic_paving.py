@@ -15,6 +15,7 @@ from pathlib import Path
 import json
 import struct
 from collections import Counter
+from cuordilava_layers import player_above_walkable_art, validate_covered
 from render_cuordilava_preview import png_indexed
 from apply_cuordilava_industrial_art import write_png
 
@@ -279,7 +280,7 @@ def run(root):
                     rows[ty+yy][tx+xx]=graphic[sy+yy][sx+xx]
             overlay += struct.pack('<H',(PALETTE<<12)|(512+tid))
         meta[mid*16:(mid+1)*16]=overlay
-        attrs[mid*2:(mid+1)*2]=pattrs[source_mid*2:source_mid*2+2]
+        # The original ground source has NORMAL BG1 overlays. Our NEW\n        # opaque upper graphics would hide an elevation-3 player there.\n        # Covered keeps the same behavior but composites art on BG2.\n        ground_attr=u16(pattrs,source_mid*2)\n        struct.pack_into('<H',attrs,mid*2,\n                         player_above_walkable_art(ground_attr))
     for (x,y),(kind,source_mid) in changes.items():
         off=2*(20*y+x)
         raw=u16(terrain,off)
@@ -338,8 +339,7 @@ def validate_built(root):
     for kind in range(12):
         source=FLOOR_SOURCE if kind<6 else AVENUE_SOURCES[kind-6]
         mid=PRIVATE_METAS[kind]
-        if attrs[2*mid:2*mid+2]!=pattrs[2*source:2*source+2]:
-            raise ValueError('Volcanic promenade no longer has original ground movement')
+        validate_covered(u16(pattrs,2*source),u16(attrs,2*mid),\n                         f'Volcanic promenade metatile {mid}')
         if meta[16*mid:16*mid+8]!=primary[16*source:16*source+8]:
             raise ValueError('Volcanic promenade changed original ground underlay')
         desired=drawing(kind)
