@@ -197,6 +197,11 @@ def main() -> None:
     # building twelve sizeable stone motifs across existing walkable cells.
     from sculpt_cuordilava_civic_paving import run as sculpt_volcanic_pavement
     sculpt_volcanic_pavement(args.root)
+    # Original tiles above the new clinic/market roofs still looked like
+    # disconnected old windows. Reuse the existing private authored roof
+    # quadrants after all other atlas/metatile registrations are complete.
+    from stitch_cuordilava_rear_roofs import run as stitch_rear_roofs
+    stitch_rear_roofs(args.root)
 
 if __name__ == "__main__":
     main()
