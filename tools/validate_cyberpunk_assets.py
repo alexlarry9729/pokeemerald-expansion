@@ -607,7 +607,6 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
             errors.append(f"{path}: unable to validate shared palette integrity: {exc}")
     # Palette 6 is private to custom architecture; legacy palette-6 metatiles are remapped to 13.
     custom_slots = {
-        72: (4, 5, 6, 7), 73: (4, 5, 6, 7), 74: (4, 5, 6, 7), 77: (4, 5, 6, 7),
         75: tuple(range(8)), 76: tuple(range(8)), 78: tuple(range(8)), 79: tuple(range(8)),
         162: (4, 5, 6, 7),
         170: tuple(range(8)), 173: tuple(range(8)), 174: tuple(range(8)),
@@ -1018,10 +1017,15 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     retired_rear_roof_panels = {
         166, 167, 182, 183, 424, 425, 426, 427, 428, 429, 430, 431,
     }
+    # The old, repeated copper scaffolding on the elevated spring-to-Center
+    # passage is also retired: it was NOT stairs. Its old art stays in the
+    # source atlas but must no longer appear on the actual town map.
+    retired_wrong_stair_scaffold = {258, 259, 260, 261}
     for tile_id in target_tiles:
         if tile_id not in active_secondary_tiles:
             if tile_id in (retired_spring_panels | retired_cliff_shoulder_panels
-                           | retired_rear_roof_panels):
+                           | retired_rear_roof_panels
+                           | retired_wrong_stair_scaffold):
                 continue  # Retired only from isolated original spa / cliff cells.
             errors.append(
                 f"{path}: facade tile {tile_id} is not referenced by LavaridgeTown; check the art target"
@@ -1226,12 +1230,17 @@ def validate_cuordilava_roof_intake_panel(root: Path) -> list[str]:
 
 
 def validate_cuordilava_roof_corner_overlays(root: Path) -> list[str]:
-    """Check the custom iron corner/eave overlays that replace the stock cyan edge tiles."""
+    """Restore and guard ORIGINAL GBA stair tiles, not industrial roof scaffolding."""
     errors: list[str] = []
     metatiles_path = root / "data/tilesets/secondary/cuordilava/metatiles.bin"
     layouts_path = root / "data/layouts/layouts.json"
-    expected = {72: (258, 259, 260, 261), 73: (258, 259, 260, 261),
-                74: (258, 259, 260, 261), 77: (258, 259, 260, 261)}
+    from restore_cuordilava_original_spring_steps import (
+        ORIGINAL_OVERLAYS, validate_built as validate_original_stairs
+    )
+    expected = {
+        mid: tuple((pal << 12) | tile for pal, tile in parts)
+        for mid, parts in ORIGINAL_OVERLAYS.items()
+    }
     try:
         meta = metatiles_path.read_bytes()
     except OSError as exc:
@@ -1241,13 +1250,12 @@ def validate_cuordilava_roof_corner_overlays(root: Path) -> list[str]:
         if off + 16 > len(meta):
             errors.append(f"{metatiles_path}: missing Cuordilava roof-corner metatile {metatile_id}")
             continue
-        for slot, tile_id in enumerate(tiles, start=4):
-            entry = struct.unpack_from("<H", meta, off + slot * 2)[0]
-            if (entry & 0x3FF) != 512 + tile_id or ((entry >> 12) & 0xF) != 6:
-                errors.append(
-                    f"{metatiles_path}: roof-corner metatile {metatile_id} overlay slot {slot} "
-                    f"must use secondary tile {tile_id} with palette 6"
-                )
+        current = struct.unpack_from("<4H", meta, off + 8)
+        if current != tiles:
+            errors.append(
+                f"{metatiles_path}: original Pokémon Emerald stair metatile "
+                f"{metatile_id} no longer has its four exact GBA overlay tiles"
+            )
 
     try:
         layouts = json.loads(layouts_path.read_text(encoding="utf-8"))["layouts"]
@@ -1286,6 +1294,10 @@ def validate_cuordilava_roof_corner_overlays(root: Path) -> list[str]:
             errors.append(
                 f"{root / 'data/layouts/LavaridgeTown/map.bin'}: roof-corner metatile {metatile_id} is not used by Cuordilava"
             )
+    try:
+        validate_original_stairs(root)
+    except (OSError, ValueError, IndexError, struct.error) as exc:
+        errors.append(f"Original elevated hot-spring stairs lost: {exc}")
     return errors
 
 
