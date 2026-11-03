@@ -1010,9 +1010,18 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     # cliff shoulders, their unchanged underlays and exact palette-10
     # quadrants are explicitly checked by validate_cuordilava_organic_springs.
     retired_cliff_shoulder_panels = {312, 328, 338, 343, 344}
+    # The five source metatiles for the OLD rear Center/Market rooftops remain
+    # untouched as historical donor definitions, but the original rear windows
+    # are no longer rendered after the eight isolated roof aliases replace
+    # those exact town cells. Their original graphic tile IDs are thus retired
+    # from live map coverage rather than missing accidentally.
+    retired_rear_roof_panels = {
+        166, 167, 182, 183, 424, 425, 426, 427, 428, 429, 430, 431,
+    }
     for tile_id in target_tiles:
         if tile_id not in active_secondary_tiles:
-            if tile_id in retired_spring_panels | retired_cliff_shoulder_panels:
+            if tile_id in (retired_spring_panels | retired_cliff_shoulder_panels
+                           | retired_rear_roof_panels):
                 continue  # Retired only from isolated original spa / cliff cells.
             errors.append(
                 f"{path}: facade tile {tile_id} is not referenced by LavaridgeTown; check the art target"
@@ -1139,8 +1148,18 @@ def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
             else:
                 counts[metatile_id] += 1
 
+    # These precise old rear-window metatiles are intentionally retired from
+    # live cells and replaced ONLY by separately validated 390..393/412..415
+    # aliases. Their palette-6 references remain protected above.
+    retired_rear_roofs = {75, 76, 78, 79, 174}
     for metatile_id, count in counts.items():
-        if count == 0:
+        if metatile_id in retired_rear_roofs:
+            if count != 0:
+                errors.append(
+                    f"Obsolete rear-roof metatile {metatile_id} is still active "
+                    "behind the new Cuordilava roof"
+                )
+        elif count == 0:
             errors.append(
                 f"{root / 'data/layouts/LavaridgeTown/map.bin'}: custom architecture metatile {metatile_id} "
                 "is not used by Cuordilava"
