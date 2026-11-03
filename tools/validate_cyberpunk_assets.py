@@ -617,6 +617,12 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
     # The 12 truly private, walkable civic flagstones now use neutral basalt
     # colors from palette 6; exact source, map location and sprite priority
     # are separately protected by validate_cuordilava_paved_promenade().
+    # Four Market + four elevated Center rear-roof aliases borrow the exact
+    # palette-6 graphics and base underlays from protected original roofs.
+    # Their exact positions, donor quadrants and collision are separately
+    # checked; unrelated old roof definitions remain unchanged.
+    custom_slots.update({tile: tuple(range(8)) for tile in
+                         (*range(390, 394), *range(412, 416))})
     custom_slots.update({tile: (4, 5, 6, 7) for tile in range(400, 412)})
     # Six EXISTING right-hand residential roof cells now reuse the left
     # sculpture's palette-6 overlay, with H-flipped 8x8 quadrants. Their
@@ -1957,6 +1963,11 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_cuordilava_gym_lower_facade(root))
     errors.extend(validate_cuordilava_civic_vents(root))
     errors.extend(validate_cuordilava_paved_promenade(root))
+    try:
+        from stitch_cuordilava_rear_roofs import validate_built as validate_rear_roofs
+        validate_rear_roofs(root)
+    except (ImportError, OSError, ValueError, AssertionError, struct.error) as exc:
+        errors.append(f"Cuordilava rear roof graphic registration regression: {exc}")
     errors.extend(validate_cuordilava_player_visibility(root))
     errors.extend(validate_cuordilava_flower_mosaics(root))
     errors.extend(validate_cuordilava_south_housing_registration(root))
