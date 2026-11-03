@@ -9,7 +9,7 @@ The map already has the correct 4-cell connectivity: never alter its words.
 The actual two original stair GRAPHIC characters (tiles 315 and 331) were
 subsequently allocated to town murals. Do NOT point at those overwritten
 characters. Instead, copy their EXACT indexed 8x8 pixels from the repository's
-untouched vanilla secondary/lavaridge/tiles.png into characters 180 and 181
+untouched vanilla secondary/lavaridge/tiles.png into characters 182 and 183
 of the existing 512-character Cuordilava tileset. Both characters were only
 used by the obsolete, now-retired scaffold on metatile 174 and must be
 proven unreferenced by every other ACTIVE map cell before repurposing.
@@ -28,13 +28,14 @@ STAIR_META = 174
 STAIR_MAP_ID = 512+STAIR_META
 STAIR_CELLS = {(6,1),(7,1),(8,1),(9,1)}
 # Original secondary/Lavaridge source tile ID -> safe repurposed Cuordilava ID.
-STEP_COPY = {315:180, 331:181}
+STEP_COPY = {315:182, 331:183}
 assert not (set(STEP_COPY.values()) & (set(range(160,172)) | set(range(288,296))))
+assert not (set(STEP_COPY.values()) & {168,169,180,181,184,185,200,201,202,203,392,393})
 ORIGINAL_PIXELS_REFERENCES = (315,315,331,331)
 ORIGINAL_STAIRS = (
     (10<<12)|82,(10<<12)|83,(10<<12)|98,(10<<12)|99,
-    (8<<12)|(512+180),(8<<12)|(512+180),
-    (8<<12)|(512+181),(8<<12)|(512+181),
+    (8<<12)|(512+182),(8<<12)|(512+182),
+    (8<<12)|(512+183),(8<<12)|(512+183),
 )
 OLD_SCAFFOLD = tuple((6<<12)|(512+t)
                      for t in (164,165,180,181,166,167,182,183))
@@ -134,7 +135,7 @@ def run(root):
     inspect_access(m,attrs,json.loads(events))
     if struct.unpack_from('<8H',meta,STAIR_META*16)!=OLD_SCAFFOLD:
         raise ValueError('Old (incorrect) stair scaffold changed; refusing stale edit')
-    # Check no other ACTIVE metatile on the town references 180 or 181.
+    # Check no other ACTIVE metatile on the town references 182 or 183.
     old_chars=set(STEP_COPY.values())
     for pos in range(400):
         mid=u16(m,2*pos)&1023
@@ -175,7 +176,7 @@ def run(root):
         raise ValueError('Restoring the staircase altered the world geometry')
     print('Cuordilava REAL original stair graphics restored: 4 raised access '
           'cells at x6..9,y1, 2 exact original 8x8 graphic characters '
-          'copied to previously occupied but now retired slots 180/181; '
+          'copied to previously occupied but now retired slots 182/183; '
           '0 new slots, 6 original warps, collision and elevation unchanged')
 
 
