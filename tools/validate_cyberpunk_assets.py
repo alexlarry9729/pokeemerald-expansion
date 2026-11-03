@@ -614,6 +614,10 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
         179: tuple(range(8)), 181: tuple(range(8)),
         # 285 is the pool's new transparent mineral-water panel (palette 8).
     }
+    # The 12 truly private, walkable civic flagstones now use neutral basalt
+    # colors from palette 6; exact source, map location and sprite priority
+    # are separately protected by validate_cuordilava_paved_promenade().
+    custom_slots.update({tile: (4, 5, 6, 7) for tile in range(400, 412)})
     # Six EXISTING right-hand residential roof cells now reuse the left
     # sculpture's palette-6 overlay, with H-flipped 8x8 quadrants. Their
     # exact locations, base tiles and collision are separately validated.
@@ -1539,7 +1543,7 @@ def validate_cuordilava_scenery(root: Path) -> list[str]:
         if (len(data),len(a),len(layout)) != (512*16,512*2,800):
             return ["Cuordilava scenery must remain 512 16-byte metatiles, matching attributes and 20x20 layout"]
         for mid in range(489,512):
-            palette_expected=9 if mid<497 else 6 if mid<508 else 10
+            palette_expected=9 if mid<497 else 6 if mid<508 else 8 if mid in (509,511) else 10
             entries=struct.unpack_from("<8H",data,mid*16)
             for slot in range(4,8):
                 val=entries[slot]
