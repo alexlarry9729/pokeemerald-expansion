@@ -13,6 +13,7 @@ on:
       - 'tools/stitch_cuordilava_rear_roofs.py'
       - 'tools/carve_cuordilava_landmark_architecture.py'
       - 'tools/relief_cuordilava_building_depth.py'
+      - 'tools/separate_cuordilava_roof_planes.py'
       - 'tools/rebuild_cuordilava_civic_massing.py'
       - 'tools/organize_cuordilava_districts.py'
       - 'tools/sculpt_cuordilava_civic_paving.py'
