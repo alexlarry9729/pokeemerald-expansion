@@ -9,9 +9,9 @@ mural alone cannot remove the disconnected / floating old roof pixels.
 Reuse the exact already-rendered four-column roof art from the four-by-two
 Center and Market murals. This adds ZERO 8x8 graphics and makes no changes
 to the walkability of the old rear roof or elevated Center entrance.
-Only four proven-unused town-private metatile slots (412..415) are needed
-to give the old repeated Center row four properly registered roof panels;
-four unique Market-only metatiles are edited in place.
+Eight audited unused town-private metatile slots (390..393 and 412..415)
+give both the repeated Center row and the four Market rear-roof cells
+independently registered artwork; the historical donor tiles stay pristine.
 
 Run AFTER the civic-paving and housing-roof passes, with all 512 metatiles
 and existing 4bpp graphic characters already allocated.
@@ -21,10 +21,9 @@ import json
 import struct
 
 CENTER_REAR = tuple((6+i, 1, 686, 412+i, 8+i, 4) for i in range(4))
-MARKET_REAR = tuple((14+i, 2, mid, 14+i, 3) for i,mid in
+MARKET_REAR = tuple((14+i, 2, mid, 390+i, 14+i, 3) for i,mid in
                     enumerate((590,587,588,591)))
-EXTRA_METAS = frozenset(range(412,416))
-MARKET_METAS = frozenset(mid-512 for _,_,mid,_,_ in MARKET_REAR)
+EXTRA_METAS = frozenset(range(412,416)) | frozenset(range(390,394))
 DONOR_START = 441
 PALETTE = 6
 
@@ -93,12 +92,14 @@ def validate_built(root):
             raise ValueError(f"Center rear roof lost continuous donor art {(x,y)}")
         if word(attrs,2*new)!=word(attrs,2*(old-512)):
             raise ValueError("Elevated Center rear roofing changed collision/behavior")
-    for x,y,old,donor_x,donor_y in MARKET_REAR:
-        if spots(m,old)!={(x,y)}:
-            raise ValueError(f"Market original rear roof changed location at {(x,y)}")
-        off=(old-512)*16
+    for x,y,old,new,donor_x,donor_y in MARKET_REAR:
+        if spots(m,512+new)!={(x,y)}:
+            raise ValueError(f"Market rear roof alias lost correct location at {(x,y)}")
+        off=new*16
         if meta[off+8:off+16]!=donor_overlay(m,meta,donor_x,donor_y):
-            raise ValueError(f"Market rooftop still displays disconnected original panels {(x,y)}")
+            raise ValueError(f"Market rear roof lost registered donor art at {(x,y)}")
+        if word(attrs,2*new)!=word(attrs,2*(old-512)):
+            raise ValueError("Market roof changed original terrain behavior")
     return True
 
 
@@ -131,26 +132,34 @@ def run(root):
         if original&1023!=old:
             raise ValueError("Center old roof source unexpectedly moved")
         struct.pack_into('<H',m,at,(original&~1023)|(512+new))
-    # Four UNIQUE old Market metatiles already have the right locations;
-    # swap their obsolete roof art, preserving ALL old base graphics.
-    for x,y,old,donor_x,donor_y in MARKET_REAR:
-        off=(old-512)*16
-        meta[off+8:off+16]=donor_overlay(m,meta,donor_x,donor_y)
+    # Keep protected original Market source definitions pristine. Use four
+    # separately registered local aliases that keep exact terrain semantics.
+    for x,y,old,new,donor_x,donor_y in MARKET_REAR:
+        old_idx=old-512
+        background=meta[old_idx*16:old_idx*16+8]
+        roof=donor_overlay(m,meta,donor_x,donor_y)
+        meta[new*16:new*16+16]=background+roof
+        struct.pack_into('<H',attrs,new*2,word(before_attrs,old_idx*2))
+        at=2*(20*y+x)
+        raw=word(m,at)
+        if raw&1023!=old:
+            raise ValueError("Original Market rooftop source shifted unexpectedly")
+        struct.pack_into('<H',m,at,(raw&~1023)|(512+new))
     for i in range(400):
         a,b=word(before_map,i*2),word(m,i*2)
         if a>>10!=b>>10 or (
-            (i%20,i//20) not in {(x,y) for x,y,*_ in CENTER_REAR} and a!=b
+            (i%20,i//20) not in (
+                {(x,y) for x,y,*_ in CENTER_REAR} |
+                {(x,y) for x,y,*_ in MARKET_REAR}
+            ) and a!=b
         ):
             raise ValueError("Rear rooftop art altered original game geometry")
     for mid in range(512):
-        if mid not in EXTRA_METAS|MARKET_METAS and (
+        if mid not in EXTRA_METAS and (
             meta[mid*16:mid*16+16]!=before_meta[mid*16:mid*16+16]
             or attrs[mid*2:mid*2+2]!=before_attrs[mid*2:mid*2+2]
         ):
             raise ValueError(f"Rear roof pass leaked outside protected metatile {mid}")
-    if any(attrs[mid*2:mid*2+2]!=before_attrs[mid*2:mid*2+2]
-           for mid in MARKET_METAS):
-        raise ValueError("Market rooftop changed collision behavior")
     p['map'].write_bytes(m)
     p['metas'].write_bytes(meta)
     p['attrs'].write_bytes(attrs)
