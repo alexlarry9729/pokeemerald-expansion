@@ -106,7 +106,10 @@ def drawing(kind):
                 c=12
             if (x,y) in ((0,0),(15,0),(0,15),(15,15)):
                 c=12
-            if 2<=y<=13:
+            # Stop most slab joints before they become repeating vertical
+            # stripes across the whole plaza. Broad, uninterrupted stone
+            # planes leave the entrances and central walking lanes legible.
+            if 3<=y<=12 and (y+v)%6 not in (0,1,2):
                 if x==main_cut:
                     c=5
                 elif x==main_cut+1:
@@ -115,7 +118,11 @@ def drawing(kind):
 
     # A diagonal shale rift crosses PART of a slab, not every entire row.
     # Vary the height/length in each variant to avoid periodic striping.
-    for x in range(2,14):
+    for x in range(3+v%3, 11+v%2):
+        # Natural fissures are local accents, not continuous 12-pixel
+        # diagonals repeated every 16 pixels across the streets.
+        if (x+v)%5==0:
+            continue
         if v in (0,3):
             fracture=5 + (x//5) + (1 if v==3 else 0)
         elif v in (1,4):
@@ -140,15 +147,18 @@ def drawing(kind):
         p(x+1,y,13)
 
     if road:
-        # One engineered geothermal service rail, clearly smaller than
-        # the pavement itself; its tiny copper core is physically inset.
-        for x in range(16):
+        # Short inlaid service joints indicate the east/west promenade,
+        # without making a continuous copper/neon stripe through every
+        # street metatile. Preserve a quiet border at the slab edges.
+        for x in range(2,14):
+            if (x+2*v)%5==0:
+                continue
             p(x,9,5)
             p(x,10,13)
-            p(x,11,6)
-            if x in range(4,12) and (x+v)%4 not in (0,1):
+            if (x+v)%3:
+                p(x,11,6)
+            if 5<=x<=10 and (x+v)%4==2:
                 p(x,10,11)
-        # A single low rivet instead of repeated glowing orange pixels.
         p(3+v%4,9,8)
         p(3+v%4,10,14)
     elif v in (1,4):
