@@ -49,16 +49,26 @@ def intended_graphics(metas):
     dark = struct.unpack_from("<8H", metas, DRY_CLIFF * 16)
     # top: the two mirrored northern stone caps; bottom: the two
     # established eastern-side dry rock feet, continuing down the cliff.
-    top_and_bottom = (north[5], north[4], east[6], east[7])
+    # Upper junction keeps the already present north-west crest. The lower
+    # two west-wall panels are instead a true horizontal reflection of the
+    # EXISTING east rim; copying the crest into every panel created three
+    # disconnected stone squares along the left of the pool.
+    upper = (north[5], north[4], east[6], east[7])
+    side = (east[5], east[4], east[7], east[6])
     if any((item >> 12) != PALETTE_WATER_ROCK
            or not 512 <= (item & 1023) < 1024
-           or item & 0x0c00 for item in top_and_bottom):
+           or item & 0x0c00 for item in (*upper, *side)):
         raise ValueError("Existing pool stone donors no longer have clean palette-8 rock tiles")
     if any((item >> 12) != PALETTE_MOUNTAIN for item in dark[:4]):
         raise ValueError("Original dark mountain backing palette was changed")
     if any(item & 0x0c00 for item in dark[:4]):
         raise ValueError("Unexpected flipped lower-level mountain donor")
-    return tuple(dark[:4]) + tuple(item ^ HFLIP for item in top_and_bottom)
+    backing = tuple(dark[:4])
+    return {
+        161: backing + tuple(item ^ HFLIP for item in upper),
+        509: backing + tuple(item ^ HFLIP for item in side),
+        511: backing + tuple(item ^ HFLIP for item in side),
+    }
 
 
 def validate_built(root):
@@ -86,7 +96,7 @@ def validate_built(root):
         if (raw >> 10) & 3 != 1 or old_behaviour != 0x1000:
             raise ValueError(f"West edge {xy} no longer has its original blocking mountain behaviour")
         actual = struct.unpack_from("<8H", metas, mid * 16)
-        if actual != expected:
+        if actual != expected[mid]:
             raise ValueError(f"Western pool metatile {mid} is not joined to the north/east rock border")
         for entry in actual[4:]:
             tid = (entry & 1023) - 512
@@ -111,7 +121,7 @@ def run(root):
     for mid, xy in WEST.items():
         if places(before_map, mid) != {xy}:
             raise ValueError(f"Cannot safely replace shared western cliff {mid}")
-        struct.pack_into("<8H", edited, mid * 16, *expected)
+        struct.pack_into("<8H", edited, mid * 16, *expected[mid])
     for mid in range(512):
         if mid not in WEST and edited[mid*16:(mid+1)*16] != original[mid*16:(mid+1)*16]:
             raise ValueError("Thermal edge change escaped its three designated metatiles")
@@ -121,7 +131,7 @@ def run(root):
             or attrs_path.read_bytes() != before_attrs
             or atlas_path.read_bytes() != before_atlas):
         raise ValueError("Thermal edge pass changed map, collision or original rock graphics")
-    print("Cuordilava pool: 3 dry west-bank cells now continue north/east basalt stones; "
+    print("Cuordilava pool: north-west crest continues into a mirrored eastern stone sidewall; "
           "water, geometry, tile graphics and collision remain unchanged")
 
 
