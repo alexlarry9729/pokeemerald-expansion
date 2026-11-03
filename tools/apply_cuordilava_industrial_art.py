@@ -172,6 +172,11 @@ def main() -> None:
     reshape_mineral_pool(args.root)
     from deindustrialize_cuordilava_spa import run as deindustrialize_spa
     deindustrialize_spa(args.root)
+    # West bank uses the original north/east granite, with a dry cliff base.
+    # Operates only on three private 16x16 graphic definitions, before
+    # lower walls and civic paving; no active water tile or gameplay bits move.
+    from continue_cuordilava_pool_edges import run as continue_pool_edges
+    continue_pool_edges(args.root)
     from construct_cuordilava_lower_facade import run as build_lower_facade
     build_lower_facade(args.root)
     from dress_cuordilava_gym_ground_floor import run as build_gym_ground_floor
