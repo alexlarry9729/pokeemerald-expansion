@@ -16,6 +16,121 @@ ROLES = {
     "CENTRAL_VOLCANIC_PLAZA_CREST": "plaza",
 }
 
+def polish_street_facades(art, role):
+    """Give each original 64x32 facade its own legible material and window rhythm.
+
+    Alter ONLY existing building mural pixels. Retain roof crowns, identifiers,
+    the central clinic cross / market cart / Gym crest, and every game tile.
+    This is decoration, not new doors, collision or foreground geometry.
+    """
+    if role not in ("clinic", "market", "foundry", "homes"):
+        return 0
+    assert (art.w, art.h) == (64, 32)
+    before = [row[:] for row in art.pix]
+
+    def dot(x, y, color):
+        assert 0 <= x < 64 and 13 <= y < 31 and 0 <= color < 16
+        art.pixel(x, y, color)
+
+    def horizontal(x0, x1, y, color):
+        for x in range(x0, x1 + 1):
+            dot(x, y, color)
+
+    def window(left, top, width, height, glass, kind):
+        right, bottom = left + width - 1, top + height - 1
+        for y in range(top, bottom + 1):
+            for x in range(left, right + 1):
+                on_edge = x in (left, right) or y in (top, bottom)
+                inset = x in (left + 1, right - 1) or y in (top + 1, bottom - 1)
+                if on_edge:
+                    color = 5
+                elif inset:
+                    color = 6
+                elif kind == "clinic" and x == left + width // 2:
+                    color = 8
+                elif kind == "market" and y == top + height // 2:
+                    color = 8
+                elif kind == "kiln" and (y - top) % 3 == 0:
+                    color = 5
+                elif kind == "home" and x == left + width // 2:
+                    color = 8
+                else:
+                    color = glass if (x + 2 * y) % 7 else 13
+                dot(x, y, color)
+        horizontal(left - 1, right + 1, bottom + 1, 8)
+        horizontal(left, right, bottom + 2, 6)
+
+    if role == "clinic":
+        # Diagnostic side bays, separate from the central medical cross.
+        for left in (9, 44):
+            horizontal(left, left + 11, 14, 5)
+            horizontal(left + 1, left + 10, 15, 6)
+            window(left + 2, 16, 8, 7, 10, "clinic")
+            for x in (left, left + 11):
+                for y in range(17, 26):
+                    dot(x, y, 8 if y % 4 else 5)
+            horizontal(left, left + 11, 26, 5)
+            horizontal(left + 1, left + 10, 27, 13)
+    elif role == "market":
+        # Two cold-glass retail bays, outside the original cart/sign x20..44.
+        window(12, 16, 8, 8, 10, "market")
+        window(47, 16, 8, 8, 9, "market")
+        for left, right in ((12, 19), (47, 54)):
+            horizontal(left, right, 14, 5)
+            horizontal(left + 1, right - 1, 15, 10)
+            horizontal(left, right, 27, 8)
+            horizontal(left + 1, right - 1, 28, 6)
+    elif role == "foundry":
+        # Upright furnace vents, not duplicates of the clinic/market glass.
+        for left in (10, 48):
+            horizontal(left, left + 8, 14, 5)
+            window(left + 1, 16, 7, 8, 12, "kiln")
+            for x in (left + 2, left + 4, left + 6):
+                for y in (18, 21):
+                    dot(x, y, 14)
+            horizontal(left - 1, left + 9, 27, 8)
+            horizontal(left, left + 8, 28, 13)
+    else:
+        houses = (
+            (7, 18, 12, "home"),
+            (21, 32, 9, "market"),
+            (34, 45, 14, "kiln"),
+            (47, 58, 10, "clinic"),
+        )
+        for index, (left, right, glass, kind) in enumerate(houses):
+            # Four readable residential bays with distinct glazing and stone.
+            stone = (3, 2, 8, 3)[index]
+            for y in range(15, 27):
+                for x in range(left + 1, right):
+                    dot(x, y, stone if (y + index) % 6 else 6)
+            horizontal(left, right, 14, 5)
+            horizontal(left + 1, right - 1, 15, 6)
+            window(left + 2, 17, right - left - 3, 7, glass, kind)
+            for x in (left, right):
+                for y in range(16, 28):
+                    dot(x, y, 8 if y % 4 else 5)
+            horizontal(left, right, 28, 5)
+            horizontal(left + 1, right - 1, 29, 13 if index % 2 == 0 else 6)
+
+    if any(art.pix[y] != before[y] for y in range(13)):
+        raise ValueError("Facade pass changed roof silhouettes or upper landmarks")
+    safe_regions = {
+        "clinic": ((9, 20), (44, 55)),
+        "market": ((11, 20), (46, 55)),
+        "foundry": ((9, 19), (47, 57)),
+        "homes": ((7, 18), (21, 32), (34, 45), (47, 58)),
+    }[role]
+    changes = [(x, y) for y in range(32) for x in range(64)
+               if art.pix[y][x] != before[y][x]]
+    if any(y < 13 or not any(left <= x <= right for left, right in safe_regions)
+           for x, y in changes):
+        raise ValueError("Facade pass painted outside a private building wing")
+    if len(changes) < 140:
+        raise ValueError(f"{role} facade detailing too sparse: {len(changes)}")
+    print(f"Cuordilava facade legibility: {role}, {len(changes)} safe pixels")
+    return len(changes)
+
+
 def organize_districts(art, name):
     role=ROLES.get(name)
     if role is None:
@@ -266,6 +381,9 @@ def organize_districts(art, name):
                 p(x,y,5 if y%4 else 6)
         p(20,8,5)
         p(32,19,12)
+
+    # Final graphic-only pass makes original civic frontages distinct.
+    polish_street_facades(art, role)
 
     # Reject partial/minimal passes. This redraw is substantially larger
     # than a couple of decorative roof pixels, but adds ZERO world geometry.
