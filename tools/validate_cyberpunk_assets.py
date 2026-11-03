@@ -951,7 +951,7 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     # indexed copies of vanilla hot-spring steps, in palette 8, not neon
     # industrial glass. validate_original_spring_steps independently checks
     # every pixel against the pristine Lavaridge atlas.
-    restored_stair_chars = {180, 181}
+    restored_stair_chars = {182, 183}
     target_tiles = tuple(tid for tid in (
         window_tiles + facade_panel_tiles + roof_seam_tiles + pipe_tiles
         + architecture_base_tiles + architecture_overlay_tiles
