@@ -123,6 +123,7 @@ from rebuild_cuordilava_civic_massing import rebuild_civic_massing
 from organize_cuordilava_districts import organize_districts
 from carve_cuordilava_landmark_architecture import carve_architecture
 from relief_cuordilava_building_depth import add_building_depth
+from separate_cuordilava_roof_planes import separate_roof_planes
 
 
 def draw(name,w,h):
@@ -316,6 +317,9 @@ def draw(name,w,h):
     # Final simulated 2.5D lighting and overhangs: separate buildings from
     # the matte basalt pavement WITHOUT editing the ground or game objects.
     add_building_depth(a, name)
+    # The clinic, Gym and residential gables need dedicated roof-face
+    # materials, not the same gray stipple as the volcanic rear cliffs.
+    separate_roof_planes(a, name)
     assert rgb_readable(a.pix)
     return a
 
