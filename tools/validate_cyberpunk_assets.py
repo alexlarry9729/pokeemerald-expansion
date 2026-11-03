@@ -1650,6 +1650,8 @@ def validate_cuordilava_organic_springs(root: Path) -> list[str]:
         validate_calm_pool(root)
         from deindustrialize_cuordilava_spa import validate_built as validate_spa_landscape
         validate_spa_landscape(root)
+        from continue_cuordilava_pool_edges import validate_built as validate_west_rim
+        validate_west_rim(root)
         from dress_cuordilava_scenery import illustration, PLACEMENTS
         from render_cuordilava_preview import png_indexed
         # These four scenery cells lie OUTSIDE the thermal pool's stone rim.
@@ -1686,6 +1688,10 @@ def validate_cuordilava_organic_springs(root: Path) -> list[str]:
         # horizontal/vertical flips: no repeated rectangular metal grills.
         donor = struct.unpack_from('<8H', metatile_data, 508 * 16)[4:]
         for i, mid in enumerate(range(508, 512)):
+            if mid in (509, 511):
+                # These two original exterior cells are now the deliberately
+                # reused, water-free left pool boundary; validated above.
+                continue
             hflip = bool(i % 2)
             vflip = bool(i // 2)
             entries = struct.unpack_from('<8H', metatile_data, mid * 16)
@@ -1713,8 +1719,10 @@ def validate_cuordilava_organic_springs(root: Path) -> list[str]:
         # only their exterior rock overlay is rebuilt in mountain palette10.
         town = (root / 'data/layouts/LavaridgeTown/map.bin').read_bytes()
         attrs = (root / 'data/tilesets/secondary/cuordilava/metatile_attributes.bin').read_bytes()
+        # (2,3) now belongs to the fully audited matching west granite rim;
+        # the lower shoulder (2,6) keeps its old mountain-only silhouette.
         for x, y, mid, hflip, vflip in (
-            (2, 3, 161, True, True), (2, 6, 177, True, False)
+            (2, 6, 177, True, False),
         ):
             base=(8<<12)|264, (8<<12)|280, (8<<12)|280, (8<<12)|264
             actual=struct.unpack_from('<8H',metatile_data,mid*16)
