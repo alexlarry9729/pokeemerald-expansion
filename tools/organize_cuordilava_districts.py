@@ -78,7 +78,8 @@ def polish_street_facades(art, role):
         for left, right in ((12, 19), (47, 54)):
             horizontal(left, right, 14, 5)
             horizontal(left + 1, right - 1, 15, 10)
-            horizontal(left, right, 27, 8)
+            # The original uninterrupted cyan storefront canopy is at y=27.
+            # Shade the footings BELOW it, never paint over the canopy.
             horizontal(left + 1, right - 1, 28, 6)
     elif role == "foundry":
         # Upright furnace vents, not duplicates of the clinic/market glass.
@@ -109,8 +110,11 @@ def polish_street_facades(art, role):
             for x in (left, right):
                 for y in range(16, 28):
                     dot(x, y, 8 if y % 4 else 5)
+            # Four warm, continuous stone sills keep the houses visually
+            # inhabited by night; each pair uses its own oxide tone.
+            horizontal(left + 2, right - 2, 25, 13 if index % 2 == 0 else 11)
             horizontal(left, right, 28, 5)
-            horizontal(left + 1, right - 1, 29, 13 if index % 2 == 0 else 6)
+            horizontal(left + 1, right - 1, 29, 13 if index % 2 == 0 else 11)
 
     if any(art.pix[y] != before[y] for y in range(13)):
         raise ValueError("Facade pass changed roof silhouettes or upper landmarks")
