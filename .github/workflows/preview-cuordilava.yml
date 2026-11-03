@@ -23,6 +23,8 @@ on:
       - 'tools/carve_cuordilava_landmark_architecture.py'
       - 'tools/relief_cuordilava_building_depth.py'
       - 'tools/separate_cuordilava_roof_planes.py'
+      - 'tools/finalize_cuordilava_clean_roof_backings.py'
+      - 'tools/restore_cuordilava_original_spring_steps.py'
       - 'tools/relief_cuordilava_cast_shadows.py'
       - 'tools/recompose_cuordilava_architecture.py'
       - 'tools/rebuild_cuordilava_civic_massing.py'
