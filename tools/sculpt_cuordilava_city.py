@@ -124,6 +124,7 @@ from organize_cuordilava_districts import organize_districts
 from carve_cuordilava_landmark_architecture import carve_architecture
 from relief_cuordilava_building_depth import add_building_depth
 from separate_cuordilava_roof_planes import separate_roof_planes
+from finalize_cuordilava_clean_roof_backings import finalize_clean_roof_backings
 
 
 def draw(name,w,h):
@@ -320,6 +321,9 @@ def draw(name,w,h):
     # The clinic, Gym and residential gables need dedicated roof-face
     # materials, not the same gray stipple as the volcanic rear cliffs.
     separate_roof_planes(a, name)
+    # Opaque, continuous roof face: stop primary rock/pavement texture from
+    # showing through gaps in the Gym, clinic and residential roof planes.
+    finalize_clean_roof_backings(a, name)
     assert rgb_readable(a.pix)
     return a
 
