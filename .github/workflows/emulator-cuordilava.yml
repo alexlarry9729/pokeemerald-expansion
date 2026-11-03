@@ -10,6 +10,7 @@ on:
       - 'tools/smoke_cuordilava_emulator.sh'
       - 'tools/apply_cuordilava_industrial_art.py'
       - 'tools/sculpt_cuordilava_city.py'
+      - 'tools/stitch_cuordilava_rear_roofs.py'
       - 'tools/carve_cuordilava_landmark_architecture.py'
       - 'tools/relief_cuordilava_building_depth.py'
       - 'tools/rebuild_cuordilava_civic_massing.py'
