@@ -98,6 +98,16 @@ def add_building_depth(art, name):
         for x in range(left+2, right-1):
             if x % 5 == 0 and (x, 8) not in protect:
                 pixel(x, 8, 2)     # widely spaced raised roof seam
+        # Real REAR roof silhouette: a continuous charcoal cap immediately
+        # behind the sloping ridge. Previously those source pixels fell
+        # through to the old stock roof/cliff, visually welding the two
+        # unrelated depths together. Protect furnace glass and all emblems;
+        # the next pixel row is the already-bright structural roof lip.
+        for x in range(left+1, right):
+            ridge = min(9, peak + abs(x-cx)//pitch)
+            behind = ridge-1
+            if 0 <= behind < 9 and art.pix[behind][x] < 9:
+                pixel(x, behind, 8)
 
     # Second plane: strongly projecting eave has three distinct layers.
     # y=11 is deliberately protected for the three iconic civic buildings.
