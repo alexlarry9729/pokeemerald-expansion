@@ -50,11 +50,14 @@ def intended_graphics(metas):
     # top: the two mirrored northern stone caps; bottom: the two
     # established eastern-side dry rock feet, continuing down the cliff.
     # Upper junction keeps the already present north-west crest. The lower
-    # two west-wall panels are instead a true horizontal reflection of the
-    # EXISTING east rim; copying the crest into every panel created three
-    # disconnected stone squares along the left of the pool.
+    # two west-wall panels instead reuse the EXISTING east rock feet with
+    # alternate north-rock caps; copying the same crest everywhere created
+    # three disconnected stone squares along the left of the pool.
     upper = (north[5], north[4], east[6], east[7])
-    side = (east[5], east[4], east[7], east[6])
+    # The upper overlay characters of EAST_RIM include actual turquoise
+    # pool pixels and cannot be mirrored onto the dry west bank. Compose
+    # only from the audited dry north caps and east rock feet instead.
+    side = (north[4], north[5], east[7], east[6])
     if any((item >> 12) != PALETTE_WATER_ROCK
            or not 512 <= (item & 1023) < 1024
            or item & 0x0c00 for item in (*upper, *side)):
@@ -67,7 +70,9 @@ def intended_graphics(metas):
     return {
         161: backing + tuple(item ^ HFLIP for item in upper),
         509: backing + tuple(item ^ HFLIP for item in side),
-        511: backing + tuple(item ^ HFLIP for item in side),
+        # Turn the lower bank's dry cap over so its geological seam does
+        # not reproduce the middle cell's perfectly repeated outline.
+        511: backing + tuple(item ^ HFLIP ^ 0x0800 for item in side),
     }
 
 
