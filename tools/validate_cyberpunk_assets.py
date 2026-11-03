@@ -947,10 +947,15 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     # Never require neon paint on those: that produced red grids in water.
     from apply_cuordilava_industrial_art import protected_spring_secondary_tiles
     spring_shared = protected_spring_secondary_tiles(root)
+    # These two formerly-industrial upper-Center characters are now EXACT
+    # indexed copies of vanilla hot-spring steps, in palette 8, not neon
+    # industrial glass. validate_original_spring_steps independently checks
+    # every pixel against the pristine Lavaridge atlas.
+    restored_stair_chars = {180, 181}
     target_tiles = tuple(tid for tid in (
         window_tiles + facade_panel_tiles + roof_seam_tiles + pipe_tiles
         + architecture_base_tiles + architecture_overlay_tiles
-    ) if tid not in spring_shared)
+    ) if tid not in spring_shared and tid not in restored_stair_chars)
 
     # Ensure the art check covers tiles actually referenced by this map, not
     # unrelated atlas tiles that happen to contain neon-colored pixels.
