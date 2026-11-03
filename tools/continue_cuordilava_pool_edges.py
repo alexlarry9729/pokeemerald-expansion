@@ -71,14 +71,8 @@ def validate_built(root):
         raise ValueError("Upper-left original thermal stones are no longer in place")
     if places(layout, EAST_RIM) != {(7, 3), (7, 4)}:
         raise ValueError("Right-hand original thermal stones are no longer in place")
-    if places(layout, DRY_CLIFF) != {
-        (1, 0), (0, 3), (1, 3), (0, 4), (0, 5), (0, 6), (1, 6),
-        (0, 7), (1, 8), (0, 9)
-    }:
-        # Other mountain-cell usage may evolve; require at least one
-        # known adjacent left-bank reference instead of an invented set.
-        if (1, 3) not in places(layout, DRY_CLIFF):
-            raise ValueError("Dark mountain donor no longer borders the western spring")
+    if (1, 3) not in places(layout, DRY_CLIFF):
+        raise ValueError("Dark mountain backing is no longer adjacent to the west pool")
     from render_cuordilava_preview import png_indexed
     width, height, pixels = png_indexed(atlas_path)
     if (width, height) != (128, 256):
