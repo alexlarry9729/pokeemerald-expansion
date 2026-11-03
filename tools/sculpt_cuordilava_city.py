@@ -121,6 +121,7 @@ from recompose_cuordilava_architecture import recompose_original_architecture
 from rebuild_cuordilava_gym_arcade import forge_ground_storey
 from rebuild_cuordilava_civic_massing import rebuild_civic_massing
 from organize_cuordilava_districts import organize_districts
+from carve_cuordilava_landmark_architecture import carve_architecture
 
 
 def draw(name,w,h):
@@ -307,6 +308,10 @@ def draw(name,w,h):
     # Source-art-only: all original metatile, map, collision/elevation and
     # events remain untouched, with the verified BG2 walkability fix.
     organize_districts(a, name)
+    # Heavy final silhouettes: real upper storeys, pitched roof masses, deep
+    # masonry porticos and distinct shop/clinic/forge/residential volumes.
+    # Stays inside the exact existing private 4x2 mural/metatile budget.
+    carve_architecture(a, name)
     assert rgb_readable(a.pix)
     return a
 
