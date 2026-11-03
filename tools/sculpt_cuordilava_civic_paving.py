@@ -25,7 +25,7 @@ AVENUE_SOURCES = (288, 290, 281, 289, 296, 297)
 # Original terraced square cell IDs, never a town water/bank character.
 PRIVATE_METAS = tuple(range(META_START, META_START + 12))
 ANIMATION_IDS = frozenset(range(160, 172)) | frozenset(range(288, 296))
-PALETTE = 9
+PALETTE = 6
 
 
 def u16(buf, offset):
@@ -55,138 +55,71 @@ def source_for(x, y, raw):
     # are untouched. This makes the southwestern quarter a real continuation
     # of the redesigned central promenade, not an abrupt rock-carpet edge.
     if mid == FLOOR_SOURCE and 4 <= x <= 7 and 16 <= y <= 18:
-        return ((x * 7 + y * 3) % 6, mid)
+        return ((x % 3) + 3 * (y % 2), mid)
     # Already existing original walkable floor in the town center, southern
     # arcade and walkway. Keep thermal basin x<8 and all building cells away.
     if mid == FLOOR_SOURCE and 8 <= x <= 18 and 7 <= y <= 18:
-        return ((x * 7 + y * 3) % 6, mid)
+        return ((x % 3) + 3 * (y % 2), mid)
     # West-east town street: six exact original brown floor IDs. New basalt
     # paving connects the existing landmark square, rather than changing the
     # gym, thermal pool or water's animated graphics.
     if mid in AVENUE_SOURCES and 8 <= x <= 18 and 6 <= y <= 10:
-        return (6 + AVENUE_SOURCES.index(mid), mid)
+        return (6 + (x % 3) + 3 * (y % 2), mid)
     return None
 
 
 def drawing(kind):
-    """Large irregular volcanic plates with low-contrast broken mineral joints.
+    """Six interlocking 3x2 ash-basalt panels for each original street family.
 
-    Previous source art laid strong straight joint lines at y=7 and y=14 in
-    EVERY 16x16 metatile; across 84 city cells this formed an overwhelming
-    repeated brick wall and distracted from the buildings. These twelve
-    existing motifs make 2-3 broad ASYMMETRIC polygon plates each instead.
-    A low, inset copper service rail survives only on street variants.
-    Same 48 already-allocated 8x8 characters and 12 metatiles, no extra
-    palette, no map edits; gameplay flags and COVERED/BG2 remain intact.
+    Instead of drawing 16px repeating stripes/rock glyphs, every six 16x16
+    panels form one connected 48x32 field of broad, quiet, irregular flagstones.
+    The day/night-safe neutral slate palette is the already-owned building
+    palette 6. No copper rails, red flecks, synthetic plants or neon wallpaper.
     """
     if not 0 <= kind < 12:
-        raise ValueError("Unexpected volcanic district paving motif")
-    road=kind>=6
-    v=kind%6
-    a=[[12]*16 for _ in range(16)]
-
-    def p(x,y,c):
-        if 0<=x<16 and 0<=y<16:
-            a[y][x]=c
-
-    # Different angles prevent aligned horizontal tile/row grids.
-    # The seams stop before the border and bevel into the actual slab:
-    # finished tiles look like a local stone terrace, not a wallpaper.
-    s1=(4,6,9,5,10,7)[v]
-    slope=(-1,1,2,-2,1,-1)[v]
+        raise ValueError("Unexpected Cuordilava basalt paving motif")
+    road = kind >= 6
+    phase = kind % 6
+    tile_x, tile_y = phase % 3, phase // 3
+    # Site centers repeat toroidally over 48x32 so adjacent 8x8 GBA graphics
+    # and adjacent 16x16 map cells meet without abrupt pavement-grid seams.
+    centers = (
+        ((5, 7), (27, 7), (44, 15), (12, 25), (36, 27))
+        if not road else
+        ((8, 10), (31, 8), (42, 25), (15, 24), (46, 2))
+    )
+    tones = (5, 4, 5, 4, 5)
+    art = []
     for y in range(16):
-        main_cut=s1+(slope*(y-7))//8
-        main_cut=max(2,min(13,main_cut))
+        line = []
         for x in range(16):
-            # Four broad colors, selected per plate not per pixel.
-            c=(12 if x<main_cut else 13)
-            if v in (2,5) and y>=9 and x>4:
-                c=3
-            if v in (1,4) and x<5 and y>11:
-                c=12
-            if (x,y) in ((0,0),(15,0),(0,15),(15,15)):
-                c=12
-            # Stop most slab joints before they become repeating vertical
-            # stripes across the whole plaza. Broad, uninterrupted stone
-            # planes leave the entrances and central walking lanes legible.
-            if 3<=y<=12 and (y+v)%6 not in (0,1,2):
-                if x==main_cut:
-                    c=5
-                elif x==main_cut+1:
-                    c=6
-            p(x,y,c)
+            gx, gy = tile_x * 16 + x, tile_y * 16 + y
+            distances = []
+            for index, (cx, cy) in enumerate(centers):
+                dx = min(abs(gx - cx), 48 - abs(gx - cx))
+                dy = min(abs(gy - cy), 32 - abs(gy - cy))
+                dist = dx * dx + (5 * dy * dy) // 4 + ((gx // 7 + 3 * index) % 4) - 2
+                distances.append((dist, index))
+            distances.sort()
+            first, stone = distances[0]
+            second, _ = distances[1]
+            color = tones[stone]
+            if second - first <= 19:
+                color = 3                 # recessed slate mortar, never lava
+            elif second - first <= 40 and (gx + 2 * gy + stone) % 4:
+                color = 4                 # quiet mineral transition
+            elif color == 5 and (3 * gx + 7 * gy + stone) % 107 == 0:
+                color = 6                 # one subtle fleck, not a glowing dot
+            line.append(color)
+        art.append(line)
 
-    # A diagonal shale rift crosses PART of a slab, not every entire row.
-    # Vary the height/length in each variant to avoid periodic striping.
-    for x in range(3+v%3, 11+v%2):
-        # Natural fissures are local accents, not continuous 12-pixel
-        # diagonals repeated every 16 pixels across the streets.
-        if (x+v)%5==0:
-            continue
-        if v in (0,3):
-            fracture=5 + (x//5) + (1 if v==3 else 0)
-        elif v in (1,4):
-            fracture=11-(x//4)+(1 if v==4 else 0)
-        else:
-            fracture=7+(x//6)
-        if 2<=fracture<14:
-            p(x,fracture,5)
-            if x%3!=0:
-                p(x,fracture+1,6)
-
-    # Broken edges, low-frequency stone flakes and very few mineral colors.
-    for x,y in (
-        ((3,2),(11,11),(6,14)),
-        ((4,3),(12,6),(8,13)),
-        ((2,4),(12,12),(8,3)),
-        ((3,13),(10,4),(5,7)),
-        ((4,11),(11,3),(13,8)),
-        ((3,3),(9,12),(13,5)),
-    )[v]:
-        p(x,y,6)
-        p(x+1,y,13)
-
-    if road:
-        # Short inlaid service joints indicate the east/west promenade,
-        # without making a continuous copper/neon stripe through every
-        # street metatile. Preserve a quiet border at the slab edges.
-        for x in range(2,14):
-            if (x+2*v)%5==0:
-                continue
-            p(x,9,5)
-            p(x,10,13)
-            if (x+v)%3:
-                p(x,11,6)
-            if 5<=x<=10 and (x+v)%4==2:
-                p(x,10,11)
-        p(3+v%4,9,8)
-        p(3+v%4,10,14)
-    elif v in (1,4):
-        # Living cliff grass appears only in two of the six sidewalks,
-        # subdued and embedded in fine stone fissures.
-        for x,y in ((3,3),(4,3),(4,4),(12,12)):
-            p(x,y,9 if (x+y)%2 else 10)
-
-    # Rare chipped corners expose the original cobbles without creating
-    # a hard rectilinear border around all the different pavement cells.
-    for x,y in ((0,0),(15,0),(0,15),(15,15)):
-        if (x+3*y+v)%5==0:
-            p(x,y,0)
-
-    counts={v:sum(c==v for row in a for c in row) for v in range(16)}
-    stone=sum(counts[c] for c in (3,5,6,12,13))
-    copper=counts[11]+counts[14]
-    moss=counts[9]+counts[10]+counts[15]
-    if stone<220 or copper>12 or moss>8 or counts[8]>16:
-        raise ValueError(
-            f"Paving kind {kind} lost broad matte basalt plates: "
-            f"stone={stone}, copper={copper}, moss={moss}, shadow={counts[8]}"
-        )
-    if sum(c!=0 for row in a for c in row)<250:
-        raise ValueError("Volcanic paving left the original floor exposed")
-    if any(not 0<=c<16 for row in a for c in row):
-        raise ValueError("Invalid 4bpp indexed color in large volcanic paving")
-    return a
+    counts = {idx: sum(pixel == idx for row in art for pixel in row)
+              for idx in range(16)}
+    if counts[4] + counts[5] < 205 or counts[3] > 48 or counts[6] > 8:
+        raise ValueError(f"Cuordilava basalt slabs became too busy: {counts}")
+    if any(counts[idx] for idx in (0, 1, 2, 7, 8, 9, 10, 11, 12, 13, 14, 15)):
+        raise ValueError("Basalt floor gained transparent, hot or neon pixels")
+    return art
 
 
 def find_changes(map_bytes, event_cells):
@@ -329,7 +262,11 @@ def validate_built(root):
                     raise ValueError(f'Civic paving unexpectedly covers a warp/NPC/sign {(x,y)}')
                 if ((u16(terrain,2*(y*20+x))>>10)&3)!=0:
                     raise ValueError('Civic walkway made impassable')
-                actual[mid-512-META_START]+=1
+                kind = mid - 512 - META_START
+                expected = (x % 3) + 3 * (y % 2) + (6 if kind >= 6 else 0)
+                if kind != expected:
+                    raise ValueError(f"Broad basalt slabs fail to join at {(x, y)}: {kind} != {expected}")
+                actual[kind] += 1
     if sum(actual.values())<48 or len(actual)!=12:
         raise ValueError(f'Volcanic paving lost its 12 motifs or coverage {actual}')
     w,h,rows=png_indexed(p['atlas'])
