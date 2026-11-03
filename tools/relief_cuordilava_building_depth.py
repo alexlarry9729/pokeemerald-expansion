@@ -184,6 +184,43 @@ def add_building_depth(art, name):
         for left, right in footing:
             hline(left+2, right-2, 14, 6)
 
+    # Recessed interior glow is the COUNTERPOINT to dark load-bearing stone.
+    # Early depth drafts blanked too many lit glazing pixels with dark eaves.
+    # Restore believable ground-floor glass behind thick structural mullions,
+    # instead of weakening the exterior contact shadows.
+    if role == "clinic":
+        for left, right in ((8, 21), (43, 56)):
+            hline(left, right, 25, 5)
+            hline(left+2, right-2, 25, 13)  # emergency bay backlight
+            for y in (26, 27, 28):
+                for x in range(left, right + 1):
+                    if x in (left, right, (left+right)//2):
+                        colour = 8  # structural glass divider, behind facade
+                    else:
+                        colour = 12 if (x+2*y)%5 else 13
+                    pixel(x, y, colour)
+            hline(left, right, 29, 6)
+    elif role == "houses":
+        # Warm inhabited first-floor glazing, separated by four shadowed
+        # door-height plinths; the 30/31px contact-shadow line stays intact.
+        for cx in (12, 25, 39, 52):
+            for x in range(cx-3, cx+4):
+                pixel(x, 28, 12 if x != cx else 8)
+                if x not in (cx-3, cx, cx+3):
+                    pixel(x, 29, 13)
+
+    # A regression here means that volumetric relief hid the actual windows.
+    if role in ("clinic", "houses"):
+        floor_start, floor_end, threshold = (
+            (25, 31, 100) if role == "clinic" else (12, 30, 85)
+        )
+        warm = sum(c in (11, 12, 13, 14)
+                   for row in art.pix[floor_start:floor_end] for c in row)
+        if warm < threshold:
+            raise ValueError(
+                f"{role}: eave shadows swallowed occupied glazing: {warm}"
+            )
+
     if any(art.pix[y][x] != before[y][x] for x, y in protect):
         raise ValueError(f"{role}: roof emblem or architectural anchor was lost")
     if any(not 0 <= colour < 16 for row in art.pix for colour in row):
