@@ -202,6 +202,10 @@ def main() -> None:
     # quadrants after all other atlas/metatile registrations are complete.
     from stitch_cuordilava_rear_roofs import run as stitch_rear_roofs
     stitch_rear_roofs(args.root)
+    # Restore original, four-different GBA stair treads behind the hot springs;
+    # the cyberpunk scaffold had incorrectly replaced this historic passage.
+    from restore_cuordilava_original_spring_steps import run as restore_spring_steps
+    restore_spring_steps(args.root)
 
 if __name__ == "__main__":
     main()
