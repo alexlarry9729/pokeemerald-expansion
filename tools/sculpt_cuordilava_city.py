@@ -122,6 +122,7 @@ from rebuild_cuordilava_gym_arcade import forge_ground_storey
 from rebuild_cuordilava_civic_massing import rebuild_civic_massing
 from organize_cuordilava_districts import organize_districts
 from carve_cuordilava_landmark_architecture import carve_architecture
+from relief_cuordilava_building_depth import add_building_depth
 
 
 def draw(name,w,h):
@@ -312,6 +313,9 @@ def draw(name,w,h):
     # masonry porticos and distinct shop/clinic/forge/residential volumes.
     # Stays inside the exact existing private 4x2 mural/metatile budget.
     carve_architecture(a, name)
+    # Final simulated 2.5D lighting and overhangs: separate buildings from
+    # the matte basalt pavement WITHOUT editing the ground or game objects.
+    add_building_depth(a, name)
     assert rgb_readable(a.pix)
     return a
 
