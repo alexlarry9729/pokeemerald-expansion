@@ -1,29 +1,25 @@
 #!/usr/bin/env python3
-"""Reconcile ORIGINAL upper roof rows with the redesigned Cuordilava buildings.
+"""Stitch ONLY the non-walkable rear Poké Mart roof to its authored facade.
 
-The Center has four identical old rooftop-window metatiles (6..9, y=1);
-the Market has four unrelated old roof-window metatiles (14..17, y=2).
-These are ABOVE the four-by-two new facade murals, so improving the new
-mural alone cannot remove the disconnected / floating old roof pixels.
+The ORIGINAL x6..9,y1 corridor behind the mineral pool is *walkable elevated
+hot-spring stair access* (elevation 3), NOT a Center roof. Earlier versions
+incorrectly overpainted those four path cells with four private roof aliases.
+Never touch those Center cells: restore_cuordilava_original_spring_steps.py
+reinstates the original stone-step metatile in the final pipeline.
 
-Reuse the exact already-rendered four-column roof art from the four-by-two
-Center and Market murals. This adds ZERO 8x8 graphics and makes no changes
-to the walkability of the old rear roof or elevated Center entrance.
-Eight audited unused town-private metatile slots (390..393 and 412..415)
-give both the repeated Center row and the four Market rear-roof cells
-independently registered artwork; the historical donor tiles stay pristine.
-
-Run AFTER the civic-paving and housing-roof passes, with all 512 metatiles
-and existing 4bpp graphic characters already allocated.
+The four old Market roof cells at x14..17,y2 are not walkable and may reuse
+the new Mart facade art through four private unused metatiles (390..393).
+No shared source graphics, collision, elevation or town warps are changed.
 """
 from pathlib import Path
 import json
 import struct
 
-CENTER_REAR = tuple((6+i, 1, 686, 412+i, 8+i, 4) for i in range(4))
+# NO CENTER_REAR: these were elevated walkable stone steps, never roof tiles.
+CENTER_REAR = ()
 MARKET_REAR = tuple((14+i, 2, mid, 390+i, 14+i, 3) for i,mid in
                     enumerate((590,587,588,591)))
-EXTRA_METAS = frozenset(range(412,416)) | frozenset(range(390,394))
+EXTRA_METAS = frozenset(range(390,394))
 DONOR_START = 441
 PALETTE = 6
 
@@ -164,9 +160,9 @@ def run(root):
     p['metas'].write_bytes(meta)
     p['attrs'].write_bytes(attrs)
     validate_built(root)
-    print("Cuordilava: repaired eight disconnected rear roof cells "
-          "(4 Center, 4 Mart) with continuous 4bpp roof donors; "
-          "0 new graphic tiles, all original warps/terrain/elevation retained")
+    print("Cuordilava: registered only four non-walkable Mart rear roof cells; "
+          "the four ORIGINAL elevated Center-to-hot-spring stair cells were "
+          "left untouched; no collision/elevation or warp changes")
 
 
 if __name__=='__main__':
