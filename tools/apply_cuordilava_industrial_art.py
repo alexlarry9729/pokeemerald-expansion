@@ -206,6 +206,14 @@ def main() -> None:
     # the cyberpunk scaffold had incorrectly replaced this historic passage.
     from restore_cuordilava_original_spring_steps import run as restore_spring_steps
     restore_spring_steps(args.root)
+    # Clean the four false orange scaffolds behind the raised Center roof.
+    # All original hot-spring stair pixels have just been restored.
+    from simplify_cuordilava_rear_roof_conduits import run as simplify_rear_roof
+    simplify_rear_roof(args.root)
+    # Polish only rock-owned characters around the FULL thermal perimeter;
+    # never recolour turquoise water, historic stairs or any walkable tile.
+    from polish_cuordilava_pool_rim import run as polish_pool_rim
+    polish_pool_rim(args.root)
 
 if __name__ == "__main__":
     main()
