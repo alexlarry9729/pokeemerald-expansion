@@ -2017,6 +2017,16 @@ def validate(root: Path) -> list[str]:
     errors.extend(validate_cuordilava_primary_palette_isolation(root))
     errors.extend(validate_cuordilava_architecture_metatiles(root))
     errors.extend(validate_cuordilava_roof_corner_overlays(root))
+    # The old bright scaffold behind the Pokémon Center is now a continuous
+    # dark roof, using the very same four private tile characters. The pool
+    # rim has its own rock-only 8x8 audit and never edits turquoise water.
+    try:
+        from simplify_cuordilava_rear_roof_conduits import validate_built as check_roof
+        check_roof(root)
+        from polish_cuordilava_pool_rim import validate_built as check_rock_rim
+        check_rock_rim(root)
+    except (ImportError, OSError, ValueError, AssertionError, IndexError, struct.error) as exc:
+        errors.append(f"Cuordilava clean roof / granite rim regression: {exc}")
     # Metatile 285 no longer depicts the misplaced intake in the spring.
     # Its new water graphics and usage are guarded by the organic spring validator.
     errors.extend(validate_cuordilava_roof_vent_metatiles(root))
