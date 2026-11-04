@@ -113,6 +113,24 @@ def softened(block):
     return out
 
 
+
+def validate_built(root):
+    mpath,primary_path,secondary_path,atlas_path,attrs_path,events_path=paths(root)
+    m,pri,sec=mpath.read_bytes(),primary_path.read_bytes(),secondary_path.read_bytes()
+    if (len(m),len(sec),len(attrs_path.read_bytes()))!=(800,8192,1024):
+        raise ValueError("Pool's 20x20/512-metatile footprint is not intact")
+    w,h,px=png_indexed(atlas_path)
+    if (w,h)!=(128,256):
+        raise ValueError("Polishing the stone rim resized the source tiles")
+    ids=exclusive_rock_tiles(m,pri,sec,px)
+    for tid in ids:
+        ox,oy=(tid%16)*8,(tid//16)*8
+        block=[px[oy+y][ox:ox+8] for y in range(8)]
+        if block!=softened(block):
+            raise ValueError(f"Perimeter-exclusive stone tile {tid} still has stray highlights")
+    return True
+
+
 def run(root):
     mpath, primary_path, secondary_path, atlas_path, attrs_path, events_path = paths(root)
     m, pri, sec = mpath.read_bytes(),primary_path.read_bytes(),secondary_path.read_bytes()
@@ -147,6 +165,7 @@ def run(root):
                 raise ValueError("Rim cleanup escaped its exclusive pool rock characters")
     if altered:
         write_png(atlas_path,w,h,px,palette)
+    validate_built(root)
     if (mpath.read_bytes()!=m or secondary_path.read_bytes()!=sec
             or attrs_path.read_bytes()!=attrs or events_path.read_bytes()!=events):
         raise ValueError("Rim cleanup inadvertently changed water or gameplay geometry")
