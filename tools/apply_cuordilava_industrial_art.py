@@ -210,6 +210,11 @@ def main() -> None:
     # All original hot-spring stair pixels have just been restored.
     from simplify_cuordilava_rear_roof_conduits import run as simplify_rear_roof
     simplify_rear_roof(args.root)
+    # The southern mineral rim was still two INDUSTRIAL WINDOW PANELS between
+    # the correct western/eastern rock corners. Rejoin the 4-cell shoreline
+    # from vetted palette-8 granite while preserving all original map flags.
+    from join_cuordilava_south_pool_rim import run as join_south_pool_rim
+    join_south_pool_rim(args.root)
     # Polish only rock-owned characters around the FULL thermal perimeter;
     # never recolour turquoise water, historic stairs or any walkable tile.
     from polish_cuordilava_pool_rim import run as polish_pool_rim
