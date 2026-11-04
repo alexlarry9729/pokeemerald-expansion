@@ -14,6 +14,7 @@ repairing the source here also repairs the two original right-hand rooftops.
 """
 TYPES = {
     'POKEMON_CENTER_INDUSTRIAL_REACTOR': 'clinic',
+    'POKE_MART_TECHNICAL_FACADE': 'mart',
     'FLANNERY_GYM_MOLTEN_FORGE': 'forge',
     'HOUSING_MAGMA_TERRACES': 'homes',
 }
@@ -26,6 +27,11 @@ ROOFS = {
     ),
     'forge': (
         (6, 57, 32, 2, 6, 13, 14),
+    ),
+    'mart': (
+        (5, 20, 13, 2, 4, 9, 10),
+        (21, 43, 32, 1, 5, 9, 10),
+        (44, 58, 51, 3, 4, 9, 10),
     ),
     'homes': (
         (6, 18, 12, 2, 3, 13, 14),
@@ -50,6 +56,11 @@ def finalize_clean_roof_backings(art, name):
         protected |= {(31,1),(20,8),(31,18),(10,16)}
         # Upper central signed bell tower is architecturally separate.
         protected |= {(x,y) for x in range(24,41) for y in range(0,11)}
+    elif role == 'mart':
+        # Preserve established shop blue canopy, existing symbol and eave.
+        protected |= {(x,11) for x in range(11,53)}
+        protected |= {(x,10) for x in range(20,45)}
+        protected |= {(20,8),(32,20),(9,16)}
     elif role == 'forge':
         protected |= {(x,0) for x in range(1,6)}
         protected |= {(x,3) for x in range(19,45)}
@@ -80,6 +91,11 @@ def finalize_clean_roof_backings(art, name):
     for i,(left,right,cx,top,pitch,body,edge) in enumerate(ROOFS[role]):
         for x in range(left,right+1):
             crest = min(8, top + abs(x-cx)//pitch)
+            # A second, almost-black back edge visually separates the
+            # pitched roof from the busy volcanic cliff immediately behind.
+            # The first dark line is a cast shadow; the next is the roof.
+            if crest >= 2:
+                paint(x,crest-2,8)
             for y in range(max(0,crest-1),11):
                 if y == crest-1:
                     v = 8         # clean dark 1px separation from rock behind
@@ -106,6 +122,8 @@ def finalize_clean_roof_backings(art, name):
             glass = 10
         elif role == 'forge':
             glass = 12
+        elif role == 'mart':
+            glass = 10
         else:
             glass = 10 if body == 9 else 12
         # The tall original Gym stacks / protected central medical tower
