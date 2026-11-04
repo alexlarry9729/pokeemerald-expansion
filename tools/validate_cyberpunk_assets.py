@@ -614,7 +614,9 @@ def validate_cuordilava_palette_pair(root: Path) -> list[str]:
         75: tuple(range(8)), 76: tuple(range(8)), 78: tuple(range(8)), 79: tuple(range(8)),
         162: (4, 5, 6, 7),
         170: tuple(range(8)), 173: tuple(range(8)),
-        179: tuple(range(8)), 181: tuple(range(8)),
+        # Metatile 179 is now REAL palette-8 southern granite, separately
+        # inspected by join_cuordilava_south_pool_rim.validate_built.
+        181: tuple(range(8)),
         # 285 is the pool's new transparent mineral-water panel (palette 8).
     }
     # The 12 truly private, walkable civic flagstones now use neutral basalt
@@ -1017,6 +1019,11 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     # cliff shoulders, their unchanged underlays and exact palette-10
     # quadrants are explicitly checked by validate_cuordilava_organic_springs.
     retired_cliff_shoulder_panels = {312, 328, 338, 343, 344}
+    # Former 179 industrial grille at x4..5,y6 was WRONG for the southern
+    # thermal rim. Its four original warm-metal base characters are now
+    # retired from the rendered town only; south-rock validation checks the
+    # exact replacement art and all four blocking water-bank positions.
+    retired_southern_grille = {376, 377, 392, 393}
     # The five source metatiles for the OLD rear Center/Market rooftops remain
     # untouched as historical donor definitions, but the original rear windows
     # are no longer rendered after the eight isolated roof aliases replace
@@ -1031,7 +1038,8 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     for tile_id in target_tiles:
         if tile_id not in active_secondary_tiles:
             if tile_id in (retired_spring_panels | retired_cliff_shoulder_panels
-                           | retired_rear_roof_panels):
+                           | retired_rear_roof_panels
+                           | retired_southern_grille):
                 continue  # Retired only from isolated original spa / cliff cells.
             errors.append(
                 f"{path}: facade tile {tile_id} is not referenced by LavaridgeTown; check the art target"
@@ -1088,7 +1096,6 @@ def validate_cuordilava_architecture_metatiles(root: Path) -> list[str]:
     expected_tiles = {
         # 165 now carries the verified private thermal-basin basalt edge.
         173: (348, 349, 360, 361, 350, 351, 362, 363),
-        179: (376, 377, 392, 393, 378, 379, 394, 395),
         181: (168, 169, 184, 185, 170, 171, 186, 187),
         170: (200, 201, 216, 217, 202, 203, 218, 219),
         # 187 now carries the verified private thermal-basin water surface.
@@ -1699,6 +1706,8 @@ def validate_cuordilava_organic_springs(root: Path) -> list[str]:
         validate_spa_landscape(root)
         from continue_cuordilava_pool_edges import validate_built as validate_west_rim
         validate_west_rim(root)
+        from join_cuordilava_south_pool_rim import validate_built as validate_south_rim
+        validate_south_rim(root)
         from dress_cuordilava_scenery import illustration, PLACEMENTS
         from render_cuordilava_preview import png_indexed
         # These four scenery cells lie OUTSIDE the thermal pool's stone rim.
