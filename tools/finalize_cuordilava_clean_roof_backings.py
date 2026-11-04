@@ -204,5 +204,5 @@ def finalize_clean_roof_backings(art, name):
     print(f'Cuordilava clean rear roof {role}: {changed} pixels, '
           f'{gap_fills} old open rock-texture holes closed, '
           f'{backdrop_pixels} noisy rear-ground pixels matched to the exact '
-          'city's volcanic stone pavement; original footprint/gameplay safe')
+          'gray city pavement; original footprint/gameplay safe')
     return changed
