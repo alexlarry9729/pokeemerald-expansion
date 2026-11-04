@@ -57,12 +57,14 @@ def intended_graphics(metas):
     # The upper overlay characters of EAST_RIM include actual turquoise
     # pool pixels and cannot be mirrored onto the dry west bank. Compose
     # only from the audited dry north caps and east rock feet instead.
-    side = (north[4], north[5], east[7], east[6])
-    # An upright lower corner must meet the existing SOUTH rim; turning
-    # the middle panel vertically upside-down created isolated, seemingly
-    # floating white stones at the southwest bend. Use four upright,
-    # bank-owned rock pieces instead, with staggered light/dark courses.
-    southwest = (north[5], east[7], east[6], north[4])
+    # CRITICAL: the straight west wall is NOT another north-facing stone
+    # crest. Reusing the two pale north caps on each of three vertical
+    # cells made a stack of disconnected white boulders. Repeat the dark,
+    # verified DRY EAST rock feet instead: a coherent shaded vertical wall.
+    # The uppermost cell retains the existing NW cap; at the bottom the
+    # southern shore gets one real stone junction, rather than another cap.
+    side = (east[6], east[7], east[6], east[7])
+    southwest = (east[6], east[7], north[5], east[6])
     if any((item >> 12) != PALETTE_WATER_ROCK
            or not 512 <= (item & 1023) < 1024
            or item & 0x0c00 for item in (*upper, *side, *southwest)):
