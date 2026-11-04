@@ -1023,7 +1023,10 @@ def validate_facade_art_tiles(root: Path, path: Path, pixels: list[list[int]]) -
     # thermal rim. Its four original warm-metal base characters are now
     # retired from the rendered town only; south-rock validation checks the
     # exact replacement art and all four blocking water-bank positions.
-    retired_southern_grille = {376, 377, 392, 393}
+    # All eight legacy metal characters were referenced only by the
+    # replaced SOUTH bank, including the formerly isolated left-hand
+    # half of the old corner. No other retirement is permitted here.
+    retired_southern_grille = {308, 376, 377, 378, 379, 392, 393, 394, 395}
     # The five source metatiles for the OLD rear Center/Market rooftops remain
     # untouched as historical donor definitions, but the original rear windows
     # are no longer rendered after the eight isolated roof aliases replace
