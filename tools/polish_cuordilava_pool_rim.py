@@ -101,15 +101,22 @@ def softened(block):
                 # A pure-white pixel on granite is not turquoise foam.
                 out[y][x] = 4 if (x+y)%3 == 0 else 5
             elif old == 4:
-                # Keep broad pale granite faces. Remove single-pixel
-                # highlights not connected to another light-colored stone.
+                # Strong bone-yellow stone texture was being repeated like
+                # a mosaic all the way around the water. Keep pale granite
+                # ONLY on the sunward/top ledge and soften downward faces.
                 near=sum(
                     block[ny][nx] == 4
                     for nx,ny in ((x-1,y),(x+1,y),(x,y-1),(x,y+1))
                     if 0<=nx<8 and 0<=ny<8
                 )
-                if near == 0:
+                if near == 0 or y >= 3:
                     out[y][x] = 5
+            elif old == 5 and y >= 5 and x >= 2:
+                # A cooler and darker supporting rock course breaks up
+                # the incorrect full-brightness yellow squares.
+                out[y][x] = 6
+            elif old == 6 and y >= 7 and x >= 4:
+                out[y][x] = 7
     return out
 
 
@@ -170,7 +177,7 @@ def run(root):
             or attrs_path.read_bytes()!=attrs or events_path.read_bytes()!=events):
         raise ValueError("Rim cleanup inadvertently changed water or gameplay geometry")
     print(f"Cuordilava full original stone rim: {len(ids)} exclusively owned "
-          f"granite characters checked, {altered} isolated white/yellow pixels "
+          f"granite characters checked, {altered} wrong-bright rock pixels "
           "softened across north/west/east/south; zero changes to water/stairs/warps")
     return altered
 
