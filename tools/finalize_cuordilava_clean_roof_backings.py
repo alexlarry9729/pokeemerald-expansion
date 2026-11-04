@@ -148,6 +148,41 @@ def finalize_clean_roof_backings(art, name):
             paint(x,skylight_y-1,5)
             paint(x,skylight_y+2,8)
 
+    # The stray mountain/factory flecks ABOVE each roofline looked like
+    # fragmented roof scaffolding. Match the rear-facing NEGATIVE SPACE to
+    # precisely the same 3x2 ash-basalt slabs already used in the civic
+    # promenade, using their ORIGINAL palette-6 indices 3..6. Keep a full
+    # 2-pixel charcoal roof outline and all building identity/luminous art.
+    # Do NOT repave any real map cell: these are only 4x2 private mural
+    # pixels, beyond the actual pitched roof plane.
+    from sculpt_cuordilava_civic_paving import drawing as civic_paving_drawing
+    origins = {
+        'clinic': (8, 4),
+        'mart': (14, 3),
+        'forge': (3, 11),
+        'homes': (11, 12),
+    }
+    origin_x, origin_y = origins[role]
+    paving = {kind: civic_paving_drawing(kind) for kind in range(6)}
+    backdrop_pixels = 0
+    for left, right, cx, top, pitch, _body, _edge in ROOFS[role]:
+        for x in range(left, right+1):
+            crest = min(8, top+abs(x-cx)//pitch)
+            for y in range(max(0, crest-2)):
+                # The main towers, dormer peaks and furnace chimneys are
+                # protected above. Neon pixels retain their intentional
+                # engineering light; 0 retains original transparency.
+                if (x,y) in protected or not 1 <= art.pix[y][x] <= 8:
+                    continue
+                map_x, map_y = origin_x+x//16, origin_y+y//16
+                motif = (map_x%3)+3*(map_y%2)
+                slate = paving[motif][y%16][x%16]
+                if slate not in (3,4,5,6):
+                    raise ValueError('Roof backdrop is not the civic floor palette')
+                if art.pix[y][x] != slate:
+                    art.pixel(x,y,slate)
+                    backdrop_pixels += 1
+
     for y in range(32):
         for x in range(64):
             old,new=previous[y][x],art.pix[y][x]
@@ -167,6 +202,7 @@ def finalize_clean_roof_backings(art, name):
     if len(changed_slots) > 8:
         raise ValueError(f'{role}: exceeded the existing two-row roof mural')
     print(f'Cuordilava clean rear roof {role}: {changed} pixels, '
-          f'{gap_fills} old open rock-texture holes closed; '
-          'original roof footprint and all gameplay unchanged')
+          f'{gap_fills} old open rock-texture holes closed, '
+          f'{backdrop_pixels} noisy rear-ground pixels matched to the exact '
+          'city's volcanic stone pavement; original footprint/gameplay safe')
     return changed
