@@ -58,9 +58,14 @@ def intended_graphics(metas):
     # pool pixels and cannot be mirrored onto the dry west bank. Compose
     # only from the audited dry north caps and east rock feet instead.
     side = (north[4], north[5], east[7], east[6])
+    # An upright lower corner must meet the existing SOUTH rim; turning
+    # the middle panel vertically upside-down created isolated, seemingly
+    # floating white stones at the southwest bend. Use four upright,
+    # bank-owned rock pieces instead, with staggered light/dark courses.
+    southwest = (north[5], east[7], east[6], north[4])
     if any((item >> 12) != PALETTE_WATER_ROCK
            or not 512 <= (item & 1023) < 1024
-           or item & 0x0c00 for item in (*upper, *side)):
+           or item & 0x0c00 for item in (*upper, *side, *southwest)):
         raise ValueError("Existing pool stone donors no longer have clean palette-8 rock tiles")
     if any((item >> 12) != PALETTE_MOUNTAIN for item in dark[:4]):
         raise ValueError("Original dark mountain backing palette was changed")
@@ -72,7 +77,7 @@ def intended_graphics(metas):
         509: backing + tuple(item ^ HFLIP for item in side),
         # Turn the lower bank's dry cap over so its geological seam does
         # not reproduce the middle cell's perfectly repeated outline.
-        511: backing + tuple(item ^ HFLIP ^ 0x0800 for item in side),
+        511: backing + tuple(item ^ HFLIP for item in southwest),
     }
 
 
