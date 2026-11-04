@@ -95,28 +95,18 @@ def softened(block):
     for y in range(8):
         for x in range(8):
             old = block[y][x]
-            if old in (11,12,13,14,15):
-                out[y][x] = 5 if (x+y)%4 < 2 else 6
-            elif old == 1:
-                # A pure-white pixel on granite is not turquoise foam.
-                out[y][x] = 4 if (x+y)%3 == 0 else 5
-            elif old == 4:
-                # Strong bone-yellow stone texture was being repeated like
-                # a mosaic all the way around the water. Keep pale granite
-                # ONLY on the sunward/top ledge and soften downward faces.
-                near=sum(
-                    block[ny][nx] == 4
-                    for nx,ny in ((x-1,y),(x+1,y),(x,y-1),(x,y+1))
-                    if 0<=nx<8 and 0<=ny<8
-                )
-                if near == 0 or y >= 3:
-                    out[y][x] = 5
-            elif old == 5 and y >= 5 and x >= 2:
-                # A cooler and darker supporting rock course breaks up
-                # the incorrect full-brightness yellow squares.
-                out[y][x] = 6
-            elif old == 6 and y >= 7 and x >= 4:
-                out[y][x] = 7
+            # This monotone palette remap is IDEMPOTENT: when verified on
+            # the written atlas, a second application makes zero changes.
+            # No adjacency-sensitive repainting that shifts a highlight
+            # again on its second pass.
+            c = 5 if old in (1, 11, 12, 13, 14, 15) else old
+            if y >= 7 and x >= 4 and c in (4, 5, 6):
+                c = 7
+            elif y >= 5 and x >= 2 and c in (4, 5):
+                c = 6
+            elif y >= 3 and c == 4:
+                c = 5
+            out[y][x] = c
     return out
 
 
