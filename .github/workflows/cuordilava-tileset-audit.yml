@@ -1,0 +1,40 @@
+name: Cuordilava tileset reuse audit
+
+on:
+  push:
+    branches:
+      - feature/daytime-cyberpunk-lights
+    paths:
+      - .github/workflows/cuordilava-tileset-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  layout-art-audit:
+    name: Export exact map and metatile sources for isolation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify layout size and town-only atlas
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          m=Path('data/layouts/LavaridgeTown/map.bin').read_bytes()
+          s=Path('data/tilesets/secondary/cuordilava/metatiles.bin').read_bytes()
+          assert len(m)==800,(len(m),'town map')
+          assert len(s)%16==0,(len(s),'secondary metatile')
+          print('Layout bytes',len(m),'private metatile count',len(s)//16)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cuordilava-layout-art-audit-${{ github.sha }}
+          path: |
+            data/layouts/LavaridgeTown/map.bin
+            data/tilesets/primary/general/metatiles.bin
+            data/tilesets/secondary/cuordilava/metatiles.bin
+            data/tilesets/primary/cuordilava/tiles.png
+            data/tilesets/secondary/cuordilava/tiles.png
+          retention-days: 7

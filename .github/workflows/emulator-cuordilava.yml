@@ -1,0 +1,87 @@
+name: Cuordilava real mGBA emulator smoke test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/daytime-cyberpunk-lights
+    paths:
+      - '.github/workflows/emulator-cuordilava.yml'
+      - 'tools/smoke_cuordilava_emulator.sh'
+      - 'tools/apply_cuordilava_industrial_art.py'
+      - 'tools/sculpt_cuordilava_city.py'
+      - 'tools/stitch_cuordilava_rear_roofs.py'
+      - 'tools/carve_cuordilava_landmark_architecture.py'
+      - 'tools/relief_cuordilava_building_depth.py'
+      - 'tools/separate_cuordilava_roof_planes.py'
+      - 'tools/finalize_cuordilava_clean_roof_backings.py'
+      - 'tools/restore_cuordilava_original_spring_steps.py'
+      - 'tools/simplify_cuordilava_rear_roof_conduits.py'
+      - 'tools/polish_cuordilava_pool_rim.py'
+      - 'tools/rebuild_cuordilava_civic_massing.py'
+      - 'tools/organize_cuordilava_districts.py'
+      - 'tools/sculpt_cuordilava_civic_paving.py'
+      - 'tools/continue_cuordilava_pool_edges.py'
+      - 'tools/cuordilava_layers.py'
+      - 'tools/validate_cuordilava_sprite_layers.py'
+      - 'tools/rebuild_cuordilava_street_wall.py'
+      - 'data/tilesets/**'
+      - 'data/maps/LavaridgeTown/**'
+      - 'data/layouts/LavaridgeTown/**'
+
+permissions:
+  contents: read
+
+jobs:
+  mgba:
+    name: Boot compiled Emerald in real mGBA and capture X11 framebuffer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout town redesign
+        uses: actions/checkout@v4
+
+      - name: Install the original Emerald build toolchain and mGBA/X11
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils-arm-none-eabi gcc-arm-none-eabi libnewlib-arm-none-eabi \
+            libpng-dev python3 python3-pil \
+            mgba-sdl xvfb xdotool imagemagick
+
+      - name: Generate original-footprint volcanic city graphics
+        run: python3 tools/apply_cuordilava_industrial_art.py
+
+      - name: Validate all exact tile, map, collision and navigation rules
+        run: |
+          python3 tools/validate_cyberpunk_assets.py
+          python3 tools/validate_cuordilava_connectivity.py --output build-emulator/verified-navigation.json
+
+      - name: Build same-source Pokémon Emerald ROM
+        env:
+          GAME_VERSION: EMERALD
+        run: make -j$(nproc) -O all
+
+      - name: Audit actual ROM byte table before emulator starts
+        run: python3 tools/check_cuordilava_compiled_rom_layers.py --rom pokeemerald.gba --output build-emulator/cuordilava-rom-layer-audit.json
+
+      - name: Really boot the compiled GBA ROM in mGBA and capture screen
+        run: |
+          bash tools/smoke_cuordilava_emulator.sh pokeemerald.gba build-emulator
+          sha256sum pokeemerald.gba > build-emulator/rom-tested.sha256
+
+      - name: Attach genuine emulator screens and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cuordilava-mgba-smoke-${{ github.sha }}
+          path: |
+            build-emulator/emulator-boot.png
+            build-emulator/emulator-after-start.png
+            build-emulator/emulator-smoke-report.json
+            build-emulator/mgba.log
+            build-emulator/verified-navigation.json
+            build-emulator/cuordilava-rom-layer-audit.json
+            build-emulator/rom-tested.sha256
+          if-no-files-found: warn
+          retention-days: 14

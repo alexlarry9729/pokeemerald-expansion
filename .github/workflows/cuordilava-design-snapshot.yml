@@ -1,0 +1,36 @@
+name: Cuordilava working design snapshot
+on:
+  push:
+    branches: [feature/daytime-cyberpunk-lights]
+    paths: [.github/workflows/cuordilava-design-snapshot.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sources:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cuordilava-design-sources-${{ github.sha }}
+          retention-days: 7
+          path: |
+            tools/apply_cuordilava_industrial_art.py
+            tools/generate_cuordilava_architecture.py
+            tools/sculpt_cuordilava_city.py
+            tools/render_cuordilava_preview.py
+            tools/validate_cyberpunk_assets.py
+            data/tilesets/primary/general/**
+            data/tilesets/primary/cuordilava/**
+            data/tilesets/secondary/cuordilava/**
+            data/tilesets/secondary/cave/anim/lava/0.png
+            data/layouts/layouts.json
+            data/layouts/LavaridgeTown/**
+            data/maps/LavaridgeTown/map.json
+            graphics/object_events/pics/misc/poke_center_light.png
+            graphics/object_events/pics/misc/mart_light.png
+            graphics/object_events/pics/misc/facade_light.png
+            graphics/object_events/palettes/neon_light*.pal
+            src/overworld.c
+          if-no-files-found: error

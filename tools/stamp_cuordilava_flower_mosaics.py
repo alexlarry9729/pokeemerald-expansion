@@ -1,0 +1,308 @@
+#!/usr/bin/env python3
+"""Small, FLAT flowering basalt beds on already open Cuordilava paving.
+
+The reference has many green/orange islands rather than an empty industrial
+forecourt. Reuse exactly two presently unreferenced GBA 8x8 tiles (510, 511)
+with vertical flips in one inactive town-private metatiles (438, 422). Map remains
+EXACTLY 20x20. This does not create trees, objects, buildings, blocked paths,
+warps, scripts, or a new palette. It runs LAST in the art generation chain.
+"""
+from pathlib import Path
+import json
+import struct
+from cuordilava_layers import player_above_walkable_art, validate_covered
+
+from render_cuordilava_preview import png_indexed
+from apply_cuordilava_industrial_art import write_png
+
+METATILE = 438
+MIRROR_METATILE = 422
+METATILES = (METATILE, MIRROR_METATILE)
+GRAPHICS = (510, 511)
+ORIGINAL_FLOOR = 1
+# These are already WALKABLE original floor cells, away from doorways,
+# signage, objects, the player-facing entrance lanes and the hot pool.
+CELLS = (
+    (18, 8), (19, 8), (18, 11), (19, 11),
+    (3, 16), (17, 16),
+    (3, 17), (5, 17), (8, 17), (11, 17), (15, 17), (17, 17),
+)
+assert len(CELLS) == len(set(CELLS)) == 12
+
+
+def read16(data, offset):
+    return struct.unpack_from("<H", data, offset)[0]
+
+
+def image():
+    """Asymmetrical terraced basalt garden on the same two 8x8 GBA chars.
+
+    Replace the former glowing, near-circular orange/green badges with two
+    differently shaped LOW herb beds, thick moss fronds, inset rock edges and
+    a handful of copper flowers. These are overlays on the original
+    WALKABLE cobbles: no NPC, event, collision, world or tile-budget edits.
+    Two top-half 8x8 sources are mirrored vertically by GBA hardware; the
+    second metatile mirrors the entire patch horizontally.
+    """
+    a = [[0] * 16 for _ in range(16)]
+
+    def p(x, y, c):
+        if 0 <= x < 16 and 0 <= y < 8:
+            a[y][x] = c
+
+    # A broad low retaining planter with a deliberately jagged silhouette:
+    # two interlocking terraces but no bright symmetrical ring. Tiny gaps
+    # let the original basalt promenade show through.
+    for y in range(1, 8):
+        for x in range(1, 15):
+            lower_west = 3*(x-5)**2 + 2*(y-5)**2 < 51
+            upper_east = 2*(x-11)**2 + 4*(y-4)**2 < 40
+            root = y >= 5 and 5 <= x <= 12
+            if not (lower_west or upper_east or root):
+                continue
+            # Dark mineral joints and shaded cobbled border, warmer dry
+            # earth inside the actual planting holes.
+            edge = (
+                not (3*(x-5)**2 + 2*(y-5)**2 < 32)
+                and not (2*(x-11)**2 + 4*(y-4)**2 < 23)
+                and not (y == 6 and 5 <= x <= 11)
+            )
+            c = 6 if edge and (x+3*y)%4 else 12
+            if (x*5 + y*7)%11 == 0:
+                c = 13
+            p(x, y, c)
+
+    # Interleaved moss and leaf fans across the FULL planter mass; their
+    # asymmetry produces more of a real overgrown basalt garden than a
+    # mechanically repeated circular flower icon.
+    for y in range(1, 8):
+        for x in range(1, 15):
+            west = 3*(x-5)**2 + 3*(y-5)**2 < 39
+            east = 3*(x-11)**2 + 4*(y-4)**2 < 32
+            bridge = 5 <= x <= 10 and y in (5, 6)
+            if not (west or east or bridge):
+                continue
+            if (x*7 + y*3)%11 == 0:
+                continue  # frond gap shows underlying basalt soil
+            color = 9 if (x + 2*y)%4 == 0 else 10
+            if y in (1, 2, 3) and x % 5 == 0:
+                color = 15  # Sparse leaf-tip highlights, no fluorescent tuft
+            p(x, y, color)
+
+    # Four distinct short natural stems grow out of soil, not an evenly
+    # spaced checkerboard of identical flowers.
+    for x, top, lean in ((4, 2, -1), (7, 3, 1), (10, 2, -1), (13, 3, 1)):
+        for y in range(top, 7):
+            px = x + (lean if y in (top, top+1) else 0)
+            p(px, y, 9 if y%2 else 10)
+            if y in (top+1, top+3):
+                p(px-1, y, 10)
+                p(px+1, y-1, 15)
+        p(x+lean, top, 15)
+
+    # Natural sparse copper flowers, placed on staggered leaf tops.
+    # No target-shaped concentric halo, no orange 16px square.
+    for x, y in ((3, 4), (6, 3), (10, 3), (12, 5), (8, 6)):
+        p(x, y, 11)
+        p(x+1, y, 14)
+        p(x, y-1, 14 if (x+y)%2 else 15)
+        p(x-1, y, 9)
+
+    # Add a single broken retaining stone sill embedded within the flowers.
+    # It visually rests on the volcanic paving instead of floating over it.
+    for x in range(3, 14):
+        if x not in (6, 11):
+            p(x, 7, 12 if x%3 else 13)
+    for x in (4, 10, 12):
+        p(x, 7, 6)
+
+    # No green frond may create a hard 16px seam against the surrounding
+    # original floor. Keep the entire x=0 / x=15 pixel edge transparent.
+    for y in range(8):
+        a[y][0] = 0
+        a[y][15] = 0
+
+    # Citywide visual hierarchy: the floor planters must read as muted
+    # moss embedded in basalt, not twelve identical neon-green/orange badges.
+    # Palette index 9 is the existing deep forest green. Keep only sparse
+    # index-10 leaf highlights and index-14 blossoms. This makes the
+    # surrounding buildings and the larger central geothermal plaza legible
+    # while preserving the same original 4bpp graphics and collision.
+    for y in range(8):
+        for x in range(16):
+            c = a[y][x]
+            if c in (10, 15) and (x * 3 + y * 5) % 5 != 0:
+                a[y][x] = 9
+            elif c == 14 and (x + 2 * y) % 4 != 0:
+                a[y][x] = 11
+
+    # Bottom source quadrants are ROM H/V flipped, not redrawn separately.
+    for y in range(8, 16):
+        a[y] = a[15-y][:]
+
+    foliage = sum(c in (9, 10, 15) for row in a for c in row)
+    flowers = sum(c in (11, 14) for row in a for c in row)
+    stone = sum(c in (6, 12, 13) for row in a for c in row)
+    if foliage < 80 or flowers < 18 or stone < 25:
+        raise ValueError(
+            f"Terraced herb gardens lost dense foliage/flowers/basalt: "
+            f"{foliage}/{flowers}/{stone}"
+        )
+    if any(c < 0 or c > 15 for row in a for c in row):
+        raise ValueError("Volcanic flower beds exceed indexed 4bpp colours")
+    if any(a[y][0] or a[y][15] for y in range(16)):
+        raise ValueError("Herb beds would create straight border seams")
+    return a
+
+def paths(root):
+    r = Path(root)
+    return {
+        "map": r / "data/layouts/LavaridgeTown/map.bin",
+        "meta": r / "data/tilesets/secondary/cuordilava/metatiles.bin",
+        "attr": r / "data/tilesets/secondary/cuordilava/metatile_attributes.bin",
+        "primary": r / "data/tilesets/primary/general/metatiles.bin",
+        "primary_attr": r / "data/tilesets/primary/general/metatile_attributes.bin",
+        "atlas": r / "data/tilesets/secondary/cuordilava/tiles.png",
+        "events": r / "data/maps/LavaridgeTown/map.json",
+        "layouts": r / "data/layouts/layouts.json",
+    }
+
+
+def ensure_events_clear(root):
+    q = paths(root)
+    layout = json.loads(q["layouts"].read_text(encoding="utf-8"))["layouts"]
+    city = next(item for item in layout if item["id"] == "LAYOUT_LAVARIDGE_TOWN")
+    if (city["width"], city["height"]) != (20, 20):
+        raise ValueError("Flower beds cannot enlarge Cuordilava")
+    events = json.loads(q["events"].read_text(encoding="utf-8"))
+    protected = {
+        (int(item["x"]), int(item["y"]))
+        for category in ("warp_events", "object_events", "coord_events", "bg_events")
+        for item in events.get(category, [])
+        if "x" in item and "y" in item
+    }
+    if protected & set(CELLS):
+        raise ValueError(f"Flower overlays would hide active events: {protected & set(CELLS)}")
+
+
+def mosaic_metatile(x,y):
+    return MIRROR_METATILE if (x+y)%2 else METATILE
+
+
+def expected_overlay(mirrored=False):
+    a,b=GRAPHICS
+    if mirrored:
+        a,b=b,a
+    flip=0x0400 if mirrored else 0
+    return (
+        (9<<12)|flip|(512+a), (9<<12)|flip|(512+b),
+        (9<<12)|flip|0x0800|(512+a),
+        (9<<12)|flip|0x0800|(512+b),
+    )
+
+
+def validate_built(root):
+    q = paths(root)
+    ensure_events_clear(root)
+    m, met, attrs = (q[k].read_bytes() for k in ("map", "meta", "attr"))
+    pri, pattrs = (q[k].read_bytes() for k in ("primary", "primary_attr"))
+    if (len(m), len(met), len(attrs)) != (800, 8192, 1024):
+        raise ValueError("Flower bed exceeds fixed 20x20 GBA map budget")
+    used = {(i%20,i//20) for i in range(400)
+            if (read16(m,2*i)&1023) in (512+METATILE,512+MIRROR_METATILE)}
+    if used != set(CELLS):
+        raise ValueError(f"Flower-bed safe cells changed: {used^set(CELLS)}")
+    for mid in METATILES:
+        if met[mid*16:mid*16+8]!=pri[ORIGINAL_FLOOR*16:ORIGINAL_FLOOR*16+8]:
+            raise ValueError("Original cobbles beneath the flowers changed")
+        validate_covered(read16(pattrs,ORIGINAL_FLOOR*2),
+                         read16(attrs,mid*2),
+                         f'Walkable flowerbed metatile {mid}')
+        if tuple(read16(met,mid*16+8+2*q) for q in range(4)) != expected_overlay(mid==MIRROR_METATILE):
+            raise ValueError("Flower mosaic 8x8 mirror / flip seam")
+    for x,y in CELLS:
+        if read16(m,2*(20*y+x))&1023 != 512+mosaic_metatile(x,y):
+            raise ValueError(f"Flower mosaic mirrored cell mismatch: {(x,y)}")
+    if any((read16(m, 2*(20*y+x)) >> 10) & 3 for x,y in CELLS):
+        raise ValueError("Flower-beds must remain exactly walkable")
+    w,h,pix = png_indexed(q["atlas"])
+    if (w,h) != (128,256):
+        raise ValueError("Flowerbeds exceed 4bpp tile atlas")
+    art = image()
+    for qid, tid in enumerate(GRAPHICS):
+        sx,sy = (tid%16)*8,(tid//16)*8
+        ox = qid*8
+        if any(pix[sy+y][sx+x] != art[y][ox+x]
+               for y in range(8) for x in range(8)):
+            raise ValueError("Flowerbed indexed art is not reproducible")
+    counts = [sum(color in colours for row in art for color in row)
+              for colours in ((9,10,15), (11,14))]
+    if counts[0] < 70 or counts[1] < 12:
+        raise ValueError(f"Insufficient reference flora: {counts}")
+
+
+def run(root):
+    q = paths(root)
+    ensure_events_clear(root)
+    raw = bytearray(q["map"].read_bytes())
+    meta = bytearray(q["meta"].read_bytes())
+    attrs = bytearray(q["attr"].read_bytes())
+    pri, pattrs = (q[k].read_bytes() for k in ("primary", "primary_attr"))
+    if (len(raw),len(meta),len(attrs)) != (800,8192,1024):
+        raise ValueError("Flower beds require the completed town-private tileset")
+    occupied={read16(raw,2*i)&1023 for i in range(400)}
+    if any(512+mid in occupied for mid in METATILES):
+        raise ValueError("Flower-bed donor metatiles already occupied")
+    if any((read16(meta,off)&1023) in (512+GRAPHICS[0],512+GRAPHICS[1])
+           for off in range(0,len(meta),2)):
+        raise ValueError("The two final atlas tiles are no longer free; refusing art corruption")
+    for x,y in CELLS:
+        original = read16(raw,2*(20*y+x))
+        if (original & 1023) != ORIGINAL_FLOOR or ((original >> 10)&3):
+            raise ValueError(f"Flower bed {x,y} is not a spare, flat original floor cell")
+    w,h,pixels = png_indexed(q["atlas"])
+    if (w,h) != (128,256):
+        raise ValueError("Unexpected indexed 4bpp atlas")
+    b = q["atlas"].read_bytes()
+    plte = b[b.index(b"PLTE")+4:b.index(b"PLTE")+52]
+    if len(plte) != 48:
+        raise ValueError("Town-private PNG must retain 16 indexed colours")
+    original_map, original_meta, original_attr = bytes(raw), bytes(meta), bytes(attrs)
+    design = image()
+    for quadrant,tid in enumerate(GRAPHICS):
+        tx,ty=(tid%16)*8,(tid//16)*8
+        for y in range(8):
+            for x in range(8):
+                pixels[ty+y][tx+x] = design[y][8*quadrant+x]
+    for mid in METATILES:
+        entries=bytearray(pri[ORIGINAL_FLOOR*16:ORIGINAL_FLOOR*16+8])
+        entries+=struct.pack("<4H",*expected_overlay(mid==MIRROR_METATILE))
+        meta[mid*16:(mid+1)*16]=entries
+        struct.pack_into('<H',attrs,mid*2,
+                         player_above_walkable_art(read16(pattrs,ORIGINAL_FLOOR*2)))
+    for x,y in CELLS:
+        off=2*(20*y+x)
+        old=read16(raw,off)
+        struct.pack_into("<H",raw,off,(old&~1023)|(512+mosaic_metatile(x,y)))
+    for i in range(400):
+        old,new=read16(original_map,2*i),read16(raw,2*i)
+        if (old>>10)!=(new>>10) or (
+            (i%20,i//20) not in CELLS and old!=new):
+            raise ValueError("Flower bed changed a gameplay map cell")
+    if any(meta[16*i:16*i+16]!=original_meta[16*i:16*i+16]
+           for i in range(512) if i not in METATILES):
+        raise ValueError("Flowerbed overwritten unrelated metatile graphics")
+    if any(attrs[2*i:2*i+2]!=original_attr[2*i:2*i+2]
+           for i in range(512) if i not in METATILES):
+        raise ValueError("Flowerbed overwritten another metatile's collision")
+    write_png(q["atlas"],w,h,pixels,plte)
+    q["map"].write_bytes(raw)
+    q["meta"].write_bytes(meta)
+    q["attr"].write_bytes(attrs)
+    validate_built(root)
+    print("Cuordilava: 12 walkable floral mosaics, two alternating mirrored private "
+          "metatiles, 2 reused 8x8 graphics, six doors/events unchanged.")
+
+
+if __name__ == "__main__":
+    run(Path(__file__).resolve().parents[1])

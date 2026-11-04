@@ -21,6 +21,7 @@
     - [Ubuntu WSL1/WSL2](local_mdbook/ubuntu_WSL.md)
 - [Contributing](./CONTRIBUTING.md)
 - [Styleguide and Principles](./STYLEGUIDE.md)
+- [Cyberpunk Hoenn Art Direction](./cyberpunk-hoenn-art-direction.md)
 - [Credits](./CREDITS.md)
 - [Tutorials]()
   - [What are AI Flags?](tutorials/ai_flags.md)

@@ -41,6 +41,20 @@ const struct Tileset gTileset_General =
     .callback = InitTilesetAnim_General,
 };
 
+// Reuses the general geometry but owns Cuordilava-only colours.
+const struct Tileset gTileset_CuordilavaGeneral =
+{
+    .isCompressed = TRUE,
+    .isSecondary = FALSE,
+    // Only this town uses the sunny structural and shadowed night palette companions.
+    .swapPalettes = SWAP_PAL(1) | SWAP_PAL(2) | SWAP_PAL(3) | SWAP_PAL(4) | SWAP_PAL(5),
+    .tiles = gTilesetTiles_CuordilavaGeneral,
+    .palettes = gTilesetPalettes_CuordilavaGeneral,
+    .metatiles = gMetatiles_General,
+    .metatileAttributes = gMetatileAttributes_General,
+    .callback = InitTilesetAnim_General,
+};
+
 const struct Tileset gTileset_Petalburg =
 {
     .isCompressed = TRUE,
@@ -104,6 +118,19 @@ const struct Tileset gTileset_Lavaridge =
     .palettes = gTilesetPalettes_Lavaridge,
     .metatiles = gMetatiles_Lavaridge,
     .metatileAttributes = gMetatileAttributes_Lavaridge,
+    .callback = InitTilesetAnim_Lavaridge,
+};
+
+// Town-only copy: custom palette 6 / night palette 15 are isolated from shared Lavaridge maps.
+const struct Tileset gTileset_CuordilavaLavaridge =
+{
+    .isCompressed = TRUE,
+    // Cuordilava's palette 6 night blend is applied layout-locally in overworld.c.
+    .isSecondary = TRUE,
+    .tiles = gTilesetTiles_CuordilavaLavaridge,
+    .palettes = gTilesetPalettes_CuordilavaLavaridge,
+    .metatiles = gMetatiles_CuordilavaLavaridge,
+    .metatileAttributes = gMetatileAttributes_CuordilavaLavaridge,
     .callback = InitTilesetAnim_Lavaridge,
 };
 
