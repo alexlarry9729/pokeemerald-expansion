@@ -116,8 +116,14 @@ def finalize_clean_roof_backings(art, name):
                 else:
                     v = body
                 paint(x,y,v)
-        # Every existing roof has one recessed skylight/heat-vent bay:
-        # limited, framed openings (not hundreds of isolated lit pebbles).
+        # A skylight on EVERY tiny house/warehouse segment reads as
+        # repeated pavement texture when the map zooms out. Only one large
+        # central clerestory on the Mart and alternating roof vents on
+        # housing; the other pitches remain quiet, continuous roof planes.
+        # Preserve both clinic-wing medical vents and the forge's one
+        # recessed heat vent.
+        if (role == 'mart' and i != 1) or (role == 'homes' and i in (1, 3)):
+            continue
         if role == 'clinic':
             glass = 10
         elif role == 'forge':
